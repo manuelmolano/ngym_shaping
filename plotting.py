@@ -193,7 +193,7 @@ def fig_(obs, actions, gt=None, rewards=None, states=None, mean_perf=None,
     return f
 
 
-def plot_rew_across_training(folder, window=500, ax=None,
+def plot_rew_across_training(folder, window=200, ax=None,
                              fkwargs={'c': 'tab:blue'}, ytitle='',
                              legend=False, zline=False):
     data = put_together_files(folder)
@@ -211,7 +211,7 @@ def plot_rew_across_training(folder, window=500, ax=None,
                                   mode='valid')
         ax.plot(mean_reward, **fkwargs)  # add color, label etc.
         fkwargs['c'] = 'k'
-        ax.plot(curr_ph, **fkwargs)  # add color, label etc.)
+        ax.plot(curr_ph/4, **fkwargs)  # add color, label etc.)
         ax.set_xlabel('trials')
         if not ytitle:
             ax.set_ylabel('mean reward (running window' +
@@ -237,10 +237,13 @@ def put_together_files(folder):
         for key in file_data.keys():
             data[key] = file_data[key]
 
-        for ind_f in range(len(files)):
+        for ind_f in range(1, len(files)):
+            print(files[ind_f])
             file_data = np.load(files[ind_f], allow_pickle=True)
             for key in file_data.keys():
                 data[key] = np.concatenate((data[key], file_data[key]))
+                print(key)
+                print(file_data[key].shape)
         np.savez(folder + '/bhvr_data_all.npz', **data)
     return data
 
