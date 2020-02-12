@@ -12,7 +12,7 @@ import plotting
 from neurogym.wrappers import monitor
 from stable_baselines.common.policies import LstmPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
-from stable_baselines import A2C  # ACER, PPO2
+from stable_baselines import A2C  # ACER, PPO2, ACKTR
 num_instances = 5
 main_folder = '/home/molano/CV-Learning/results/'
 task = 'CVLearning-v0'
