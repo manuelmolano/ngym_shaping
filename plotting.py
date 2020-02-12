@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import glob
 import gym
+import seaborn as sns
+import ntpath
 
 
 def plot_env(env, num_steps_env=200, def_act=None, model=None, show_fig=True,
@@ -193,15 +195,15 @@ def fig_(obs, actions, gt=None, rewards=None, states=None, mean_perf=None,
     return f
 
 
-def plot_rew_across_training(folder, window=200, ax=None,
+def plot_rew_across_training(folder, window=1000, ax=None,
                              fkwargs={'c': 'tab:blue'}, ytitle='',
-                             legend=False, zline=False):
+                             legend=True, zline=False):
     data = put_together_files(folder)
     if data:
         sv_fig = False
         if ax is None:
             sv_fig = True
-            f, ax = plt.subplots(figsize=(8, 8))
+            f, ax = plt.subplots(nrows=2, ncols=1, figsize=(8, 8))
         reward = data['first_rew']
         curr_ph = data['curr_ph']
         if isinstance(window, float):
@@ -209,19 +211,18 @@ def plot_rew_across_training(folder, window=200, ax=None,
                 window = int(reward.size * window)
         mean_reward = np.convolve(reward, np.ones((window,))/window,
                                   mode='valid')
-        ax.plot(mean_reward, **fkwargs)  # add color, label etc.
-        fkwargs['c'] = 'k'
-        ax.plot(curr_ph/4, **fkwargs)  # add color, label etc.)
-        ax.set_xlabel('trials')
+        ax[0].plot(mean_reward, **fkwargs)  # add color, label etc.
+        ax[1].plot(curr_ph/4, **fkwargs)  # add color, label etc.)
+        ax[1].set_xlabel('trials')
         if not ytitle:
-            ax.set_ylabel('mean reward (running window' +
-                          ' of {:d} trials)'.format(window))
+            ax[0].set_ylabel('mean reward (running window' +
+                             ' of {:d} trials)'.format(window))
         else:
-            ax.set_ylabel(ytitle)
+            ax[1].set_ylabel(ytitle)
         if legend:
-            ax.legend()
+            ax[1].legend()
         if zline:
-            ax.axhline(0, c='k', ls=':')
+            ax[1].axhline(0, c='k', ls=':')
         if sv_fig:
             f.savefig(folder + '/mean_reward_across_training.png')
     else:
@@ -238,12 +239,9 @@ def put_together_files(folder):
             data[key] = file_data[key]
 
         for ind_f in range(1, len(files)):
-            print(files[ind_f])
             file_data = np.load(files[ind_f], allow_pickle=True)
             for key in file_data.keys():
                 data[key] = np.concatenate((data[key], file_data[key]))
-                print(key)
-                print(file_data[key].shape)
         np.savez(folder + '/bhvr_data_all.npz', **data)
     return data
 
@@ -255,5 +253,25 @@ def order_by_sufix(file_list):
 
 
 if __name__ == '__main__':
-    f = '/home/molano/CV-Learning/results/test1/'
-    plot_rew_across_training(folder=f)
+    colors = sns.color_palette()
+    folder = '/home/molano/CV-Learning/results/'
+    files = glob.glob(folder + '*')
+    f, ax = plt.subplots(sharex=True, nrows=2, ncols=1, figsize=(8, 8))
+    ths_mat = []
+    ths_count = []
+    for ind_f, f in enumerate(files):
+        f_name = ntpath.basename(f)
+        th = f_name[f_name.find('_')+1:-2]
+        if th in ths_mat:
+            color_ind = np.where(np.array(ths_mat) == th)[0][0]
+            lbl = ''
+            ths_count[color_ind] += 1
+        else:
+            ths_mat.append(th)
+            ths_count.append(1)
+            lbl = th
+            color_ind = len(ths_mat)-1
+        plot_rew_across_training(folder=f, ax=ax,
+                                 fkwargs={'c': colors[color_ind],
+                                          'label': lbl})
+    print(ths_count)
