@@ -252,16 +252,16 @@ def order_by_sufix(file_list):
     return sorted_list
 
 
-if __name__ == '__main__':
+def plot_results(folder, algorithm):
     colors = sns.color_palette()
-    folder = '/home/molano/CV-Learning/results/'
-    files = glob.glob(folder + '*')
+    files = glob.glob(folder + '*' + algorithm)
     f, ax = plt.subplots(sharex=True, nrows=2, ncols=1, figsize=(8, 8))
     ths_mat = []
     ths_count = []
-    for ind_f, f in enumerate(files):
-        f_name = ntpath.basename(f)
-        th = f_name[f_name.find('_')+1:-2]
+    for ind_f, file in enumerate(files):
+        f_name = ntpath.basename(file)
+        th = f_name[f_name.find('_')+1:]
+        th = th[:th.find('_')]
         if th in ths_mat:
             color_ind = np.where(np.array(ths_mat) == th)[0][0]
             lbl = ''
@@ -271,7 +271,20 @@ if __name__ == '__main__':
             ths_count.append(1)
             lbl = th
             color_ind = len(ths_mat)-1
-        plot_rew_across_training(folder=f, ax=ax,
+        plot_rew_across_training(folder=file, ax=ax,
                                  fkwargs={'c': colors[color_ind],
                                           'label': lbl})
+    ax[0].set_title(alg)
+    f.savefig(folder + '/mean_reward_across_training_'+algorithm+'.png')
     print(ths_count)
+
+
+if __name__ == '__main__':
+    # f = 'train_full_0_ACER'
+    # plot_rew_across_training(folder=folder+f, fkwargs={'c': 'c'})
+    plt.close('all')
+    folder = '/home/molano/CV-Learning/results/'
+    algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
+    for alg in algs:
+        print(alg)
+        plot_results(folder, alg)
