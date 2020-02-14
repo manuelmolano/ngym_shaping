@@ -258,10 +258,13 @@ def plot_results(folder, algorithm):
     f, ax = plt.subplots(sharex=True, nrows=2, ncols=1, figsize=(8, 8))
     ths_mat = []
     ths_count = []
+    # TODO: create mat that stores individual traces and vector that indicates
+    # corresponding th
     for ind_f, file in enumerate(files):
         f_name = ntpath.basename(file)
         th = f_name[f_name.find('_')+1:]
         th = th[:th.find('_')]
+        # check if th was already visited
         if th in ths_mat:
             color_ind = np.where(np.array(ths_mat) == th)[0][0]
             lbl = ''
