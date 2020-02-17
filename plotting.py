@@ -195,40 +195,41 @@ def fig_(obs, actions, gt=None, rewards=None, states=None, mean_perf=None,
     return f
 
 
-def plot_rew_across_training(folder, window=1000, ax=None,
-                             fkwargs={'c': 'tab:blue'}, ytitle='',
-                             legend=False, zline=False):
+def plot_rew_across_training(folder, window=1000, ax=None, ytitle='', xlbl='',
+                             metrics={'reward': []}, fkwargs={'c': 'tab:blue'},
+                             legend=False, conv=[1]):
     data = put_together_files(folder)
     if data:
         sv_fig = False
         if ax is None:
             sv_fig = True
-            f, ax = plt.subplots(nrows=2, ncols=1, figsize=(8, 8))
-        reward = data['first_rew']
-        curr_ph = data['curr_ph']
-        if isinstance(window, float):
-            if window < 1.0:
-                window = int(reward.size * window)
-        mean_reward = np.convolve(reward, np.ones((window,))/window,
-                                  mode='valid')
-        ax[0].plot(mean_reward, **fkwargs)  # add color, label etc.
-        ax[1].plot(curr_ph/4, **fkwargs)  # add color, label etc.)
-        ax[1].set_xlabel('trials')
-        if not ytitle:
-            ax[0].set_ylabel('mean reward (running window' +
-                             ' of {:d} trials)'.format(window))
-        else:
-            ax[1].set_ylabel(ytitle)
-        if legend:
-            ax[1].legend()
-        if zline:
-            ax[1].axhline(0, c='k', ls=':')
+            f, ax = plt.subplots(nrows=len(metrics.keys()), ncols=1,
+                                 figsize=(8, 8))
+        for ind_k, k in enumerate(metrics.keys()):
+            metric = data[k]
+            if isinstance(window, float):
+                if window < 1.0:
+                    window = int(metric.size * window)
+            if conv[ind_k]:
+                mean = np.convolve(metric, np.ones((window,))/window,
+                                   mode='valid')
+            else:
+                mean = metric
+            metrics[k].append(mean)
+            ax[ind_k].plot(mean, **fkwargs)  # add color, label etc.
+            ax[ind_k].set_xlabel(xlbl)
+            if not ytitle:
+                ax[ind_k].set_ylabel('mean ' + k)
+            else:
+                ax[ind_k].set_ylabel(ytitle)
+            if legend:
+                ax[ind_k].legend()
         if sv_fig:
             f.savefig(folder + '/mean_reward_across_training.png')
     else:
         print('No data in: ', folder)
 
-    return mean_reward
+    return metrics
 
 
 def put_together_files(folder):
@@ -254,61 +255,67 @@ def order_by_sufix(file_list):
     return sorted_list
 
 
-def plot_results(folder, algorithm):
-    colors = sns.color_palette()
-    files = sorted(glob.glob(folder + '*' + algorithm))
-    f, ax = plt.subplots(sharex=True, nrows=2, ncols=1, figsize=(8, 8))
+def plot_results(folder, algorithm, w,
+                 keys=['reward', 'performance', 'curr_ph']):
+    clrs = sns.color_palette()
+    files = glob.glob(folder + '*_' + w + '_*_' + algorithm)
+    files += glob.glob(folder + '*_full_*_' + algorithm)
+    files = sorted(files)
+    f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1, figsize=(8, 8))
     ths_mat = []
     ths_count = []
-    # TODO: create mat that stores individual traces and vector that indicates
-    # corresponding th
-    rew_traces = []
     th_index = []
+    metrics = {k: [] for k in keys}
     for ind_f, file in enumerate(files):
         f_name = ntpath.basename(file)
         th = f_name[f_name.find('_')+1:]
         th = th[:th.find('_')]
         # check if th was already visited
         if th in ths_mat:
-            color_ind = np.where(np.array(ths_mat) == th)[0][0]
-            ths_count[color_ind] += 1
+            ci = np.where(np.array(ths_mat) == th)[0][0]
+            ths_count[ci] += 1
         else:
             ths_mat.append(th)
             ths_count.append(1)
-            color_ind = len(ths_mat)-1
-        rew_trace = plot_rew_across_training(folder=file, ax=ax,
-                                             fkwargs={'c': colors[color_ind],
-                                                      'lw': 0.5,
-                                                      'alpha': 0.5})
-        rew_traces.append(rew_trace)
+            ci = len(ths_mat)-1
+        metrics = plot_rew_across_training(folder=file, ax=ax, metrics=metrics,
+                                           conv=[1, 1, 0],
+                                           fkwargs={'c': clrs[ci],
+                                                    'lw': 0.5,
+                                                    'alpha': 0.5})
         th_index.append(th)
-
-    max_dur = np.max([len(x) for x in rew_traces])
-    #
-    rew_traces = [np.concatenate((np.array(x),
-                                  np.nan*np.ones((int(max_dur-len(x)),))))
-                  for x in rew_traces]
-    rew_traces = np.array(rew_traces)
-    th_index = np.array(th_index)
-    for ind_th, th in enumerate(ths_mat):
-        traces_temp = rew_traces[th_index == th, :]
-        ax[0].plot(np.nanmean(traces_temp, axis=0), color=colors[ind_th],
-                   lw=2, label=th)
-
-    ax[0].set_title(alg)
+    for ind_met, met in enumerate(metrics.keys()):
+        plt_means(metric=metrics[met], index=th_index, ax=ax[ind_met],
+                  clrs=clrs)
+    ax[0].set_title(alg + ' (w: ' + w + ')')
     ax[0].legend()
-    f.savefig(folder + '/mean_reward_across_training_'+algorithm+'.png')
-    print(ths_count)
-    print(ths_mat)
+    f.savefig(folder + '/values_across_training_'+algorithm+'_'+w+'.png')
 
+
+def plt_means(metric, index, ax, clrs):
+    max_dur = np.max([len(x) for x in metric])
+    metric = [np.concatenate((np.array(x),
+                              np.nan*np.ones((int(max_dur-len(x)),))))
+              for x in metric]
+
+    metric = np.array(metric)
+    index = np.array(index)
+    unq_index = np.unique(index)
+    for ind_th, th in enumerate(unq_index):
+        traces_temp = metric[index == th, :]
+        ax.plot(np.nanmean(traces_temp, axis=0), color=clrs[ind_th],
+                lw=2, label=th)
 
 
 if __name__ == '__main__':
     # f = 'train_full_0_ACER'
     # plot_rew_across_training(folder=folder+f, fkwargs={'c': 'c'})
     plt.close('all')
-    folder = '/home/molano/CV-Learning/results/'
+    folder = '/home/molano/CV-Learning/results_1702/'
     algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
+    windows = ['100', '500', '1000']
     for alg in algs:
         print(alg)
-        plot_results(folder, alg)
+        for w in windows:
+            print(w)
+            plot_results(folder, alg, w)

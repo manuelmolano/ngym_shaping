@@ -14,7 +14,7 @@ from stable_baselines.common.policies import LstmPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
 from stable_baselines import A2C, ACER, PPO2, ACKTR
 num_instances = 3
-main_folder = '/home/molano/CV-Learning/results_1402/'
+main_folder = '/home/molano/CV-Learning/results_1702/'
 task = 'CVLearning-v0'
 KWARGS = {'dt': 100,
           'timing': {'fixation': ('constant', 200),
