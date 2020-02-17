@@ -197,7 +197,7 @@ def fig_(obs, actions, gt=None, rewards=None, states=None, mean_perf=None,
 
 def plot_rew_across_training(folder, window=1000, ax=None,
                              fkwargs={'c': 'tab:blue'}, ytitle='',
-                             legend=True, zline=False):
+                             legend=False, zline=False):
     data = put_together_files(folder)
     if data:
         sv_fig = False
@@ -228,6 +228,8 @@ def plot_rew_across_training(folder, window=1000, ax=None,
     else:
         print('No data in: ', folder)
 
+    return mean_reward
+
 
 def put_together_files(folder):
     files = glob.glob(folder + '/*_bhvr_data*npz')
@@ -254,12 +256,14 @@ def order_by_sufix(file_list):
 
 def plot_results(folder, algorithm):
     colors = sns.color_palette()
-    files = glob.glob(folder + '*' + algorithm)
+    files = sorted(glob.glob(folder + '*' + algorithm))
     f, ax = plt.subplots(sharex=True, nrows=2, ncols=1, figsize=(8, 8))
     ths_mat = []
     ths_count = []
     # TODO: create mat that stores individual traces and vector that indicates
     # corresponding th
+    rew_traces = []
+    th_index = []
     for ind_f, file in enumerate(files):
         f_name = ntpath.basename(file)
         th = f_name[f_name.find('_')+1:]
@@ -267,19 +271,36 @@ def plot_results(folder, algorithm):
         # check if th was already visited
         if th in ths_mat:
             color_ind = np.where(np.array(ths_mat) == th)[0][0]
-            lbl = ''
             ths_count[color_ind] += 1
         else:
             ths_mat.append(th)
             ths_count.append(1)
-            lbl = th
             color_ind = len(ths_mat)-1
-        plot_rew_across_training(folder=file, ax=ax,
-                                 fkwargs={'c': colors[color_ind],
-                                          'label': lbl})
+        rew_trace = plot_rew_across_training(folder=file, ax=ax,
+                                             fkwargs={'c': colors[color_ind],
+                                                      'lw': 0.5,
+                                                      'alpha': 0.5})
+        rew_traces.append(rew_trace)
+        th_index.append(th)
+
+    max_dur = np.max([len(x) for x in rew_traces])
+    #
+    rew_traces = [np.concatenate((np.array(x),
+                                  np.nan*np.ones((int(max_dur-len(x)),))))
+                  for x in rew_traces]
+    rew_traces = np.array(rew_traces)
+    th_index = np.array(th_index)
+    for ind_th, th in enumerate(ths_mat):
+        traces_temp = rew_traces[th_index == th, :]
+        ax[0].plot(np.nanmean(traces_temp, axis=0), color=colors[ind_th],
+                   lw=2, label=th)
+
     ax[0].set_title(alg)
+    ax[0].legend()
     f.savefig(folder + '/mean_reward_across_training_'+algorithm+'.png')
     print(ths_count)
+    print(ths_mat)
+
 
 
 if __name__ == '__main__':
