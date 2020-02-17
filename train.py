@@ -37,13 +37,13 @@ for ind_inst in range(num_instances):
                     save_folder =\
                         main_folder + '/train_full_' + str(ind_inst) + '_' +\
                         algs_names[ind_alg] + '/'
-                    KWARGS['init_h'] = 4
+                    KWARGS['init_ph'] = 4
                 else:
                     save_folder =\
                         main_folder + 'train_' + str(th) + '_' +\
                         str(w) + '_' + str(ind_inst) + '_' +\
                         algs_names[ind_alg] + '/'
-                    KWARGS['init_h'] = 0
+                    KWARGS['init_ph'] = 0
                 print(save_folder)
                 if not os.path.exists(save_folder + 'bhvr_data_all.npz'):
                     KWARGS['th'] = th
