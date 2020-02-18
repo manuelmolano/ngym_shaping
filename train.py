@@ -8,11 +8,11 @@ Created on Fri Jan 17 14:59:08 2020
 import gym
 import os
 import neurogym
-import plotting
+import plotting as pl
 from neurogym.wrappers import monitor
 from stable_baselines.common.policies import LstmPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
-from stable_baselines import A2C, ACER, PPO2, ACKTR
+from stable_baselines import A2C, ACER  # , PPO2, ACKTR
 num_instances = 3
 main_folder = '/home/molano/CV-Learning/results_1702/'
 task = 'CVLearning-v0'
@@ -21,8 +21,8 @@ KWARGS = {'dt': 100,
                      'stimulus': ('constant', 500),
                      'delay': ('choice', [100, 300, 500]),
                      'decision': ('constant', 300)}}
-algs = [A2C, ACER, PPO2, ACKTR]
-algs_names = ['A2C', 'ACER', 'PPO2', 'ACKTR']
+algs = [A2C, ACER]  # , PPO2, ACKTR]
+algs_names = ['A2C', 'ACER']  # , 'PPO2', 'ACKTR']
 th_mat = [-1, 0.3, 0.5, 0.7, 0.9]
 window_mat = [100, 500, 1000]
 for ind_inst in range(num_instances):
@@ -56,6 +56,9 @@ for ind_inst in range(num_instances):
                     model = alg(LstmPolicy, env, verbose=0,
                                 policy_kwargs={'feature_extraction': "mlp"})
                     model.learn(total_timesteps=5000000)
-                    plotting.plot_rew_across_training(folder=save_folder)
+                    pl.plot_rew_across_training(folder=save_folder,
+                                                metrics={'reward': [],
+                                                         'performance': [],
+                                                         'curr_ph': []})
                 else:
                     print('DONE')

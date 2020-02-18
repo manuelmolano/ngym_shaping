@@ -199,6 +199,7 @@ def plot_rew_across_training(folder, window=1000, ax=None, ytitle='', xlbl='',
                              metrics={'reward': []}, fkwargs={'c': 'tab:blue'},
                              legend=False, conv=[1]):
     data = put_together_files(folder)
+    data_flag = True
     if data:
         sv_fig = False
         if ax is None:
@@ -228,8 +229,9 @@ def plot_rew_across_training(folder, window=1000, ax=None, ytitle='', xlbl='',
             f.savefig(folder + '/mean_reward_across_training.png')
     else:
         print('No data in: ', folder)
+        data_flag = False
 
-    return metrics
+    return metrics, data_flag
 
 
 def put_together_files(folder):
@@ -278,12 +280,14 @@ def plot_results(folder, algorithm, w,
             ths_mat.append(th)
             ths_count.append(1)
             ci = len(ths_mat)-1
-        metrics = plot_rew_across_training(folder=file, ax=ax, metrics=metrics,
-                                           conv=[1, 1, 0],
-                                           fkwargs={'c': clrs[ci],
-                                                    'lw': 0.5,
-                                                    'alpha': 0.5})
-        th_index.append(th)
+        metrics, flag = plot_rew_across_training(folder=file, ax=ax,
+                                                 metrics=metrics,
+                                                 conv=[1, 1, 0],
+                                                 fkwargs={'c': clrs[ci],
+                                                          'lw': 0.5,
+                                                          'alpha': 0.5})
+        if flag:
+            th_index.append(th)
     for ind_met, met in enumerate(metrics.keys()):
         plt_means(metric=metrics[met], index=th_index, ax=ax[ind_met],
                   clrs=clrs)
