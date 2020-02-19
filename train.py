@@ -57,6 +57,7 @@ for ind_inst in range(num_instances):
                                 policy_kwargs={'feature_extraction': "mlp"})
                     model.learn(total_timesteps=5000000)
                     pl.plot_rew_across_training(folder=save_folder,
+                                                conv=[1, 1, 0],
                                                 metrics={'reward': [],
                                                          'performance': [],
                                                          'curr_ph': []})
