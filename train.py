@@ -51,7 +51,7 @@ for ind_inst in range(num_instances):
                     env = gym.make(task, **KWARGS)
                     env = monitor.Monitor(env, folder=save_folder,
                                           sv_per=10000, sv_fig=True,
-                                          verbose=True)
+                                          verbose=True, fig_type='svg')
                     env = DummyVecEnv([lambda: env])
                     model = alg(LstmPolicy, env, verbose=0,
                                 policy_kwargs={'feature_extraction': "mlp"})
