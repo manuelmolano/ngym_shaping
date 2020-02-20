@@ -55,7 +55,7 @@ for ind_inst in range(num_instances):
                     env = DummyVecEnv([lambda: env])
                     model = alg(LstmPolicy, env, verbose=0,
                                 policy_kwargs={'feature_extraction': "mlp"})
-                    model.learn(total_timesteps=5000000)
+                    model.learn(total_timesteps=1000000)
                     pl.plot_rew_across_training(folder=save_folder,
                                                 conv=[1, 1, 0],
                                                 metrics={'reward': [],
