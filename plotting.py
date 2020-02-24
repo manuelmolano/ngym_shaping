@@ -296,19 +296,24 @@ def plot_results(folder, algorithm, w,
     f.savefig(folder + '/values_across_training_'+algorithm+'_'+w+'.png')
 
 
-def plt_means(metric, index, ax, clrs):
-    max_dur = np.max([len(x) for x in metric])
-    metric = [np.concatenate((np.array(x),
-                              np.nan*np.ones((int(max_dur-len(x)),))))
-              for x in metric]
+def plt_means(metric, index, ax, clrs, limit_mean=True):
+    if limit_mean:
+        min_dur = np.min([len(x) for x in metric])
+        metric = [x[:min_dur] for x in metric]
+    else:
+        max_dur = np.max([len(x) for x in metric])
+        metric = [np.concatenate((np.array(x),
+                                  np.nan*np.ones((int(max_dur-len(x)),))))
+                  for x in metric]
 
     metric = np.array(metric)
     index = np.array(index)
     unq_index = np.unique(index)
     for ind_th, th in enumerate(unq_index):
-        traces_temp = metric[index == th, :]
+        indx = index == th
+        traces_temp = metric[indx, :]
         ax.plot(np.nanmean(traces_temp, axis=0), color=clrs[ind_th],
-                lw=2, label=th)
+                lw=1, label=th+'('+str(np.sum(indx))+')')
 
 
 if __name__ == '__main__':
@@ -317,7 +322,7 @@ if __name__ == '__main__':
     plt.close('all')
     folder = '/home/molano/CV-Learning/results_1702/'
     algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
-    windows = ['100', '500', '1000']
+    windows = ['100']  # , '500', '1000']
     for alg in algs:
         print(alg)
         for w in windows:

@@ -13,7 +13,7 @@ from neurogym.wrappers import monitor
 from stable_baselines.common.policies import LstmPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
 from stable_baselines import A2C, ACER  # , PPO2, ACKTR
-num_instances = 3
+num_instances = 5
 main_folder = '/home/molano/CV-Learning/results_1702/'
 task = 'CVLearning-v0'
 KWARGS = {'dt': 100,
@@ -50,7 +50,7 @@ for ind_inst in range(num_instances):
                     KWARGS['perf_w'] = w
                     env = gym.make(task, **KWARGS)
                     env = monitor.Monitor(env, folder=save_folder,
-                                          sv_per=10000, sv_fig=True,
+                                          sv_per=10000, sv_fig=False,
                                           verbose=True, fig_type='svg')
                     env = DummyVecEnv([lambda: env])
                     model = alg(LstmPolicy, env, verbose=0,
