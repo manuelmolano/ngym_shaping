@@ -9,11 +9,12 @@ import gym
 import os
 import neurogym
 import plotting as pl
+import matplotlib.pyplot as plt
 from neurogym.wrappers import monitor
 from stable_baselines.common.policies import LstmPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
 from stable_baselines import A2C, ACER  # , PPO2, ACKTR
-num_instances = 5
+num_instances = 9
 main_folder = '/home/molano/CV-Learning/results_1702/'
 task = 'CVLearning-v0'
 KWARGS = {'dt': 100,
@@ -61,5 +62,6 @@ for ind_inst in range(num_instances):
                                                 metrics={'reward': [],
                                                          'performance': [],
                                                          'curr_ph': []})
+                    plt.close('all')
                 else:
                     print('DONE')

@@ -225,6 +225,8 @@ def plot_rew_across_training(folder, window=1000, ax=None, ytitle='', xlbl='',
                 ax[ind_k].set_ylabel(ytitle)
             if legend:
                 ax[ind_k].legend()
+            if ind_k == len(metrics.keys())-1:
+                ax[ind_k].set_xlabel('trials')
         if sv_fig:
             f.savefig(folder + '/mean_reward_across_training.png')
     else:
@@ -258,7 +260,7 @@ def order_by_sufix(file_list):
 
 
 def plot_results(folder, algorithm, w,
-                 keys=['reward', 'performance', 'curr_ph']):
+                 keys=['reward', 'performance', 'curr_ph'], limit_ax=True):
     clrs = sns.color_palette()
     files = glob.glob(folder + '*_' + w + '_*_' + algorithm)
     files += glob.glob(folder + '*_full_*_' + algorithm)
@@ -290,13 +292,13 @@ def plot_results(folder, algorithm, w,
             th_index.append(th)
     for ind_met, met in enumerate(metrics.keys()):
         plt_means(metric=metrics[met], index=th_index, ax=ax[ind_met],
-                  clrs=clrs)
+                  clrs=clrs, limit_ax=limit_ax)
     ax[0].set_title(alg + ' (w: ' + w + ')')
     ax[0].legend()
     f.savefig(folder + '/values_across_training_'+algorithm+'_'+w+'.png')
 
 
-def plt_means(metric, index, ax, clrs, limit_mean=True):
+def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
     if limit_mean:
         min_dur = np.min([len(x) for x in metric])
         metric = [x[:min_dur] for x in metric]
@@ -314,6 +316,9 @@ def plt_means(metric, index, ax, clrs, limit_mean=True):
         traces_temp = metric[indx, :]
         ax.plot(np.nanmean(traces_temp, axis=0), color=clrs[ind_th],
                 lw=1, label=th+'('+str(np.sum(indx))+')')
+    if limit_ax:
+        assert limit_mean, 'limiting ax only works when mean is also limited'
+        ax.set_xlim([0, min_dur])
 
 
 if __name__ == '__main__':
