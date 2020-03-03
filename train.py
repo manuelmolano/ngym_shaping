@@ -47,8 +47,8 @@ for ind_inst in range(num_instances):
                     KWARGS['init_ph'] = 0
                 print(save_folder)
                 if not os.path.exists(save_folder + 'bhvr_data_all.npz'):
-                    KWARGS['th'] = th
-                    KWARGS['perf_w'] = w
+                    KWARGS['th_stage'] = th
+                    KWARGS['perf_w_stage'] = w
                     env = gym.make(task, **KWARGS)
                     env = monitor.Monitor(env, folder=save_folder,
                                           sv_per=10000, sv_fig=False,
