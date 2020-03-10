@@ -20,12 +20,12 @@ task = 'CVLearning-v0'
 KWARGS = {'dt': 100,
           'timing': {'fixation': ('constant', 200),
                      'stimulus': ('constant', 500),
-                     'delay': ('choice', [100, 300, 500]),
+                     'delay': ('choice', [0, 1000, 3000]),
                      'decision': ('constant', 300)}}
 algs = [A2C, ACER]  # , PPO2, ACKTR]
 algs_names = ['A2C', 'ACER']  # , 'PPO2', 'ACKTR']
-th_mat = [-1, 0.3, 0.5, 0.7, 0.9]
-days_mat = [1, 2, 3]
+th_mat = [0.7]
+days_mat = [100, 200, 300]
 for ind_inst in range(num_instances):
     for ind_alg, alg in enumerate(algs):
         for th in th_mat:
@@ -47,7 +47,8 @@ for ind_inst in range(num_instances):
                 if not os.path.exists(save_folder + 'bhvr_data_all.npz'):
                     KWARGS['th_stage'] = th
                     # KWARGS['perf_w_stage'] = w
-                    KWARGS['days_perf'] = d
+                    KWARGS['trials_day'] = d
+                    KWARGS['stages'] = [3]
                     env = gym.make(task, **KWARGS)
                     env = monitor.Monitor(env, folder=save_folder,
                                           sv_per=10000, sv_fig=False,
