@@ -22,10 +22,10 @@ KWARGS = {'dt': 100,
                      'stimulus': ('constant', 500),
                      'delay': ('choice', [0, 1000, 3000]),
                      'decision': ('constant', 300)}}
-algs = [A2C, ACER]  # , PPO2, ACKTR]
-algs_names = ['A2C', 'ACER']  # , 'PPO2', 'ACKTR']
+algs = [A2C]  # , PPO2, ACKTR]
+algs_names = ['A2C']  # , 'PPO2', 'ACKTR']
 th_mat = [0.7]
-days_mat = [100, 200, 300]
+days_mat = [300]
 for ind_inst in range(num_instances):
     for ind_alg, alg in enumerate(algs):
         for th in th_mat:
@@ -48,15 +48,14 @@ for ind_inst in range(num_instances):
                     KWARGS['th_stage'] = th
                     # KWARGS['perf_w_stage'] = w
                     KWARGS['trials_day'] = d
-                    KWARGS['stages'] = [3]
                     env = gym.make(task, **KWARGS)
                     env = monitor.Monitor(env, folder=save_folder,
-                                          sv_per=10000, sv_fig=False,
+                                          sv_per=1000, sv_fig=False,
                                           verbose=True, fig_type='svg')
                     env = DummyVecEnv([lambda: env])
                     model = alg(LstmPolicy, env, verbose=0,
                                 policy_kwargs={'feature_extraction': "mlp"})
-                    model.learn(total_timesteps=1000000)
+                    model.learn(total_timesteps=100000)
                     pl.plot_rew_across_training(folder=save_folder,
                                                 conv=[1, 1, 0],
                                                 metrics={'reward': [],
