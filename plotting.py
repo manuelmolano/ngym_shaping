@@ -325,9 +325,9 @@ if __name__ == '__main__':
     # f = 'train_full_0_ACER'
     # plot_rew_across_training(folder=folder+f, fkwargs={'c': 'c'})
     plt.close('all')
-    folder = '/home/molano/CV-Learning/results_1702/'
+    folder = '/home/manuel/CV-Learning/results/results_1203/'
     algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
-    windows = ['100']  # , '500', '1000']
+    windows = ['300']  # , '500', '1000']
     for alg in algs:
         print(alg)
         for w in windows:
