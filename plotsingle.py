@@ -249,7 +249,7 @@ def plot_stage2(folder, window=10, ax=None, ytitle='', xlbl='',
 
 
 def plot_stage_change(folder, window=200, ax=None, ytitle='', xlbl='',
-                      metrics={'performance': [], 'curr_ph': [], 'days': []},
+                      metrics={'curr_perf': [], 'curr_ph': [], 'days': []},
                       fkwargs={'c': 'tab:red'}, legend=True, conv=[0]):
 
     data = put_together_files(folder)
@@ -273,16 +273,15 @@ def plot_stage_change(folder, window=200, ax=None, ytitle='', xlbl='',
                         day += 1
                     days.append(day)
                 metric = days
+            elif k == 'curr_perf':
+                metric = data[k][300:]
             else:
                 metric = data[k]
             if isinstance(window, float):
                 if window < 1.0:
                     window = int(metric.size * window)
-            if k == 'performance':
-                mean = np.convolve(metric, np.ones((window,))/window,
-                                   mode='valid')
-            else:
-                mean = metric
+
+            mean = metric
             metrics[k].append(mean)
 
             ax[ind_k].plot(mean, **fkwargs)
@@ -367,8 +366,8 @@ if __name__ == '__main__':
         print(alg)
         for w in windows:
             print(w)
-            plot_results(folder, alg, w, durs=True, keys=['inst_perf',
-                                                          'durs',
+            plot_results(folder, alg, w, stage_change=True, keys=['curr_perf',
+                                                          'curr_ph',
                                                           'days'])
 
     
