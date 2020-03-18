@@ -6,6 +6,7 @@ import glob
 import gym
 import seaborn as sns
 import ntpath
+from neurogym.envs import cv_learning
 
 
 def plot_env(env, num_steps_env=200, def_act=None, model=None, show_fig=True,
@@ -38,9 +39,9 @@ def plot_env(env, num_steps_env=200, def_act=None, model=None, show_fig=True,
     obs_cum = np.array(obs_cum)
     obs = np.array(observations)
     if show_fig:
-        fig_(obs, actions, gt, rewards, legend=legend,
+        fig_(obs, actions, gt, rewards, legend=legend, performance=perf,
              states=states, name=name, obs_traces=obs_traces,
-             fig_kwargs=fig_kwargs)
+             fig_kwargs=fig_kwargs, env=env)
     data = {'obs': obs, 'obs_cum': obs_cum, 'rewards': rewards,
             'actions': actions, 'perf': perf,
             'actions_end_of_trial': actions_end_of_trial, 'gt': gt,
@@ -64,7 +65,8 @@ def run_env(env, num_steps_env=200, def_act=None, model=None):
             action, _states = model.predict(obs)
             if isinstance(action, float) or isinstance(action, int):
                 action = [action]
-            state_mat.append(_states)
+            if len(_states) > 0:
+                state_mat.append(_states)
         elif def_act is not None:
             action = def_act
         else:
@@ -86,17 +88,18 @@ def run_env(env, num_steps_env=200, def_act=None, model=None):
         observations.append(obs_aux)
         if info['new_trial']:
             actions_end_of_trial.append(action)
-            perf.append(rew)
+            perf.append(info['performance'])
             obs_cum_temp = np.zeros_like(obs_cum_temp)
         else:
             actions_end_of_trial.append(-1)
+            perf.append(-1)
         rewards.append(rew)
         actions.append(action)
         if 'gt' in info.keys():
             gt.append(info['gt'])
         else:
             gt.append(0)
-    if model is not None:
+    if model is not None and len(state_mat) > 0:
         states = np.array(state_mat)
         states = states[:, 0, :]
     else:
@@ -105,8 +108,11 @@ def run_env(env, num_steps_env=200, def_act=None, model=None):
         actions_end_of_trial, gt, states
 
 
-def fig_(obs, actions, gt=None, rewards=None, states=None, mean_perf=None,
-         legend=True, obs_traces=[], name='', folder='', fig_kwargs={}):
+def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
+         performance=None, legend=True, obs_traces=None, name='', folder='',
+         fig_kwargs={}, path=None, env=None, sv_data=False, start=None,
+         end=None, show_delays=False, dash=None, show_perf=True):
+
     """
     obs, actions: data to plot
     gt, rewards, states: if not None, data to plot
@@ -119,6 +125,21 @@ def fig_(obs, actions, gt=None, rewards=None, states=None, mean_perf=None,
                 specified by obs_traces
     fig_kwargs: figure properties admited by matplotlib.pyplot.subplots() fun.
     """
+
+    if path is not None:
+        if start is None:
+            start = 0
+        if end is None:
+            end = 100
+        data = load_data(path)
+        obs = data['obs'][start:end]
+        actions = data['actions'][start:end]
+        gt = data['gt'][start:end]
+        rewards = data['rewards'][start:end]
+        performance = data['performance'][start:end]
+
+    obs = np.array(obs)
+    actions = np.array(actions)
     if len(obs.shape) != 2:
         raise ValueError('obs has to be 2-dimensional.')
     steps = np.arange(obs.shape[0])  # XXX: +1? 1st obs doesn't have action/gt
@@ -132,18 +153,80 @@ def fig_(obs, actions, gt=None, rewards=None, states=None, mean_perf=None,
         fig_kwargs = dict(sharex=True, figsize=(5, n_row*1.5))
 
     f, axes = plt.subplots(n_row, 1, **fig_kwargs)
+
     # obs
     ax = axes[0]
-    if len(obs_traces) > 0:
+    d = 0
+    d_start = []
+    d_end = []
+
+    if obs_traces:
         assert len(obs_traces) == obs.shape[1],\
             'Please provide label for each trace in the observations'
         for ind_tr, tr in enumerate(obs_traces):
-            ax.plot(obs[:, ind_tr], label=obs_traces[ind_tr])
+            if ind_tr == dash:
+                ax.plot(obs[:, ind_tr], '--', label=obs_traces[ind_tr])
+            else:
+                ax.plot(obs[:, ind_tr], label=obs_traces[ind_tr])
+            # decision
+            if ind_tr == 0:
+                fixation = obs[:, ind_tr]
+                for ind, action in enumerate(fixation):
+                    if action == 0 and d == 0:
+                        d_start.append(ind)
+                        d = 1
+                    elif action == 1 and d == 1:
+                        d_end.append(ind-1)
+                        d = 0
+                if len(d_start) > len(d_end):
+                    d_end.append(end)
+            elif ind_tr == 1:
+                stim1 = obs[:, ind_tr]
+            elif ind_tr == 2:
+                stim2 = obs[:, ind_tr]
+
+        stim = []
+        for s1, s2 in zip(stim1, stim2):
+            if s1 > 0 or s2 > 0:
+                stim.append(1)
+            else:
+                stim.append(0)
+        # delay
+        dly = 0
+        predly_start = []
+        predly_end = []
+        for ind, value in enumerate(fixation):
+            if value != stim[ind] and dly == 0:
+                predly_start.append(ind)
+                dly = 1
+            elif value == stim[ind] and dly == 1:
+                predly_end.append(ind-1)
+                dly = 0
+        if len(predly_start) > len(predly_end):
+            predly_end.append(end)
+
+        dly_start = []
+        dly_end = []
+        for ind, step in enumerate(predly_end):
+            if step+1 in d_start:
+                dly_start.append(predly_start[ind])
+                dly_end.append(predly_end[ind])
+
         ax.legend()
         ax.set_xlim([-0.5, len(steps)-0.5])
     else:
         ax.imshow(obs.T, aspect='auto')
-        ax.set_yticks([])
+        if env and env.ob_dict:
+            # Plot environment annotation
+            yticks = []
+            yticklabels = []
+            for key, val in env.ob_dict.items():
+                yticks.append((np.min(val)+np.max(val))/2)
+                yticklabels.append(key)
+            ax.set_yticks(yticks)
+            ax.set_yticklabels(yticklabels)
+        else:
+            ax.set_yticks([])
 
     if name:
         ax.set_title(name + ' env')
@@ -151,7 +234,12 @@ def fig_(obs, actions, gt=None, rewards=None, states=None, mean_perf=None,
 
     # actions
     ax = axes[1]
-    ax.plot(steps, actions, marker='+', label='Actions')
+    if len(actions.shape) > 1:
+        # Changes not implemented yet
+        ax.plot(steps, actions, marker='+', label='Actions')
+    else:
+        ax.plot(steps, actions, marker='+', label='Actions')
+
     if gt is not None:
         gt = np.array(gt)
         if len(gt.shape) > 1:
@@ -164,15 +252,46 @@ def fig_(obs, actions, gt=None, rewards=None, states=None, mean_perf=None,
     ax.set_ylabel('Actions')
     if legend:
         ax.legend()
+    if env and env.act_dict:
+        # Plot environment annotation
+        yticks = []
+        yticklabels = []
+        for key, val in env.act_dict.items():
+            yticks.append((np.min(val) + np.max(val)) / 2)
+            yticklabels.append(key)
+        ax.set_yticks(yticks)
+        ax.set_yticklabels(yticklabels)
+
+    yticks = [0, 1, 2]
+    yticklabels = ['Fixate', 'Left', 'Right']
+    ax.set_yticks(yticks)
+    ax.set_yticklabels(yticklabels)
 
     # rewards
     if rewards is not None:
         ax = axes[2]
-        ax.plot(steps, rewards, 'r')
-        ax.set_ylabel('Reward')
-        if mean_perf is not None:
-            ax.set_title('Mean performance: ' + str(np.round(mean_perf, 2)))
+        ax.plot(steps, rewards, 'r', label='Rewards')
+        if show_perf:
+            ax.plot(steps, performance, 'k', label='Performance')
+            ax.set_ylabel('Reward/Performance')
+        else:
+            ax.set_ylabel('Reward')
+        # performance = np.array(performance)
+        # mean_perf = np.mean(performance[performance != -1])
+        # ax.set_title('Mean performance: ' + str(np.round(mean_perf, 2)))
+        if legend:
+            ax.legend()
         ax.set_xlim([-0.5, len(steps)-0.5])
+
+        if env and env.rewards:
+            # Plot environment annotation
+            yticks = []
+            yticklabels = []
+            for key, val in env.rewards.items():
+                yticks.append(val)
+                yticklabels.append('{:s} {:0.2f}'.format(key, val))
+            ax.set_yticks(yticks)
+            ax.set_yticklabels(yticklabels)
 
     # states
     if states is not None:
@@ -184,9 +303,34 @@ def fig_(obs, actions, gt=None, rewards=None, states=None, mean_perf=None,
         ax.set_ylabel('Neurons')
 
     ax.set_xlabel('Steps')
+
+    for ind, value in enumerate(d_start):
+        if value == start:
+            [ax.axvspan(d_start[ind], d_end[ind]+0.5, facecolor='grey',
+                        alpha=0.3) for ax in axes]
+        elif d_end[ind] == end:
+            [ax.axvspan(d_start[ind]-0.5, end, facecolor='grey',
+                        alpha=0.3) for ax in axes]
+        else:
+            [ax.axvspan(d_start[ind]-0.5, d_end[ind]+0.5, facecolor='grey',
+                        alpha=0.3) for ax in axes]
+
+    if show_delays:
+        for ind, value in enumerate(dly_start):
+            if value == start:
+                [ax.axvspan(dly_start[ind], dly_end[ind]+0.5, facecolor='blue',
+                            alpha=0.2) for ax in axes]
+            elif d_end[ind] == end:
+                [ax.axvspan(dly_start[ind]-0.5, end, facecolor='blue',
+                            alpha=0.2) for ax in axes]
+            else:
+                [ax.axvspan(dly_start[ind]-0.5, dly_end[ind]+0.5,
+                            facecolor='blue', alpha=0.2) for ax in axes]
+
     plt.tight_layout()
+
     if folder is not None and folder != '':
-        if folder.endswith('.png'):
+        if folder.endswith('.png') or folder.endswith('.svg'):
             f.savefig(folder)
         else:
             f.savefig(folder + name + 'env_struct.png')
@@ -253,6 +397,14 @@ def put_together_files(folder):
     return data
 
 
+def load_data(path):
+    data = {}
+    file_data = np.load(path, allow_pickle=True)
+    for key in file_data.keys():
+            data[key] = file_data[key]
+    return data
+
+
 def order_by_sufix(file_list):
     sfx = [int(x[x.rfind('_')+1:x.rfind('.')]) for x in file_list]
     sorted_list = [x for _, x in sorted(zip(sfx, file_list))]
@@ -293,7 +445,7 @@ def plot_results(folder, algorithm, w,
     for ind_met, met in enumerate(metrics.keys()):
         plt_means(metric=metrics[met], index=th_index, ax=ax[ind_met],
                   clrs=clrs, limit_ax=limit_ax)
-    ax[0].set_title(alg + ' (w: ' + w + ')')
+    ax[0].set_title(algorithm + ' (w: ' + w + ')')
     ax[0].legend()
     f.savefig(folder + '/values_across_training_'+algorithm+'_'+w+'.png')
 
@@ -322,14 +474,50 @@ def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
 
 
 if __name__ == '__main__':
-    # f = 'train_full_0_ACER'
-    # plot_rew_across_training(folder=folder+f, fkwargs={'c': 'c'})
-    plt.close('all')
-    folder = '/home/manuel/CV-Learning/results/results_1203/'
-    algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
-    windows = ['300']  # , '500', '1000']
-    for alg in algs:
-        print(alg)
-        for w in windows:
-            print(w)
-            plot_results(folder, alg, w)
+
+    stage = 4
+
+    if stage == 0:
+        start = 10
+        end = 28
+        dash = 2
+        show_delays = False
+        show_perf = False
+        path = '/Users/martafradera/CV/data_fig/stage_0.npz'
+        folder = '/Users/martafradera/CV/figures/stage_0'
+    elif stage == 1:
+        start = 45
+        end = 65
+        dash = None
+        show_delays = False
+        show_perf = True
+        path = '/Users/martafradera/CV/data_fig/stage_1.npz'
+        folder = '/Users/martafradera/CV/figures/stage_1'
+    elif stage == 2:
+        start = 18
+        end = 40
+        dash = None
+        show_delays = False
+        show_perf = True
+        path = '/Users/martafradera/CV/data_fig/stage_2.npz'
+        folder = '/Users/martafradera/CV/figures/stage_2'
+    elif stage == 3:
+        start = 0
+        end = 38
+        dash = None
+        show_delays = True
+        show_perf = True
+        path = '/Users/martafradera/CV/data_fig/stage_3.npz'
+        folder = '/Users/martafradera/CV/figures/stage_3'
+    elif stage == 4:
+        start = 45
+        end = 85
+        dash = None
+        show_delays = True
+        show_perf = True
+        path = '/Users/martafradera/CV/data_fig/stage_4.npz'
+        folder = '/Users/martafradera/CV/figures/stage_4'
+
+    fig_(path=path, obs_traces=['Fixation Cue', 'Left Stim', 'Right Stim'],
+         start=start, end=end, dash=dash, show_delays=show_delays,
+         show_perf=show_perf, folder=folder+'.svg')
