@@ -58,7 +58,7 @@ def run_env(env, num_steps_env=200, def_act=None, model=None):
     actions_end_of_trial = []
     gt = []
     perf = []
-    obs = env.reset()  # TODO: not saving this first observation
+    obs = env.reset()
     obs_cum_temp = obs
     for stp in range(int(num_steps_env)):
         if model is not None:
@@ -142,7 +142,7 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
     actions = np.array(actions)
     if len(obs.shape) != 2:
         raise ValueError('obs has to be 2-dimensional.')
-    steps = np.arange(obs.shape[0])  # XXX: +1? 1st obs doesn't have action/gt
+    steps = np.arange(obs.shape[0])
 
     n_row = 2  # observation and action
     n_row += rewards is not None
@@ -483,40 +483,40 @@ if __name__ == '__main__':
         dash = 2
         show_delays = False
         show_perf = False
-        path = '/Users/martafradera/CV/data_fig/stage_0.npz'
-        folder = '/Users/martafradera/CV/figures/stage_0'
+        path = '/Users/martafradera/CV-figures/data_fig/stage_0.npz'
+        folder = '/Users/martafradera/CV-figures/figures/stage_0'
     elif stage == 1:
         start = 45
         end = 65
         dash = None
         show_delays = False
         show_perf = True
-        path = '/Users/martafradera/CV/data_fig/stage_1.npz'
-        folder = '/Users/martafradera/CV/figures/stage_1'
+        path = '/Users/martafradera/CV-figures/data_fig/stage_1.npz'
+        folder = '/Users/martafradera/CV-figures/figures/stage_1'
     elif stage == 2:
         start = 18
         end = 40
         dash = None
         show_delays = False
         show_perf = True
-        path = '/Users/martafradera/CV/data_fig/stage_2.npz'
-        folder = '/Users/martafradera/CV/figures/stage_2'
+        path = '/Users/martafradera/CV-figures/data_fig/stage_2.npz'
+        folder = '/Users/martafradera/CV-figures/figures/stage_2'
     elif stage == 3:
         start = 0
         end = 38
         dash = None
         show_delays = True
         show_perf = True
-        path = '/Users/martafradera/CV/data_fig/stage_3.npz'
-        folder = '/Users/martafradera/CV/figures/stage_3'
+        path = '/Users/martafradera/CV-figures/data_fig/stage_3.npz'
+        folder = '/Users/martafradera/CV-figures/figures/stage_3'
     elif stage == 4:
         start = 45
         end = 85
         dash = None
         show_delays = True
         show_perf = True
-        path = '/Users/martafradera/CV/data_fig/stage_4.npz'
-        folder = '/Users/martafradera/CV/figures/stage_4'
+        path = '/Users/martafradera/CV-figures/data_fig/stage_4.npz'
+        folder = '/Users/martafradera/CV-figures/figures/stage_4'
 
     fig_(path=path, obs_traces=['Fixation Cue', 'Left Stim', 'Right Stim'],
          start=start, end=end, dash=dash, show_delays=show_delays,
