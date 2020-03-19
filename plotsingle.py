@@ -48,7 +48,7 @@ def plot_rew_across_training(folder, window=1000, ax=None, ytitle='', xlbl='',
             if ind_k == len(metrics.keys())-1:
                 ax[ind_k].set_xlabel('trials')
         if sv_fig:
-            f.savefig(folder + '/mean_reward_across_training.png')
+            f.savefig(folder + '/mean_reward_across_training.svg')
     else:
         print('No data in: ', folder)
         data_flag = False
@@ -107,17 +107,21 @@ def plot_results(folder, algorithm, w, durs=False, stage2=False,
             ths_count.append(1)
             ci = len(ths_mat)-1
         if durs:
+            fname = 'delays'
             metrics, flag = plot_durs(folder=file, ax=ax, metrics=metrics,
                                       fkwargs={'lw': 1, 'alpha': 1})
         elif stage2:
+            fname = 'stage2'
             metrics, flag = plot_stage2(folder=file, ax=ax, metrics=metrics,
                                         fkwargs={'lw': 1, 'alpha': 1})
         elif stage_change:
+            fname = 'stagechange'
             metrics, flag = plot_stage_change(folder=file, ax=ax,
                                               metrics=metrics,
                                               fkwargs={'lw': 1,
                                                        'alpha': 1})
         else:
+            fname = 'values_across_training_'
             metrics, flag = plot_rew_across_training(folder=file, ax=ax,
                                                      metrics=metrics,
                                                      conv=[1, 1, 0],
@@ -126,14 +130,14 @@ def plot_results(folder, algorithm, w, durs=False, stage2=False,
         if flag:
             th_index.append(th)
 
-
     ax[0].set_title(alg + ' (w: ' + w + ')')
     ax[0].legend()
-    f.savefig(folder + '/values_across_training_'+algorithm+'_'+w+'.png')
+    f.savefig(folder + '/' + fname + '_' + algorithm + '_' + w + '.svg')
 
 
-def plot_durs(folder, window=100, ax=None, ytitle='', xlbl='',
-              metrics={'inst_perf': [], 'inc_delays': [], 'days': [], 'durs':[]},
+def plot_durs(folder, window=0, ax=None, ytitle='', xlbl='',
+              metrics={'inst_perf': [], 'inc_delays': [], 'days': [],
+                       'durs': []},
               fkwargs={'c': 'tab:blue'}, legend=True, conv=[0]):
 
     data = put_together_files(folder)
@@ -170,6 +174,12 @@ def plot_durs(folder, window=100, ax=None, ytitle='', xlbl='',
             if k == 'inst_perf':
                 mean = np.convolve(metric, np.ones((window,))/window,
                                    mode='valid')
+                up_th = np.repeat(data['th_perf'][0], len(mean))
+                ax[ind_k].plot(up_th, label='upper threshold',
+                               color='green', alpha=0.5)
+                low_th = np.repeat(0.5, len(mean))
+                ax[ind_k].plot(low_th, label='lower threshold',
+                               color='red', alpha=0.5)
             else:
                 mean = metric
             metrics[k].append(mean)
@@ -190,7 +200,7 @@ def plot_durs(folder, window=100, ax=None, ytitle='', xlbl='',
             if ind_k == len(metrics.keys())-1:
                 ax[ind_k].set_xlabel('trials')
         if sv_fig:
-            f.savefig(folder + '/mean_reward_across_training.png')
+            f.savefig(folder + '/delays.svg')
     else:
         print('No data in: ', folder)
         data_flag = False
@@ -229,6 +239,12 @@ def plot_stage2(folder, window=10, ax=None, ytitle='', xlbl='',
             if k == 'inst_perf':
                 mean = np.convolve(metric, np.ones((window,))/window,
                                    mode='valid')
+                up_th = np.repeat(data['th_perf'][0], len(mean))
+                ax[ind_k].plot(up_th, label='upper threshold',
+                               color='green', alpha=0.5)
+                low_th = np.repeat(0.5, len(mean))
+                ax[ind_k].plot(low_th, label='lower threshold',
+                               color='red', alpha=0.5)
             else:
                 mean = metric
             metrics[k].append(mean)
@@ -240,7 +256,7 @@ def plot_stage2(folder, window=10, ax=None, ytitle='', xlbl='',
             if ind_k == len(metrics.keys())-1:
                 ax[ind_k].set_xlabel('trials')
         if sv_fig:
-            f.savefig(folder + '/mean_reward_across_training.png')
+            f.savefig(folder + '/stage2.svg')
     else:
         print('No data in: ', folder)
         data_flag = False
@@ -293,9 +309,10 @@ def plot_stage_change(folder, window=200, ax=None, ytitle='', xlbl='',
             control = 0
             prev_stage = -1
             first_day = []
+            stages = []
 
             for ind, value in enumerate(mean):
-                if k == 'curr_ph':
+                if k == 'curr_ph' or k == 'curr_perf':
                     a = data['keep_stage'][ind] * 1
                     if a == 1 and control == 0:
                         control = 1
@@ -308,8 +325,8 @@ def plot_stage_change(folder, window=200, ax=None, ytitle='', xlbl='',
                         first_day.append(ind)
                         prev_stage = data['curr_ph'][ind]
 
-            for ind, value in enumerate(start):
-                if k == 'curr_ph':
+            if k == 'curr_ph' or k == 'curr_perf':
+                for ind, value in enumerate(start):
                     if value == start[0]:
                         ax[ind_k].plot(x[start[ind]:stop[ind]],
                                        mean[start[ind]:stop[ind]], color='red',
@@ -319,9 +336,12 @@ def plot_stage_change(folder, window=200, ax=None, ytitle='', xlbl='',
                                        mean[start[ind]:stop[ind]], color='red',
                                        **fkwargs)
 
-            stages = []
-            for ind, value in enumerate(first_day):
-                if k == 'days':
+            if k == 'curr_perf':
+                ax[ind_k].plot(data['th_perf'], label='threshold',
+                               color='green', alpha=0.5)
+
+            elif k == 'days':
+                for ind, value in enumerate(first_day):
                     stage = data['curr_ph'][value]
                     label = 'stage ' + str(stage)
                     if value == first_day[-1]:
@@ -347,7 +367,7 @@ def plot_stage_change(folder, window=200, ax=None, ytitle='', xlbl='',
             if ind_k == len(metrics.keys())-1:
                 ax[ind_k].set_xlabel('trials')
         if sv_fig:
-            f.savefig(folder + '/mean_reward_across_training.png')
+            f.savefig(folder + '/change.svg')
     else:
         print('No data in: ', folder)
         data_flag = False
@@ -358,16 +378,27 @@ def plot_stage_change(folder, window=200, ax=None, ytitle='', xlbl='',
 if __name__ == '__main__':
     # f = 'train_full_0_ACER'
     # plot_rew_across_training(folder=folder+f, fkwargs={'c': 'c'})
+
+    choices = ['stage_change', 'stage2', 'delays', 'rewards']
+    figure = choices[0]
+
     plt.close('all')
-    folder = '/Users/martafradera/CV/'
+    #folder = '/Users/martafradera/Desktop/OneDrive - Universitat de Barcelona/TFG/FIGURES/train_oldth/cas3/'
+    folder = '/Users/martafradera/Desktop/OneDrive - Universitat de Barcelona/TFG/FIGURES/train/cas6/'
     algs = ['A2C']
     windows = ['300']  # , '500', '1000']
-    for alg in algs:
-        print(alg)
-        for w in windows:
-            print(w)
-            plot_results(folder, alg, w, stage_change=True, keys=['curr_perf',
-                                                          'curr_ph',
-                                                          'days'])
 
-    
+    for alg in algs:
+        for w in windows:
+            if figure == 'stage_change':
+                plot_results(folder, alg, w, stage_change=True,
+                             keys=['curr_perf', 'curr_ph', 'days'])
+            elif figure == 'delays':
+                plot_results(folder, alg, w, durs=True,
+                             keys=['inst_perf', 'durs', 'days'])
+            elif figure == 'stage2':
+                plot_results(folder, alg, w, stage2=True,
+                             keys=['inst_perf', 'curr_ph'])
+            elif figure == 'rewards':
+                plot_results(folder, alg, w)
+                
