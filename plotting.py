@@ -339,7 +339,7 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
     return f
 
 
-def plot_rew_across_training(folder, window=1000, ax=None, ytitle='', xlbl='',
+def plot_rew_across_training(folder, window=100, ax=None, ytitle='', xlbl='',
                              metrics={'reward': []}, fkwargs={'c': 'tab:blue'},
                              legend=False, conv=[1]):
     data = put_together_files(folder)
@@ -414,13 +414,15 @@ def order_by_sufix(file_list):
 def plot_results(folder, algorithm, w,
                  keys=['reward', 'performance', 'curr_ph'], limit_ax=True):
     clrs = sns.color_palette()
-    files = glob.glob(folder + '*_' + w + '_*_' + algorithm)
-    files += glob.glob(folder + '*_full_*_' + algorithm)
+    files = glob.glob(folder + '*_' + algorithm + '_*_' + w)
+    files += glob.glob(folder + algorithm + '*_full_*_')
     files = sorted(files)
     f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1, figsize=(8, 8))
     ths_mat = []
     ths_count = []
     th_index = []
+    print(files)
+    print(folder + '*_' + algorithm + '_*_' + w)
     metrics = {k: [] for k in keys}
     for ind_f, file in enumerate(files):
         f_name = ntpath.basename(file)
@@ -442,13 +444,15 @@ def plot_results(folder, algorithm, w,
                                                           'alpha': 0.5})
         if flag:
             th_index.append(th)
-    for ind_met, met in enumerate(metrics.keys()):
-        plt_means(metric=metrics[met], index=th_index, ax=ax[ind_met],
-                  clrs=clrs, limit_ax=limit_ax)
-    ax[0].set_title(algorithm + ' (w: ' + w + ')')
-    ax[0].legend()
-    f.savefig(folder + '/values_across_training_'+algorithm+'_'+w+'.png')
-
+    if metrics[keys[0]]:
+        for ind_met, met in enumerate(metrics.keys()):
+            plt_means(metric=metrics[met], index=th_index, ax=ax[ind_met],
+                      clrs=clrs, limit_ax=limit_ax)
+        ax[0].set_title(algorithm + ' (w: ' + w + ')')
+        ax[0].legend()
+        f.savefig(folder + '/values_across_training_'+algorithm+'_'+w+'.png')
+    else:
+        plt.close(f)
 
 def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
     if limit_mean:
@@ -474,50 +478,12 @@ def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
 
 
 if __name__ == '__main__':
-
-    stage = 4
-
-    if stage == 0:
-        start = 10
-        end = 28
-        dash = 2
-        show_delays = False
-        show_perf = False
-        path = '/Users/martafradera/CV-figures/data_fig/stage_0.npz'
-        folder = '/Users/martafradera/CV-figures/figures/stage_0'
-    elif stage == 1:
-        start = 45
-        end = 65
-        dash = None
-        show_delays = False
-        show_perf = True
-        path = '/Users/martafradera/CV-figures/data_fig/stage_1.npz'
-        folder = '/Users/martafradera/CV-figures/figures/stage_1'
-    elif stage == 2:
-        start = 18
-        end = 40
-        dash = None
-        show_delays = False
-        show_perf = True
-        path = '/Users/martafradera/CV-figures/data_fig/stage_2.npz'
-        folder = '/Users/martafradera/CV-figures/figures/stage_2'
-    elif stage == 3:
-        start = 0
-        end = 38
-        dash = None
-        show_delays = True
-        show_perf = True
-        path = '/Users/martafradera/CV-figures/data_fig/stage_3.npz'
-        folder = '/Users/martafradera/CV-figures/figures/stage_3'
-    elif stage == 4:
-        start = 45
-        end = 85
-        dash = None
-        show_delays = True
-        show_perf = True
-        path = '/Users/martafradera/CV-figures/data_fig/stage_4.npz'
-        folder = '/Users/martafradera/CV-figures/figures/stage_4'
-
-    fig_(path=path, obs_traces=['Fixation Cue', 'Left Stim', 'Right Stim'],
-         start=start, end=end, dash=dash, show_delays=show_delays,
-         show_perf=show_perf, folder=folder+'.svg')
+    folder = '/home/manuel/CV-Learning/results/tests/'
+    plt.close('all')
+    algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
+    windows = ['0', '2', '4']  # , '500', '1000']
+    for alg in algs:
+        print(alg)
+        for w in windows:
+            print(w)
+            plot_results(folder, alg, w)
