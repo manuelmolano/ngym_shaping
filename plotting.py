@@ -379,6 +379,8 @@ def plot_rew_across_training(folder, window=100, ax=None, ytitle='', xlbl='',
 
     return metrics, data_flag
 
+# def find_reaching_phase_time(trace, phase=4):
+#     return time
 
 def put_together_files(folder):
     files = glob.glob(folder + '/*_bhvr_data*npz')
@@ -401,7 +403,7 @@ def load_data(path):
     data = {}
     file_data = np.load(path, allow_pickle=True)
     for key in file_data.keys():
-            data[key] = file_data[key]
+        data[key] = file_data[key]
     return data
 
 
@@ -421,12 +423,10 @@ def plot_results(folder, algorithm, w,
     ths_mat = []
     ths_count = []
     th_index = []
-    print(files)
-    print(folder + '*_' + algorithm + '_*_' + w)
     metrics = {k: [] for k in keys}
     for ind_f, file in enumerate(files):
         f_name = ntpath.basename(file)
-        th = f_name[f_name.find('_')+1:]
+        th = f_name[f_name.find('th_stage')+9:]
         th = th[:th.find('_')]
         # check if th was already visited
         if th in ths_mat:
@@ -450,9 +450,20 @@ def plot_results(folder, algorithm, w,
                       clrs=clrs, limit_ax=limit_ax)
         ax[0].set_title(algorithm + ' (w: ' + w + ')')
         ax[0].legend()
-        f.savefig(folder + '/values_across_training_'+algorithm+'_'+w+'.png')
+        f.savefig(folder+'/values_across_training_'+algorithm+'_'+w+'.png')
+        # plot only means
+        f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
+                             figsize=(8, 8))
+        for ind_met, met in enumerate(metrics.keys()):
+            plt_means(metric=metrics[met], index=th_index, ax=ax[ind_met],
+                      clrs=clrs, limit_ax=limit_ax)
+        ax[0].set_title(algorithm + ' (w: ' + w + ')')
+        ax[0].legend()
+        f.savefig(folder + '/mean_values_across_training_' +
+                  algorithm+'_'+w+'.png')
     else:
         plt.close(f)
+
 
 def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
     if limit_mean:
@@ -486,4 +497,4 @@ if __name__ == '__main__':
         print(alg)
         for w in windows:
             print(w)
-            plot_results(folder, alg, w)
+            plot_results(folder, alg, w, limit_ax=False)
