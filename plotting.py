@@ -449,10 +449,7 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
     metrics = {k: [] for k in keys}
     tmp = {k+'_final': [] for k in keys}
     metrics.update(tmp)
-    # TODO: put this into a dictionary
-    final_perf = []
-    trials_to_ph = []
-    num_tr_exps = []
+    fparams = {'performance_final': [], 'trials_to_ph': [], 'num_tr_exps': []}
     for ind_f, file in enumerate(files):
         f_name = ntpath.basename(file)
         th = f_name[f_name.find('th_stage')+9:]
@@ -474,19 +471,20 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
                                                           'alpha': 0.5})
         if flag:
             th_index.append(th)
-            num_tr_exps.append(len(metrics['curr_ph']))
+            fparams['num_tr_exps'].append(len(metrics['curr_ph']))
             if 'curr_ph' in metrics.keys():
-                time = np.where(metrics['curr_ph'] == reach_ph)[0]
+                time = np.where(metrics['curr_ph'][0] == reach_ph)[0]
                 if len(time) != 0:
                     first_tr = np.min(time)
-                    if first_tr > len(metrics['curr_ph']) - wind_final_perf:
-                        trials_to_ph.append(-1)
+                    if first_tr > len(metrics['curr_ph'][0]) - wind_final_perf:
+                        fparams['trials_to_ph'].append(-1)
                     else:
-                        trials_to_ph.append(first_tr)
+                        fparams['trials_to_ph'].append(first_tr)
                 else:
-                    trials_to_ph.append(-1)
+                    fparams['trials_to_ph'].append(-1)
+
             if 'performance' in metrics.keys():
-                final_perf.append(metrics['performance_final'])
+                fparams['performance_final'].append(metrics['performance_final'])
 
     if metrics[keys[0]]:
         # plot means
@@ -514,15 +512,19 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
                   algorithm+'_'+w+'.png')
         # plot final results
         if ax_final is not None:
-            # TODO: metrics should be substitute by new dict
             for ind_met, met in enumerate(metrics.keys()):
                 ind_f = met.find('_final')
                 if ind_f != -1:
                     ind_sbplt = 0 if 'performance_final' == met else 1
-                    plt_final_perf_and_time_to_ph(metric=metrics[met],
+                    if met == 'curr_ph_final':
+                        met = 'trials_to_ph'
+                    plt_final_perf_and_time_to_ph(metric=fparams[str(met)],
                                                   f_props=f_final_prop,
                                                   index=th_index,
                                                   ax=ax_final[ind_sbplt])
+                    ax_final[ind_sbplt].set_xlabel('threshold')
+                    ax_final[ind_sbplt].set_ylabel(met)
+
     else:
         plt.close(f)
 
@@ -557,7 +559,7 @@ def plt_final_perf_and_time_to_ph(metric, index, ax, f_props):
     for ind_th, th in enumerate(unq_index):
         indx = index == th
         traces_temp = metric[indx]
-        ax.errorbar([ind_th], np.nanmean(traces_temp), np.std(traces_temp),
+        ax.errorbar([th], np.nanmean(traces_temp), np.std(traces_temp),
                     color=f_props['color'], label=f_props['label'], marker='+')
 
 
@@ -576,12 +578,10 @@ def process_all_results(folder):
         ax[0].legend()
         f.savefig(folder + '/final_results_' +
                   alg+'_'+'.png')
-        asdsad
 
 
 if __name__ == '__main__':
-    # folder = '/Users/martafradera/Desktop/OneDrive -
-    #           Universitat de Barcelona/TFG/bsc_results/'
-    folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
+    folder = '/Users/martafradera/Desktop/OneDrive - Universitat de Barcelona/TFG/bsc_results/'
+    # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     plt.close('all')
     process_all_results(folder)
