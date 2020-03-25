@@ -6,7 +6,7 @@ import glob
 import gym
 import seaborn as sns
 import ntpath
-from neurogym.envs import cv_learning
+clrs = sns.color_palette()
 
 
 def plot_env(env, num_steps_env=200, def_act=None, model=None, show_fig=True,
@@ -113,7 +113,6 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
          fig_kwargs={}, path=None, env=None, sv_data=False, start=None,
          end=None, show_delays=False, dash=None, show_perf=True,
          show_gt=True):
-
     """
     obs, actions: data to plot
     gt, rewards, states: if not None, data to plot
@@ -345,7 +344,7 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
 
 def plot_rew_across_training(folder, window=100, ax=None, ytitle='', xlbl='',
                              metrics={'reward': []}, fkwargs={'c': 'tab:blue'},
-                             legend=False, conv=[1]):
+                             legend=False, conv=[1], wind_final_perf=200):
     data = put_together_files(folder)
     data_flag = True
     if data:
@@ -355,26 +354,32 @@ def plot_rew_across_training(folder, window=100, ax=None, ytitle='', xlbl='',
             f, ax = plt.subplots(nrows=len(metrics.keys()), ncols=1,
                                  figsize=(8, 8))
         for ind_k, k in enumerate(metrics.keys()):
-            metric = data[k]
-            if isinstance(window, float):
-                if window < 1.0:
-                    window = int(metric.size * window)
-            if conv[ind_k]:
-                mean = np.convolve(metric, np.ones((window,))/window,
-                                   mode='valid')
+            ind_f = k.find('_final')
+            if ind_f == -1:
+                metric = data[k]
+                if isinstance(window, float):
+                    if window < 1.0:
+                        window = int(metric.size * window)
+                if conv[ind_k]:
+                    mean = np.convolve(metric, np.ones((window,))/window,
+                                       mode='valid')
+                else:
+                    mean = metric
+                metrics[k].append(mean)
+                ax[ind_k].plot(mean, **fkwargs)  # add color, label etc.
+                ax[ind_k].set_xlabel(xlbl)
+                # figure props
+                if not ytitle:
+                    ax[ind_k].set_ylabel('mean ' + k)
+                else:
+                    ax[ind_k].set_ylabel(ytitle)
+                if legend:
+                    ax[ind_k].legend()
+                if ind_k == len(metrics.keys())-1:
+                    ax[ind_k].set_xlabel('trials')
             else:
-                mean = metric
-            metrics[k].append(mean)
-            ax[ind_k].plot(mean, **fkwargs)  # add color, label etc.
-            ax[ind_k].set_xlabel(xlbl)
-            if not ytitle:
-                ax[ind_k].set_ylabel('mean ' + k)
-            else:
-                ax[ind_k].set_ylabel(ytitle)
-            if legend:
-                ax[ind_k].legend()
-            if ind_k == len(metrics.keys())-1:
-                ax[ind_k].set_xlabel('trials')
+                metric = data[k[:ind_f]]
+                metrics[k] = np.mean(metric[-wind_final_perf:])
         if sv_fig:
             f.savefig(folder + '/mean_reward_across_training.png')
     else:
@@ -390,7 +395,6 @@ def find_reaching_phase_time(trace, phase=4):
     fphase = trace[0][-1]
     fstart = 0
     for curr_ph in trace[0]:
-        #print(np.shape(curr_ph))
         if curr_ph != phase and stop is False:
             trials += 1
         else:
@@ -431,19 +435,24 @@ def order_by_sufix(file_list):
     return sorted_list
 
 
-def plot_results(folder, algorithm, w,
-                 keys=['performance', 'curr_ph'], limit_ax=True):
-    clrs = sns.color_palette()
+def plot_results(folder, algorithm, w, wind_final_perf=100,
+                 keys=['performance', 'curr_ph'], limit_ax=True, reach_ph=4,
+                 ax_final=None, f_final_prop={'color': (0, 0, 0), 'label': ''}):
     files = glob.glob(folder + '*_' + algorithm + '_*_' + w)
     files += glob.glob(folder + algorithm + '*_full_*_')
     files = sorted(files)
-    f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1, figsize=(8, 8))
+    f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
+                         figsize=(8, 8))
     ths_mat = []
     ths_count = []
     th_index = []
-    new_th = True
-    fparams = {}
     metrics = {k: [] for k in keys}
+    tmp = {k+'_final': [] for k in keys}
+    metrics.update(tmp)
+    # TODO: put this into a dictionary
+    final_perf = []
+    trials_to_ph = []
+    num_tr_exps = []
     for ind_f, file in enumerate(files):
         f_name = ntpath.basename(file)
         th = f_name[f_name.find('th_stage')+9:]
@@ -452,47 +461,40 @@ def plot_results(folder, algorithm, w,
         if th in ths_mat:
             ci = np.where(np.array(ths_mat) == th)[0][0]
             ths_count[ci] += 1
-            new_th = False
         else:
             ths_mat.append(th)
             ths_count.append(1)
             ci = len(ths_mat)-1
-            new_th = True
         metrics, flag = plot_rew_across_training(folder=file, ax=ax,
                                                  metrics=metrics,
                                                  conv=[1, 0],
+                                                 wind_final_perf=wind_final_perf,
                                                  fkwargs={'c': clrs[ci],
                                                           'lw': 0.5,
                                                           'alpha': 0.5})
         if flag:
             th_index.append(th)
-
-        trials, fphase, fstart = find_reaching_phase_time(trace=metrics['curr_ph'],
-                                                          phase=4)
-        fperf = np.mean(metrics['performance'][0][-300:-1])
-        if fphase == 4:
-            perf = metrics['performance'][0]
-            if len(perf) - fstart < 300:
-                ph4_perf = np.mean(perf[fstart:-1])
-            else:
-                ph4_perf = np.mean(perf[-300:-1])
-        else:
-            ph4_perf = 'NaN'
-        if new_th is False:
-            fparams[str(th)] = {'final_perf': fparams[str(th)]['final_perf'].append(fperf),
-                                'ph4_perf': fparams[str(th)]['ph4_perf'].append(ph4_perf),
-                                'time': fparams[str(th)]['time'].append(trials)}
-        else:
-            fparams.update({str(th): {'final_perf': [fperf],
-                                      'ph4_perf': [ph4_perf],
-                                      'time': [trials]}})
-
-    plot_fvalues(folder=folder, fparams=fparams, algorithm=algorithm, w=w)
+            num_tr_exps.append(len(metrics['curr_ph']))
+            if 'curr_ph' in metrics.keys():
+                time = np.where(metrics['curr_ph'] == reach_ph)[0]
+                if len(time) != 0:
+                    first_tr = np.min(time)
+                    if first_tr > len(metrics['curr_ph']) - wind_final_perf:
+                        trials_to_ph.append(-1)
+                    else:
+                        trials_to_ph.append(first_tr)
+                else:
+                    trials_to_ph.append(-1)
+            if 'performance' in metrics.keys():
+                final_perf.append(metrics['performance_final'])
 
     if metrics[keys[0]]:
+        # plot means
         for ind_met, met in enumerate(metrics.keys()):
-            plt_means(metric=metrics[met], index=th_index, ax=ax[ind_met],
-                      clrs=clrs, limit_ax=limit_ax)
+            ind_f = met.find('_final')
+            if ind_f == -1:
+                plt_means(metric=metrics[met], index=th_index, ax=ax[ind_met],
+                          clrs=clrs, limit_ax=limit_ax)
         np.array
         ax[0].set_title(algorithm + ' (w: ' + w + ')')
         ax[0].legend()
@@ -501,47 +503,28 @@ def plot_results(folder, algorithm, w,
         f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
                              figsize=(8, 8))
         for ind_met, met in enumerate(metrics.keys()):
-            plt_means(metric=metrics[met], index=th_index, ax=ax[ind_met],
-                      clrs=clrs, limit_ax=limit_ax)
+            ind_f = met.find('_final')
+            if ind_f == -1:
+                plt_means(metric=metrics[met], index=th_index, ax=ax[ind_met],
+                          clrs=clrs, limit_ax=limit_ax)
 
         ax[0].set_title(algorithm + ' (w: ' + w + ')')
         ax[0].legend()
         f.savefig(folder + '/mean_values_across_training_' +
                   algorithm+'_'+w+'.png')
-
-        #fparams = np.array([['final_perf', fperf],
-        #                    ['trials_until_phase4', trials],
-        #                    ['phase4_perf', ph4_perf]])
-        # np.savetxt(folder+'/final_mean_params_'+algorithm+'_'+w+'.txt',
-        #           fparams, fmt='%s')
+        # plot final results
+        if ax_final is not None:
+            # TODO: metrics should be substitute by new dict
+            for ind_met, met in enumerate(metrics.keys()):
+                ind_f = met.find('_final')
+                if ind_f != -1:
+                    ind_sbplt = 0 if 'performance_final' == met else 1
+                    plt_final_perf_and_time_to_ph(metric=metrics[met],
+                                                  f_props=f_final_prop,
+                                                  index=th_index,
+                                                  ax=ax_final[ind_sbplt])
     else:
         plt.close(f)
-
-
-def plot_fvalues(folder, fparams, algorithm, w):
-    th_mat = []
-    # f_perf = []
-    ph4_perf = []
-    time = []
-    for th in fparams.keys():
-        th_mat.append(float(th))
-        # f_perf.append(np.mean(fparams[th]['final_perf']))
-        ph4_perf.append(np.mean(fparams[th]['ph4_perf']))
-        time.append(np.mean(fparams[th]['time']))
-
-    f, ax = plt.subplots(sharex=True, nrows=2, ncols=1, figsize=(8, 8))
-    ax[0].plot(th_mat, ph4_perf)
-    ax[0].set_xlabel('Threshold')
-    ax[0].set_ylim([0, 1])
-    ax[0].set_ylabel('Performance')
-    ax[0].set_title('Final performance in stage 4')
-    ax[1].plot(th_mat, time)
-    ax[1].set_xlabel('Threshold')
-    ax[1].set_ylabel('Trials')
-    ax[1].set_title('Time until reaching stage 4')
-    f.suptitle(str(alg)+' (w: '+str(w)+')')
-
-    f.savefig(folder+'/final_values_'+algorithm+'_'+w+'.png')
 
 
 def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
@@ -567,13 +550,38 @@ def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
         ax.set_xlim([0, min_dur])
 
 
-if __name__ == '__main__':
-    folder = '/Users/martafradera/Desktop/OneDrive - Universitat de Barcelona/TFG/bsc_results/'
-    plt.close('all')
-    algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
-    windows = ['0', '2', '3']  # , '500', '1000']
+def plt_final_perf_and_time_to_ph(metric, index, ax, f_props):
+    metric = np.array(metric)
+    index = np.array(index)
+    unq_index = np.unique(index)
+    for ind_th, th in enumerate(unq_index):
+        indx = index == th
+        traces_temp = metric[indx]
+        ax.errorbar([ind_th], np.nanmean(traces_temp), np.std(traces_temp),
+                    color=f_props['color'], label=f_props['label'], marker='+')
+
+
+def process_all_results(folder):
+    algs = ['A2C', 'ACER']  # , 'PPO2', 'ACKTR']
+    windows = ['0', '2', '4']  # , '500', '1000']
     for alg in algs:
         print(alg)
-        for w in windows:
+        f, ax = plt.subplots(sharex=True, nrows=1, ncols=2,
+                             figsize=(8, 8))
+        for ind_w, w in enumerate(windows):
             print(w)
-            plot_results(folder, alg, w, limit_ax=False)
+            plot_results(folder, alg, w, limit_ax=False,
+                         ax_final=ax, f_final_prop={'color': clrs[ind_w],
+                                                    'label': str(w)})
+        ax[0].legend()
+        f.savefig(folder + '/final_results_' +
+                  alg+'_'+'.png')
+        asdsad
+
+
+if __name__ == '__main__':
+    # folder = '/Users/martafradera/Desktop/OneDrive -
+    #           Universitat de Barcelona/TFG/bsc_results/'
+    folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
+    plt.close('all')
+    process_all_results(folder)
