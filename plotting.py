@@ -508,7 +508,9 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
                 ind_f = met.find('_final')
                 if ind_f != -1:
                     ind_sbplt = 0 if 'performance_final' == met else 1
-                    plt_final_perf_and_time_to_ph(metric=metrics, key=met,
+                    trph = metrics['curr_ph_final']
+                    plt_final_perf_and_time_to_ph(tr_to_reach_ph=trph,
+                                                  metric=metrics[met],
                                                   f_props=f_final_prop,
                                                   index=th_index,
                                                   ax=ax_final[ind_sbplt])
@@ -556,16 +558,17 @@ def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
         ax.set_xlim([0, min_dur])
 
 
-def plt_final_perf_and_time_to_ph(metrics, key, index_th, ax, f_props):
-    reached_ph = metrics['curr_ph_final']
-    metrics = np.array(metrics[key])
+def plt_final_perf_and_time_to_ph(tr_to_reach_ph, metric, index_th, ax, f_props):
+    metric = np.array(metric)
     index_th = np.array(index_th)
     unq_index = np.unique(index_th)
     for ind_th, th in enumerate(unq_index):
-        indx = index_th == th
-        traces_temp = metrics[indx]
-        ax.errorbar([th], np.nanmean(traces_temp), np.std(traces_temp),
-                    color=f_props['color'], label=f_props['label'], marker='+')
+        indx = np.logical_and(index_th == th, tr_to_reach_ph != -1)
+        values_temp = metric[indx]
+        if len(values_temp) != 0:
+            ax.errorbar([th], np.nanmean(values_temp), np.std(values_temp),
+                        color=f_props['color'], label=f_props['label'],
+                        marker='+')
 
 
 def process_all_results(folder):
