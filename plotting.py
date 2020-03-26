@@ -512,10 +512,13 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
                     plt_final_perf_and_time_to_ph(tr_to_reach_ph=trph,
                                                   metric=metrics[met],
                                                   f_props=f_final_prop,
-                                                  index=th_index,
+                                                  index_th=th_index,
                                                   ax=ax_final[ind_sbplt])
                     ax_final[ind_sbplt].set_xlabel('threshold')
                     ax_final[ind_sbplt].set_ylabel(met)
+
+            prop_of_exp_reaching_ph(tr_to_reach_ph=trph, index_th=th_index,
+                                    ax=ax_final[2], f_props=f_final_prop)
 
     else:
         plt.close(f)
@@ -524,7 +527,7 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
 def time_to_reach_ph(metrics, wind_final_perf, reach_ph):
     curr_ph = metrics['curr_ph'][-1]
     time = np.where(curr_ph == reach_ph)[0]
-    if len(time) != 0:
+    if time[0] != 0:
         first_tr = np.min(time)
         if first_tr > len(curr_ph) - wind_final_perf:
             metrics['curr_ph_final'].append(-1)
@@ -563,7 +566,7 @@ def plt_final_perf_and_time_to_ph(tr_to_reach_ph, metric, index_th, ax, f_props)
     index_th = np.array(index_th)
     unq_index = np.unique(index_th)
     for ind_th, th in enumerate(unq_index):
-        indx = np.logical_and(index_th == th, tr_to_reach_ph != -1)
+        indx = np.logical_and(index_th == th, tr_to_reach_ph[ind_th] != -1)
         values_temp = metric[indx]
         if len(values_temp) != 0:
             ax.errorbar([th], np.nanmean(values_temp), np.std(values_temp),
@@ -571,12 +574,25 @@ def plt_final_perf_and_time_to_ph(tr_to_reach_ph, metric, index_th, ax, f_props)
                         marker='+')
 
 
+def prop_of_exp_reaching_ph(tr_to_reach_ph, index_th, ax, f_props):
+    index_th = np.array(index_th)
+    unq_index = np.unique(index_th)
+    for ind_th, th in enumerate(unq_index):
+        indx = np.logical_and(index_th == th, tr_to_reach_ph[ind_th] != -1)
+        if np.any(indx) == True:   # changing '== 'for 'is' does not work
+            print('yes')
+            indx2 = index_th == th
+            prop = np.sum(indx2)/np.sum(indx)
+            ax.plot(th, prop, color=f_props['color'], label=f_props['label'],
+                    marker='+')
+
+
 def process_all_results(folder):
     algs = ['A2C', 'ACER']  # , 'PPO2', 'ACKTR']
     windows = ['0', '2', '4']  # , '500', '1000']
     for alg in algs:
         print(alg)
-        f, ax = plt.subplots(sharex=True, nrows=1, ncols=2,
+        f, ax = plt.subplots(sharex=True, nrows=1, ncols=3,
                              figsize=(8, 8))
         for ind_w, w in enumerate(windows):
             print(w)
@@ -584,15 +600,15 @@ def process_all_results(folder):
                          ax_final=ax, f_final_prop={'color': clrs[ind_w],
                                                     'label': str(w)})
         ax[0].legend()
-        asd
+        # asd
         f.savefig(folder + '/final_results_' +
                   alg+'_'+'.png')
         plt.close(f)
 
 
 if __name__ == '__main__':
-    # folder = '/Users/martafradera/Desktop/OneDrive -' +\
-    #     ' Universitat de Barcelona/TFG/bsc_results/'
-    folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
+    folder = '/Users/martafradera/Desktop/OneDrive -' +\
+        ' Universitat de Barcelona/TFG/bsc_results/'
+    # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     plt.close('all')
     process_all_results(folder)
