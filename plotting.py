@@ -452,10 +452,11 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
     tmp = {k+'_final': [] for k in keys}
     metrics.update(tmp)
     num_tr_exps = []
+    reached_ph = []
     for ind_f, file in enumerate(files):
         f_name = ntpath.basename(file)
         th = f_name[f_name.find('th_stage')+9:]
-        th = th[:th.find('_')]
+        th = float(th[:th.find('_')])
         # check if th was already visited
         if th in ths_mat:
             ci = np.where(np.array(ths_mat) == th)[0][0]
@@ -474,8 +475,11 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
         if flag:
             th_index.append(th)
             num_tr_exps.append(len(metrics['curr_ph'][-1]))
-            metrics = time_to_reach_ph(metrics, wind_final_perf, reach_ph)
-
+            metrics, reached = time_to_reach_ph(metrics, wind_final_perf,
+                                                reach_ph)
+            reached_ph.append(reached)
+    th_index = np.array(th_index)
+    th_index[th_index == -1] = -0.001
     if metrics[keys[0]]:
         # plot means
         for ind_met, met in enumerate(metrics.keys()):
@@ -504,24 +508,23 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
         plt.close(f)
         # plot final results
         if ax_final is not None:
-            trph = np.array(metrics['curr_ph_final'])
+            trph = metrics['curr_ph_final']
             num_tr_exps = np.array(num_tr_exps)
-            never_reached = np.where(trph == -1)[0]
-            trph_fill = trph.copy()
-            trph_fill[never_reached] = num_tr_exps[never_reached]
             for ind_met, met in enumerate(metrics.keys()):
                 ind_f = met.find('_final')
                 if ind_f != -1:
-                    ind_sbplt = 0 if 'performance_final' == met else 1
-                    plt_final_perf_and_time_to_ph(tr_to_reach_ph=trph_fill,
+                    plot_full = 'performance_final' == met
+                    ind_sbplt = 0 if plot_full else 1
+                    plt_final_perf_and_time_to_ph(tr_to_reach_ph=trph,
                                                   metric=metrics[met],
                                                   f_props=f_final_prop,
                                                   index_th=th_index,
-                                                  ax=ax_final[ind_sbplt])
+                                                  ax=ax_final[ind_sbplt],
+                                                  plot_full=plot_full)
                     ax_final[ind_sbplt].set_xlabel('threshold')
                     ax_final[ind_sbplt].set_ylabel(met)
             # make -1s equal to total number of trials
-            prop_of_exp_reaching_ph(tr_to_reach_ph=trph,
+            prop_of_exp_reaching_ph(reached_ph=reached_ph,
                                     index_th=th_index,
                                     ax=ax_final[2], f_props=f_final_prop)
 
@@ -532,15 +535,17 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
 def time_to_reach_ph(metrics, wind_final_perf, reach_ph):
     curr_ph = metrics['curr_ph'][-1]
     time = np.where(curr_ph == reach_ph)[0]
+    reached = False
     if len(time) != 0 and time[0] != 0:
         first_tr = np.min(time)
         if first_tr > len(curr_ph) - wind_final_perf:
-            metrics['curr_ph_final'].append(-1)
+            metrics['curr_ph_final'].append(len(curr_ph))
         else:
             metrics['curr_ph_final'].append(first_tr)
+            reached = True
     else:
-        metrics['curr_ph_final'].append(-1)
-    return metrics
+        metrics['curr_ph_final'].append(len(curr_ph))
+    return metrics, reached
 
 
 def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
@@ -560,53 +565,45 @@ def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
         indx = index == th
         traces_temp = metric[indx, :]
         ax.plot(np.nanmean(traces_temp, axis=0), color=clrs[ind_th],
-                lw=1, label=th+'('+str(np.sum(indx))+')')
+                lw=1, label=str(th)+'('+str(np.sum(indx))+')')
     if limit_ax:
         assert limit_mean, 'limiting ax only works when mean is also limited'
         ax.set_xlim([0, min_dur])
 
 
-def plt_final_perf_and_time_to_ph(tr_to_reach_ph, metric, index_th, ax, f_props):
+def plt_final_perf_and_time_to_ph(tr_to_reach_ph, metric, index_th, ax,
+                                  f_props, plot_full=False):
     metric = np.array(metric)
     index_th = np.array(index_th)
     unq_index = np.unique(index_th)
     for ind_th, th in enumerate(unq_index):
-        if th != -1:
+        if th >= 0 or plot_full:
             indx = index_th == th
             values_temp = metric[indx]
             if len(values_temp) != 0:
-                ax.errorbar([th], np.nanmean(values_temp), np.std(values_temp),
-                            color=f_props['color'], label=f_props['label'],
-                            marker='+')
+                ax.errorbar([th], np.nanmean(values_temp),
+                            np.std(values_temp), color=f_props['color'],
+                            label=f_props['label'], marker='+')
 
 
-def prop_of_exp_reaching_ph(tr_to_reach_ph, index_th, ax, f_props):
+def prop_of_exp_reaching_ph(reached_ph, index_th, ax, f_props):
+    reached_ph = np.array(reached_ph)
     index_th = np.array(index_th)
     unq_index = np.unique(index_th)
     for ind_th, th in enumerate(unq_index):
-        if th != -1:
-            indx = np.logical_and(index_th == th, tr_to_reach_ph[ind_th] != -1)
-            indx2 = index_th == th
-            prop = np.sum(indx)/np.sum(indx2)
-            print(th)
-            print(tr_to_reach_ph)
-            print(indx)
-            print(indx2)
-            print(np.sum(indx))
-            print(np.sum(indx2))
-            print(prop)
-            print('--------------')
+        if th >= 0:
+            indx = index_th == th
+            prop = np.mean(reached_ph[indx])
             ax.plot(th, prop, color=f_props['color'], label=f_props['label'],
                     marker='+')
 
 
 def process_all_results(folder):
-    algs = ['A2C', 'ACER']  # , 'PPO2', 'ACKTR']
+    algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
     windows = ['0', '2', '4']  # , '500', '1000']
     for alg in algs:
         print(alg)
-        f, ax = plt.subplots(sharex=True, nrows=1, ncols=3,
-                             figsize=(8, 8))
+        f, ax = plt.subplots(nrows=1, ncols=3, figsize=(8, 8))
         for ind_w, w in enumerate(windows):
             print('xxxxxxxxxxxxxxxxxxxxxxxx')
             print('Window')
