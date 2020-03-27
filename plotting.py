@@ -473,7 +473,7 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
                                                           'alpha': 0.5})
         if flag:
             th_index.append(th)
-            num_tr_exps.append(len(metrics['curr_ph']))
+            num_tr_exps.append(len(metrics['curr_ph'][-1]))
             metrics = time_to_reach_ph(metrics, wind_final_perf, reach_ph)
 
     if metrics[keys[0]]:
@@ -504,20 +504,25 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
         plt.close(f)
         # plot final results
         if ax_final is not None:
+            trph = np.array(metrics['curr_ph_final'])
+            num_tr_exps = np.array(num_tr_exps)
+            never_reached = np.where(trph == -1)[0]
+            trph_fill = trph.copy()
+            trph_fill[never_reached] = num_tr_exps[never_reached]
             for ind_met, met in enumerate(metrics.keys()):
                 ind_f = met.find('_final')
                 if ind_f != -1:
                     ind_sbplt = 0 if 'performance_final' == met else 1
-                    trph = metrics['curr_ph_final']
-                    plt_final_perf_and_time_to_ph(tr_to_reach_ph=trph,
+                    plt_final_perf_and_time_to_ph(tr_to_reach_ph=trph_fill,
                                                   metric=metrics[met],
                                                   f_props=f_final_prop,
                                                   index_th=th_index,
                                                   ax=ax_final[ind_sbplt])
                     ax_final[ind_sbplt].set_xlabel('threshold')
                     ax_final[ind_sbplt].set_ylabel(met)
-
-            prop_of_exp_reaching_ph(tr_to_reach_ph=trph, index_th=th_index,
+            # make -1s equal to total number of trials
+            prop_of_exp_reaching_ph(tr_to_reach_ph=trph,
+                                    index_th=th_index,
                                     ax=ax_final[2], f_props=f_final_prop)
 
     else:
@@ -527,7 +532,7 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
 def time_to_reach_ph(metrics, wind_final_perf, reach_ph):
     curr_ph = metrics['curr_ph'][-1]
     time = np.where(curr_ph == reach_ph)[0]
-    if time[0] != 0:
+    if len(time) != 0 and time[0] != 0:
         first_tr = np.min(time)
         if first_tr > len(curr_ph) - wind_final_perf:
             metrics['curr_ph_final'].append(-1)
@@ -566,23 +571,31 @@ def plt_final_perf_and_time_to_ph(tr_to_reach_ph, metric, index_th, ax, f_props)
     index_th = np.array(index_th)
     unq_index = np.unique(index_th)
     for ind_th, th in enumerate(unq_index):
-        indx = np.logical_and(index_th == th, tr_to_reach_ph[ind_th] != -1)
-        values_temp = metric[indx]
-        if len(values_temp) != 0:
-            ax.errorbar([th], np.nanmean(values_temp), np.std(values_temp),
-                        color=f_props['color'], label=f_props['label'],
-                        marker='+')
+        if th != -1:
+            indx = index_th == th
+            values_temp = metric[indx]
+            if len(values_temp) != 0:
+                ax.errorbar([th], np.nanmean(values_temp), np.std(values_temp),
+                            color=f_props['color'], label=f_props['label'],
+                            marker='+')
 
 
 def prop_of_exp_reaching_ph(tr_to_reach_ph, index_th, ax, f_props):
     index_th = np.array(index_th)
     unq_index = np.unique(index_th)
     for ind_th, th in enumerate(unq_index):
-        indx = np.logical_and(index_th == th, tr_to_reach_ph[ind_th] != -1)
-        if np.any(indx) == True:   # changing '== 'for 'is' does not work
-            print('yes')
+        if th != -1:
+            indx = np.logical_and(index_th == th, tr_to_reach_ph[ind_th] != -1)
             indx2 = index_th == th
-            prop = np.sum(indx2)/np.sum(indx)
+            prop = np.sum(indx)/np.sum(indx2)
+            print(th)
+            print(tr_to_reach_ph)
+            print(indx)
+            print(indx2)
+            print(np.sum(indx))
+            print(np.sum(indx2))
+            print(prop)
+            print('--------------')
             ax.plot(th, prop, color=f_props['color'], label=f_props['label'],
                     marker='+')
 
@@ -595,6 +608,8 @@ def process_all_results(folder):
         f, ax = plt.subplots(sharex=True, nrows=1, ncols=3,
                              figsize=(8, 8))
         for ind_w, w in enumerate(windows):
+            print('xxxxxxxxxxxxxxxxxxxxxxxx')
+            print('Window')
             print(w)
             plot_results(folder, alg, w, limit_ax=False,
                          ax_final=ax, f_final_prop={'color': clrs[ind_w],
@@ -607,8 +622,8 @@ def process_all_results(folder):
 
 
 if __name__ == '__main__':
-    folder = '/Users/martafradera/Desktop/OneDrive -' +\
-        ' Universitat de Barcelona/TFG/bsc_results/'
-    # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
+    # folder = '/Users/martafradera/Desktop/OneDrive -' +\
+    #     ' Universitat de Barcelona/TFG/bsc_results/'
+    folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     plt.close('all')
     process_all_results(folder)
