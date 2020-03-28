@@ -272,10 +272,13 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
         ax = axes[2]
         ax.plot(steps, rewards, 'r', label='Rewards')
         if show_perf:
+            new_perf = []
+            new_steps = []
             for ind, value in enumerate(performance):
-                if value == -1:
-                    performance[ind] = 0
-            ax.plot(steps, performance, 'k', label='Performance', ls='--')
+                if value != -1:
+                    new_perf.append(value)
+                    new_steps.append(steps[ind])
+            ax.plot(new_steps, new_perf, 'x', color='k', label='Performance')
             ax.set_ylabel('Reward/Performance')
         else:
             ax.set_ylabel('Reward')
