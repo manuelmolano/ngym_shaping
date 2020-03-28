@@ -435,7 +435,7 @@ def order_by_sufix(file_list):
     return sorted_list
 
 
-def plot_results(folder, algorithm, w, wind_final_perf=100,
+def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
                  keys=['performance', 'curr_ph'], limit_ax=True, reach_ph=4,
                  ax_final=None, f_final_prop={'color': (0, 0, 0), 'label': ''}):
     assert ('performance' in keys) and ('curr_ph' in keys),\
@@ -516,6 +516,7 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
                     plot_full = 'performance_final' == met
                     ind_sbplt = 0 if plot_full else 1
                     plt_final_perf_and_time_to_ph(tr_to_reach_ph=trph,
+                                                  marker=marker,
                                                   metric=metrics[met],
                                                   f_props=f_final_prop,
                                                   index_th=th_index,
@@ -525,7 +526,7 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
                     ax_final[ind_sbplt].set_ylabel(met)
             # make -1s equal to total number of trials
             prop_of_exp_reaching_ph(reached_ph=reached_ph,
-                                    index_th=th_index,
+                                    index_th=th_index, marker=marker,
                                     ax=ax_final[2], f_props=f_final_prop)
 
     else:
@@ -572,7 +573,7 @@ def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
 
 
 def plt_final_perf_and_time_to_ph(tr_to_reach_ph, metric, index_th, ax,
-                                  f_props, plot_full=False):
+                                  f_props, marker, plot_full=False):
     metric = np.array(metric)
     index_th = np.array(index_th)
     unq_index = np.unique(index_th)
@@ -582,11 +583,12 @@ def plt_final_perf_and_time_to_ph(tr_to_reach_ph, metric, index_th, ax,
             values_temp = metric[indx]
             if len(values_temp) != 0:
                 ax.errorbar([th], np.nanmean(values_temp),
-                            np.std(values_temp), color=f_props['color'],
-                            label=f_props['label'], marker='+')
+                            (np.std(values_temp)/np.sqrt(len(values_temp))),
+                            color=f_props['color'], label=f_props['label'],
+                            marker=marker)
 
 
-def prop_of_exp_reaching_ph(reached_ph, index_th, ax, f_props):
+def prop_of_exp_reaching_ph(reached_ph, index_th, ax, f_props, marker):
     reached_ph = np.array(reached_ph)
     index_th = np.array(index_th)
     unq_index = np.unique(index_th)
@@ -595,32 +597,39 @@ def prop_of_exp_reaching_ph(reached_ph, index_th, ax, f_props):
             indx = index_th == th
             prop = np.mean(reached_ph[indx])
             ax.plot(th, prop, color=f_props['color'], label=f_props['label'],
-                    marker='+')
+                    marker=marker)
 
 
 def process_all_results(folder):
     algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
     windows = ['0', '2', '4']  # , '500', '1000']
+    markers = ['+', 'x', '1']
     for alg in algs:
         print(alg)
         f, ax = plt.subplots(nrows=1, ncols=3, figsize=(8, 8))
+        ind = 0
         for ind_w, w in enumerate(windows):
             print('xxxxxxxxxxxxxxxxxxxxxxxx')
             print('Window')
             print(w)
-            plot_results(folder, alg, w, limit_ax=False,
+            marker = markers[ind]
+            ind += 1
+            plot_results(folder, alg, w, limit_ax=False, marker=marker,
                          ax_final=ax, f_final_prop={'color': clrs[ind_w],
                                                     'label': str(w)})
-        ax[0].legend()
-        # asd
+
+        handles, labels = plt.gca().get_legend_handles_labels()
+        by_label = dict(zip(labels, handles))
+        ax[0].legend(by_label.values(), by_label.keys())
+
         f.savefig(folder + '/final_results_' +
                   alg+'_'+'.png')
         plt.close(f)
 
 
 if __name__ == '__main__':
-    # folder = '/Users/martafradera/Desktop/OneDrive -' +\
-    #     ' Universitat de Barcelona/TFG/bsc_results/'
-    folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
+    folder = '/Users/martafradera/Desktop/OneDrive -' +\
+        ' Universitat de Barcelona/TFG/bsc_results/'
+    # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     plt.close('all')
     process_all_results(folder)
