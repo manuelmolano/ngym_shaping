@@ -131,7 +131,7 @@ def plot_results(folder, algorithm, w, durs=False, stage2=False,
             th_index.append(th)
 
     ax[0].set_title(alg + ' (w: ' + w + ')')
-    ax[0].legend()
+    # ax[0].legend()
     f.savefig(folder + '/' + fname + '_' + algorithm + '_' + w + '.svg')
 
 
@@ -299,11 +299,20 @@ def plot_stage_change(folder, window=200, ax=None, ytitle='', xlbl='',
 
             mean = metric
             metrics[k].append(mean)
+            x = np.arange(len(mean))
 
-            ax[ind_k].plot(mean, **fkwargs)
+            if k != 'curr_perf':
+                ax[ind_k].plot(mean, **fkwargs)
+            else:
+                curr_perf = []
+                new_x = [150]
+                for n in range(1, int(len(x)/300)):
+                    new_x.append(n*300+150)
+                for ind in new_x:
+                    curr_perf.append(mean[ind])
+                ax[ind_k].plot(new_x, curr_perf, 'x')
             ax[ind_k].set_ylabel(k)
 
-            x = np.arange(len(mean))
             start = []
             stop = []
             control = 0
@@ -325,16 +334,29 @@ def plot_stage_change(folder, window=200, ax=None, ytitle='', xlbl='',
                         first_day.append(ind)
                         prev_stage = data['curr_ph'][ind]
 
-            if k == 'curr_ph' or k == 'curr_perf':
-                for ind, value in enumerate(start):
+            # if k == 'curr_ph' or k == 'curr_perf':
+            label = True
+            for ind, value in enumerate(start):
+                trials = x[start[ind]:stop[ind]]
+                if k == 'curr_ph':
                     if value == start[0]:
-                        ax[ind_k].plot(x[start[ind]:stop[ind]],
+                        ax[ind_k].plot(trials,
                                        mean[start[ind]:stop[ind]], color='red',
                                        **fkwargs, label='keep_stage')
                     else:
-                        ax[ind_k].plot(x[start[ind]:stop[ind]],
+                        ax[ind_k].plot(trials,
                                        mean[start[ind]:stop[ind]], color='red',
                                        **fkwargs)
+                elif k == 'curr_perf':
+                    for ind, value in enumerate(new_x):
+                        if value in trials:
+                            if label is True:
+                                ax[ind_k].plot(value, curr_perf[ind], 'x',
+                                               color='red', label='keep_days')
+                                label = False
+                            else:
+                                ax[ind_k].plot(value, curr_perf[ind], 'x',
+                                               color='red')
 
             if k == 'curr_perf':
                 ax[ind_k].plot(data['th_perf'], label='threshold',
