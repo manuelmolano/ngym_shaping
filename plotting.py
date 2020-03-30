@@ -460,6 +460,7 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
     tmp = {k+'_final': [] for k in keys}
     metrics.update(tmp)
     num_tr_exps = []
+    tr_to_final_perf = []
     reached_ph = []
     for ind_f, file in enumerate(files):
         f_name = ntpath.basename(file)
@@ -486,6 +487,9 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
             metrics, reached = time_to_reach_ph(metrics, wind_final_perf,
                                                 reach_ph)
             reached_ph.append(reached)
+            metrics = time_to_reach_perf(metrics, reach_perf=0.75,
+                                         tr_to_final_perf=tr_to_final_perf,
+                                         reach_ph=reach_ph)
     th_index = np.array(th_index)
     th_index[th_index == -1] = 0.5
     if metrics[keys[0]]:
@@ -527,21 +531,27 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
             plt_final_perf(final_perf=metrics['performance_final'],
                            marker=marker, reached_ph=reached_ph,
                            f_props=f_final_prop, index_th=th_index,
-                           ax=ax_final[0])
-            ax_final[0].set_xlabel('threshold')
-            ax_final[0].set_ylabel('Average performance')
+                           ax=ax_final[0, 0])
+            ax_final[0, 0].set_xlabel('threshold')
+            ax_final[0, 0].set_ylabel('Average performance')
             # trials to reach phase 4
             plt_final_time_to_ph(tr_to_reach_ph=metrics['curr_ph_final'],
                                  marker=marker, f_props=f_final_prop,
-                                 index_th=th_index, ax=ax_final[1])
-            ax_final[1].set_xlabel('threshold')
-            ax_final[1].set_ylabel('Number of trials to reach phase 4')
+                                 index_th=th_index, ax=ax_final[0, 1])
+            ax_final[0, 1].set_xlabel('threshold')
+            ax_final[0, 1].set_ylabel('Number of trials to reach phase 4')
+            # trials to reach final perf
+            plt_time_to_final_perf(tr_to_reach_perf=tr_to_final_perf,
+                                   index_th=th_index, ax=ax_final[1, 0],
+                                   f_props=f_final_prop, marker=marker)
+            ax_final[1, 0].set_xlabel('threshold')
+            ax_final[1, 0].set_ylabel('Number of trials to reach final performance')
             # make -1s equal to total number of trials
             prop_of_exp_reaching_ph(reached_ph=reached_ph,
                                     index_th=th_index, marker=marker,
-                                    ax=ax_final[2], f_props=f_final_prop)
-            ax_final[2].set_xlabel('threshold')
-            ax_final[2].set_ylabel('Proportion of instances reaching phase 4')
+                                    ax=ax_final[1, 1], f_props=f_final_prop)
+            ax_final[1, 1].set_xlabel('threshold')
+            ax_final[1, 1].set_ylabel('Proportion of instances reaching phase 4')
     else:
         plt.close(f)
 
@@ -560,6 +570,23 @@ def time_to_reach_ph(metrics, wind_final_perf, reach_ph):
     else:
         metrics['curr_ph_final'].append(len(curr_ph))
     return metrics, reached
+
+
+def time_to_reach_perf(metrics, reach_perf, tr_to_final_perf, reach_ph):
+    perf = metrics['performance'][-1]
+    time = np.where(perf >= reach_perf)[0]
+    curr_ph = metrics['curr_ph'][-1]
+    trials = []
+    for value in time:
+        # print(curr_ph[value], 'ph')
+        if curr_ph[value] == reach_ph:
+            trials.append(value)
+    if len(trials) != 0:
+        first_tr = np.min(trials)
+        tr_to_final_perf.append(first_tr)
+    else:
+        tr_to_final_perf.append(len(perf))
+    return metrics
 
 
 def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
@@ -601,6 +628,21 @@ def plt_final_time_to_ph(tr_to_reach_ph, index_th, ax, f_props, marker):
                             marker=marker, markersize=6)
 
 
+def plt_time_to_final_perf(tr_to_reach_perf, index_th, ax, f_props, marker):
+    tr_to_reach_perf = np.array(tr_to_reach_perf)
+    index_th = np.array(index_th)
+    unq_index = np.unique(index_th)
+    for ind_th, th in enumerate(unq_index):
+        # if th > 0.5:
+        indx = index_th == th
+        values_temp = tr_to_reach_perf[indx]
+        if len(values_temp) != 0:
+            ax.errorbar([th], np.nanmean(values_temp),
+                        (np.std(values_temp)/np.sqrt(len(values_temp))),
+                        color=f_props['color'], label=f_props['label'],
+                        marker=marker, markersize=6)
+
+
 def plt_final_perf(final_perf, reached_ph, index_th, ax, f_props, marker):
     final_perf = np.array(final_perf)
     index_th = np.array(index_th)
@@ -635,7 +677,7 @@ def process_all_results(folder):
     markers = ['+', 'x', '1']
     for alg in algs:
         print(alg)
-        f, ax = plt.subplots(nrows=1, ncols=3, figsize=(15, 5))
+        f, ax = plt.subplots(nrows=2, ncols=2) # figsize=(15, 5))
         ind = 0
         for ind_w, w in enumerate(windows):
             print('xxxxxxxxxxxxxxxxxxxxxxxx')
@@ -649,7 +691,7 @@ def process_all_results(folder):
 
         handles, labels = plt.gca().get_legend_handles_labels()
         by_label = dict(zip(labels, handles))
-        ax[0].legend(by_label.values(), by_label.keys())
+        ax[0, 0].legend(by_label.values(), by_label.keys())
 
         f.savefig(folder + '/final_results_' +
                   alg+'_'+'.png', dpi=200)
@@ -657,11 +699,11 @@ def process_all_results(folder):
 
 
 if __name__ == '__main__':
-    # folder = '/Users/martafradera/Desktop/OneDrive -' +\
-    #     ' Universitat de Barcelona/TFG/bsc_results/'
-    folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
-    plt.close('all')
-    process_all_results(folder)
-    folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
+    folder = '/Users/martafradera/Desktop/OneDrive -' +\
+        ' Universitat de Barcelona/TFG/bsc_results/'
+    # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
+    # plt.close('all')
+    # process_all_results(folder)
+    #folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
     plt.close('all')
     process_all_results(folder)
