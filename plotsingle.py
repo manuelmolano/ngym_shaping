@@ -301,7 +301,7 @@ def plot_stage_change(folder, window=200, ax=None, ytitle='', xlbl='',
             metrics[k].append(mean)
             x = np.arange(len(mean))
 
-            if k != 'curr_perf':
+            if k == 'days':
                 ax[ind_k].plot(mean, **fkwargs)
             else:
                 curr_perf = []
@@ -310,7 +310,7 @@ def plot_stage_change(folder, window=200, ax=None, ytitle='', xlbl='',
                     new_x.append(n*300+150)
                 for ind in new_x:
                     curr_perf.append(mean[ind])
-                ax[ind_k].plot(new_x, curr_perf, 'x')
+                ax[ind_k].plot(new_x, curr_perf, marker='X')
             ax[ind_k].set_ylabel(k)
 
             start = []
@@ -334,11 +334,10 @@ def plot_stage_change(folder, window=200, ax=None, ytitle='', xlbl='',
                         first_day.append(ind)
                         prev_stage = data['curr_ph'][ind]
 
-            # if k == 'curr_ph' or k == 'curr_perf':
             label = True
             for ind, value in enumerate(start):
                 trials = x[start[ind]:stop[ind]]
-                if k == 'curr_ph':
+                if k == 'prova':
                     if value == start[0]:
                         ax[ind_k].plot(trials,
                                        mean[start[ind]:stop[ind]], color='red',
@@ -347,20 +346,20 @@ def plot_stage_change(folder, window=200, ax=None, ytitle='', xlbl='',
                         ax[ind_k].plot(trials,
                                        mean[start[ind]:stop[ind]], color='red',
                                        **fkwargs)
-                elif k == 'curr_perf':
+                elif k == 'curr_perf' or k == 'curr_ph':
                     for ind, value in enumerate(new_x):
                         if value in trials:
                             if label is True:
-                                ax[ind_k].plot(value, curr_perf[ind], 'x',
+                                ax[ind_k].plot(value, curr_perf[ind], 'X',
                                                color='red', label='keep_days')
                                 label = False
                             else:
-                                ax[ind_k].plot(value, curr_perf[ind], 'x',
+                                ax[ind_k].plot(value, curr_perf[ind], 'X',
                                                color='red')
 
             if k == 'curr_perf':
                 ax[ind_k].plot(data['th_perf'], label='threshold',
-                               color='green', alpha=0.5)
+                               color='grey', alpha=0.5)
 
             elif k == 'days':
                 for ind, value in enumerate(first_day):
