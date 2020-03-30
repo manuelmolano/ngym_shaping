@@ -6,6 +6,11 @@ import glob
 import gym
 import seaborn as sns
 import ntpath
+from matplotlib import rcParams
+rcParams['font.family'] = 'sans-serif'
+rcParams['font.sans-serif'] = ['Arial']
+rcParams['font.size'] = 7
+
 clrs = sns.color_palette()
 
 
@@ -355,7 +360,7 @@ def plot_rew_across_training(folder, window=100, ax=None, ytitle='', xlbl='',
         if ax is None:
             sv_fig = True
             f, ax = plt.subplots(nrows=len(metrics.keys()), ncols=1,
-                                 figsize=(8, 8))
+                                 figsize=(6, 6))
         for ind_k, k in enumerate(metrics.keys()):
             ind_f = k.find('_final')
             if ind_f == -1:
@@ -447,7 +452,7 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
     files += glob.glob(folder + algorithm + '*_full_*_')
     files = sorted(files)
     f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
-                         figsize=(8, 8))
+                         figsize=(6, 6))
     ths_mat = []
     ths_count = []
     th_index = []
@@ -482,7 +487,7 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
                                                 reach_ph)
             reached_ph.append(reached)
     th_index = np.array(th_index)
-    th_index[th_index == -1] = -0.001
+    th_index[th_index == -1] = 0.5
     if metrics[keys[0]]:
         # plot means
         for ind_met, met in enumerate(metrics.keys()):
@@ -492,12 +497,16 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
                           clrs=clrs, limit_ax=limit_ax)
         np.array
         ax[0].set_title(algorithm + ' (w: ' + w + ')')
-        ax[0].legend()
-        f.savefig(folder+'/values_across_training_'+algorithm+'_'+w+'.png')
+        ax[0].set_ylabel('Average performance')
+        ax[1].set_ylabel('Average phase')
+        ax[1].set_xlabel('Trials')
+        ax[1].legend()
+        f.savefig(folder+'/values_across_training_'+algorithm+'_'+w+'.png',
+                  dpi=200)
         plt.close(f)
         # plot only means
         f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
-                             figsize=(8, 8))
+                             figsize=(6, 6))
         for ind_met, met in enumerate(metrics.keys()):
             ind_f = met.find('_final')
             if ind_f == -1:
@@ -505,33 +514,34 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
                           clrs=clrs, limit_ax=limit_ax)
 
         ax[0].set_title(algorithm + ' (w: ' + w + ')')
-        ax[0].legend()
+        ax[0].set_ylabel('Average performance')
+        ax[1].set_ylabel('Average phase')
+        ax[1].set_xlabel('Trials')
+        ax[1].legend()
         f.savefig(folder + '/mean_values_across_training_' +
-                  algorithm+'_'+w+'.png')
+                  algorithm+'_'+w+'.png', dpi=200)
         plt.close(f)
         # plot final results
         if ax_final is not None:
-            trph = metrics['curr_ph_final']
-            num_tr_exps = np.array(num_tr_exps)
-            for ind_met, met in enumerate(metrics.keys()):
-                ind_f = met.find('_final')
-                if ind_f != -1:
-                    plot_full = 'performance_final' == met
-                    ind_sbplt = 0 if plot_full else 1
-                    plt_final_perf_and_time_to_ph(tr_to_reach_ph=trph,
-                                                  marker=marker,
-                                                  metric=metrics[met],
-                                                  f_props=f_final_prop,
-                                                  index_th=th_index,
-                                                  ax=ax_final[ind_sbplt],
-                                                  plot_full=plot_full)
-                    ax_final[ind_sbplt].set_xlabel('threshold')
-                    ax_final[ind_sbplt].set_ylabel(met)
+            # plot final performance
+            plt_final_perf(final_perf=metrics['performance_final'],
+                           marker=marker, reached_ph=reached_ph,
+                           f_props=f_final_prop, index_th=th_index,
+                           ax=ax_final[0])
+            ax_final[0].set_xlabel('threshold')
+            ax_final[0].set_ylabel('Average performance')
+            # trials to reach phase 4
+            plt_final_time_to_ph(tr_to_reach_ph=metrics['curr_ph_final'],
+                                 marker=marker, f_props=f_final_prop,
+                                 index_th=th_index, ax=ax_final[1])
+            ax_final[1].set_xlabel('threshold')
+            ax_final[1].set_ylabel('Number of trials to reach phase 4')
             # make -1s equal to total number of trials
             prop_of_exp_reaching_ph(reached_ph=reached_ph,
                                     index_th=th_index, marker=marker,
                                     ax=ax_final[2], f_props=f_final_prop)
-
+            ax_final[2].set_xlabel('threshold')
+            ax_final[2].set_ylabel('Proportion of instances reaching phase 4')
     else:
         plt.close(f)
 
@@ -540,7 +550,7 @@ def time_to_reach_ph(metrics, wind_final_perf, reach_ph):
     curr_ph = metrics['curr_ph'][-1]
     time = np.where(curr_ph == reach_ph)[0]
     reached = False
-    if len(time) != 0 and time[0] != 0:
+    if len(time) != 0:
         first_tr = np.min(time)
         if first_tr > len(curr_ph) - wind_final_perf:
             metrics['curr_ph_final'].append(len(curr_ph))
@@ -568,27 +578,43 @@ def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
     for ind_th, th in enumerate(unq_index):
         indx = index == th
         traces_temp = metric[indx, :]
+        th_str = 'full' if th == .5 else str(th)
         ax.plot(np.nanmean(traces_temp, axis=0), color=clrs[ind_th],
-                lw=1, label=str(th)+'('+str(np.sum(indx))+')')
+                lw=1, label=th_str+'('+str(np.sum(indx))+')')
     if limit_ax:
         assert limit_mean, 'limiting ax only works when mean is also limited'
         ax.set_xlim([0, min_dur])
 
 
-def plt_final_perf_and_time_to_ph(tr_to_reach_ph, metric, index_th, ax,
-                                  f_props, marker, plot_full=False):
-    metric = np.array(metric)
+def plt_final_time_to_ph(tr_to_reach_ph, index_th, ax, f_props, marker):
+    tr_to_reach_ph = np.array(tr_to_reach_ph)
     index_th = np.array(index_th)
     unq_index = np.unique(index_th)
     for ind_th, th in enumerate(unq_index):
-        if th >= 0 or plot_full:
+        if th > 0.5:
             indx = index_th == th
-            values_temp = metric[indx]
+            values_temp = tr_to_reach_ph[indx]
             if len(values_temp) != 0:
                 ax.errorbar([th], np.nanmean(values_temp),
                             (np.std(values_temp)/np.sqrt(len(values_temp))),
                             color=f_props['color'], label=f_props['label'],
-                            marker=marker)
+                            marker=marker, markersize=6)
+
+
+def plt_final_perf(final_perf, reached_ph, index_th, ax, f_props, marker):
+    final_perf = np.array(final_perf)
+    index_th = np.array(index_th)
+    reached_ph = np.array(reached_ph)
+    unq_index = np.unique(index_th)
+    for ind_th, th in enumerate(unq_index):
+        indx = np.logical_and(index_th == th, reached_ph)
+        assert len(indx) == len(index_th)
+        values_temp = final_perf[indx]
+        if len(values_temp) != 0:
+            ax.errorbar([th], np.nanmean(values_temp),
+                        (np.std(values_temp)/np.sqrt(len(values_temp))),
+                        color=f_props['color'], label=f_props['label'],
+                        marker=marker, markersize=6)
 
 
 def prop_of_exp_reaching_ph(reached_ph, index_th, ax, f_props, marker):
@@ -596,11 +622,11 @@ def prop_of_exp_reaching_ph(reached_ph, index_th, ax, f_props, marker):
     index_th = np.array(index_th)
     unq_index = np.unique(index_th)
     for ind_th, th in enumerate(unq_index):
-        if th >= 0:
+        if th > 0.5:
             indx = index_th == th
             prop = np.mean(reached_ph[indx])
             ax.plot(th, prop, color=f_props['color'], label=f_props['label'],
-                    marker=marker)
+                    marker=marker, markersize=6)
 
 
 def process_all_results(folder):
@@ -609,7 +635,7 @@ def process_all_results(folder):
     markers = ['+', 'x', '1']
     for alg in algs:
         print(alg)
-        f, ax = plt.subplots(nrows=1, ncols=3, figsize=(8, 8))
+        f, ax = plt.subplots(nrows=1, ncols=3, figsize=(15, 5))
         ind = 0
         for ind_w, w in enumerate(windows):
             print('xxxxxxxxxxxxxxxxxxxxxxxx')
@@ -626,13 +652,16 @@ def process_all_results(folder):
         ax[0].legend(by_label.values(), by_label.keys())
 
         f.savefig(folder + '/final_results_' +
-                  alg+'_'+'.png')
+                  alg+'_'+'.png', dpi=200)
         plt.close(f)
 
 
 if __name__ == '__main__':
-    folder = '/Users/martafradera/Desktop/OneDrive -' +\
-        ' Universitat de Barcelona/TFG/bsc_results/'
-    # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
+    # folder = '/Users/martafradera/Desktop/OneDrive -' +\
+    #     ' Universitat de Barcelona/TFG/bsc_results/'
+    folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
+    plt.close('all')
+    process_all_results(folder)
+    folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
     plt.close('all')
     process_all_results(folder)
