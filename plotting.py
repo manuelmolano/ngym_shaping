@@ -162,6 +162,7 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
     # obs
     ax = axes[0]
     d = 0
+    # duration of decision period
     d_start = []
     d_end = []
 
@@ -177,6 +178,7 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
             if ind_tr == 0:
                 fixation = obs[:, ind_tr]
                 for ind, action in enumerate(fixation):
+                    # define first and last step of decision period
                     if action == 0 and d == 0:
                         d_start.append(ind)
                         d = 1
@@ -198,6 +200,8 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
                 stim.append(0)
         # delay
         dly = 0
+        # duration of delay period
+        # predly: fixation an delay periods
         predly_start = []
         predly_end = []
         for ind, value in enumerate(fixation):
@@ -210,6 +214,7 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
         if len(predly_start) > len(predly_end):
             predly_end.append(end)
 
+        # dly period: previous than decision period
         dly_start = []
         dly_end = []
         for ind, step in enumerate(predly_end):
@@ -245,6 +250,7 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
     else:
         ax.plot(steps, actions, marker='+', label='Actions')
 
+    # plot gt
     if gt is not None and show_gt is True:
         gt = np.array(gt)
         if len(gt.shape) > 1:
@@ -277,6 +283,7 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
         ax = axes[2]
         ax.plot(steps, rewards, 'r', label='Rewards')
         if show_perf:
+            # ind and perf value where perf != -1
             new_perf = []
             new_steps = []
             for ind, value in enumerate(performance):
@@ -315,6 +322,7 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
 
     ax.set_xlabel('Steps')
 
+    # plot decision area
     for ind, value in enumerate(d_start):
         if value == start:
             [ax.axvspan(d_start[ind], d_end[ind]+0.5, facecolor='grey',
@@ -326,6 +334,7 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
             [ax.axvspan(d_start[ind]-0.5, d_end[ind]+0.5, facecolor='grey',
                         alpha=0.3) for ax in axes]
 
+    # plot delay area
     if show_delays:
         for ind, value in enumerate(dly_start):
             if value == start:
@@ -448,6 +457,7 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
                  ax_final=None, f_final_prop={'color': (0, 0, 0), 'label': ''}):
     assert ('performance' in keys) and ('curr_ph' in keys),\
         'performance and curr_ph need to be included in the metrics (keys)'
+    # load files
     files = glob.glob(folder + '*_' + algorithm + '_*_' + w)
     files += glob.glob(folder + algorithm + '*_full_*_')
     files = sorted(files)
@@ -474,6 +484,7 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
             ths_mat.append(th)
             ths_count.append(1)
             ci = len(ths_mat)-1
+        # general plot
         metrics, flag = plot_rew_across_training(folder=file, ax=ax,
                                                  metrics=metrics,
                                                  conv=[1, 0],
@@ -483,10 +494,13 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
                                                           'alpha': 0.5})
         if flag:
             th_index.append(th)
+            # ??? is num_tr_exps useful?
             num_tr_exps.append(len(metrics['curr_ph'][-1]))
+            # number of trials until last phase
             metrics, reached = time_to_reach_ph(metrics, wind_final_perf,
                                                 reach_ph)
             reached_ph.append(reached)
+            # number of trials until final perf
             metrics = time_to_reach_perf(metrics, reach_perf=0.75,
                                          tr_to_final_perf=tr_to_final_perf,
                                          reach_ph=reach_ph)
@@ -559,11 +573,12 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
 
 def time_to_reach_ph(metrics, wind_final_perf, reach_ph):
     curr_ph = metrics['curr_ph'][-1]
-    time = np.where(curr_ph == reach_ph)[0]
+    time = np.where(curr_ph == reach_ph)[0]  # find those trials in phase 4
     reached = False
     if len(time) != 0:
-        first_tr = np.min(time)
+        first_tr = np.min(time)  # min trial is first trial in phase 4
         if first_tr > len(curr_ph) - wind_final_perf:
+            # if phase 4 is not reached, last trial is obtained
             metrics['curr_ph_final'].append(len(curr_ph))
         else:
             metrics['curr_ph_final'].append(first_tr)
@@ -575,14 +590,16 @@ def time_to_reach_ph(metrics, wind_final_perf, reach_ph):
 
 def time_to_reach_perf(metrics, reach_perf, tr_to_final_perf, reach_ph):
     perf = metrics['performance'][-1]
+    # find those trials which performance is over reach perf
     time = np.where(perf >= reach_perf)[0]
     curr_ph = metrics['curr_ph'][-1]
     trials = []
     for value in time:
-        # print(curr_ph[value], 'ph')
         if curr_ph[value] == reach_ph:
+            # only keep those trials which are in the last phase
             trials.append(value)
     if len(trials) != 0:
+        # if last phase is not reached, last trial is obtained
         first_tr = np.min(trials)
         tr_to_final_perf.append(first_tr)
     else:
@@ -615,14 +632,15 @@ def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
 
 
 def plt_final_time_to_ph(tr_to_reach_ph, index_th, ax, f_props, marker):
-    tr_to_reach_ph = np.array(tr_to_reach_ph)
+    tr_to_reach_ph = np.array(tr_to_reach_ph)  # tr until final phase
     index_th = np.array(index_th)
     unq_index = np.unique(index_th)
     for ind_th, th in enumerate(unq_index):
-        if th > 0.5:
+        if th > 0.5:   # for those thresholds different than full task
             indx = index_th == th
             values_temp = tr_to_reach_ph[indx]
             if len(values_temp) != 0:
+                # plot number of trials
                 ax.errorbar([th], np.nanmean(values_temp),
                             (np.std(values_temp)/np.sqrt(len(values_temp))),
                             color=f_props['color'], label=f_props['label'],
@@ -630,14 +648,16 @@ def plt_final_time_to_ph(tr_to_reach_ph, index_th, ax, f_props, marker):
 
 
 def plt_time_to_final_perf(tr_to_reach_perf, index_th, ax, f_props, marker):
-    tr_to_reach_perf = np.array(tr_to_reach_perf)
+    tr_to_reach_perf = np.array(tr_to_reach_perf)  # trials to reach final perf
     index_th = np.array(index_th)
     unq_index = np.unique(index_th)
     for ind_th, th in enumerate(unq_index):
         # if th > 0.5:
+        # for each threshold obtain corresponding trials
         indx = index_th == th
         values_temp = tr_to_reach_perf[indx]
         if len(values_temp) != 0:
+            # plot number of trials
             ax.errorbar([th], np.nanmean(values_temp),
                         (np.std(values_temp)/np.sqrt(len(values_temp))),
                         color=f_props['color'], label=f_props['label'],
@@ -650,10 +670,12 @@ def plt_final_perf(final_perf, reached_ph, index_th, ax, f_props, marker):
     reached_ph = np.array(reached_ph)
     unq_index = np.unique(index_th)
     for ind_th, th in enumerate(unq_index):
+        # only those traces with same threshold that have reached last phase
         indx = np.logical_and(index_th == th, reached_ph)
         assert len(indx) == len(index_th)
         values_temp = final_perf[indx]
         if len(values_temp) != 0:
+            # plot final perf
             ax.errorbar([th], np.nanmean(values_temp),
                         (np.std(values_temp)/np.sqrt(len(values_temp))),
                         color=f_props['color'], label=f_props['label'],
@@ -665,8 +687,9 @@ def prop_of_exp_reaching_ph(reached_ph, index_th, ax, f_props, marker):
     index_th = np.array(index_th)
     unq_index = np.unique(index_th)
     for ind_th, th in enumerate(unq_index):
-        if th > 0.5:
+        if th > 0.5:  # for those thresholds different than full task
             indx = index_th == th
+            # prop of traces that reached final phase
             prop = np.mean(reached_ph[indx])
             ax.plot(th, prop, color=f_props['color'], label=f_props['label'],
                     marker=marker, markersize=6)
