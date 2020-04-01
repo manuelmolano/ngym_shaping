@@ -545,7 +545,8 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
                                    index_th=th_index, ax=ax_final[1, 0],
                                    f_props=f_final_prop, marker=marker)
             ax_final[1, 0].set_xlabel('threshold')
-            ax_final[1, 0].set_ylabel('Number of trials to reach final performance')
+            ax_final[1, 0].set_ylabel('Number of trials to reach' +
+                                      ' final performance')
             # make -1s equal to total number of trials
             prop_of_exp_reaching_ph(reached_ph=reached_ph,
                                     index_th=th_index, marker=marker,
@@ -677,7 +678,7 @@ def process_all_results(folder):
     markers = ['+', 'x', '1']
     for alg in algs:
         print(alg)
-        f, ax = plt.subplots(nrows=2, ncols=2) # figsize=(15, 5))
+        f, ax = plt.subplots(nrows=2, ncols=2, figsize=(8, 8))
         ind = 0
         for ind_w, w in enumerate(windows):
             print('xxxxxxxxxxxxxxxxxxxxxxxx')
@@ -699,11 +700,11 @@ def process_all_results(folder):
 
 
 if __name__ == '__main__':
-    folder = '/Users/martafradera/Desktop/OneDrive -' +\
-        ' Universitat de Barcelona/TFG/bsc_results/'
-    # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
+    # folder = '/Users/martafradera/Desktop/OneDrive -' +\
+    #     ' Universitat de Barcelona/TFG/bsc_results/'
+    folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     # plt.close('all')
     # process_all_results(folder)
-    #folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
+    # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
     plt.close('all')
     process_all_results(folder)
