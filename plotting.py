@@ -453,26 +453,26 @@ def order_by_sufix(file_list):
 
 
 def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
-                 keys=['performance', 'curr_ph'], limit_ax=True, reach_ph=4,
-                 ax_final=None, f_final_prop={'color': (0, 0, 0), 'label': ''}):
+                 keys=['performance', 'curr_ph'], limit_ax=True, final_ph=4,
+                 final_perf=0.75, ax_final=None,
+                 f_final_prop={'color': (0, 0, 0), 'label': ''}):
     assert ('performance' in keys) and ('curr_ph' in keys),\
         'performance and curr_ph need to be included in the metrics (keys)'
     # load files
     files = glob.glob(folder + '*_' + algorithm + '_*_' + w)
-    files += glob.glob(folder + algorithm + '*_full_*_')
     files = sorted(files)
     f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
                          figsize=(6, 6))
-    ths_mat = []
+    ths_mat = []  # stores unique thresholds
     ths_count = []
-    th_index = []
+    th_index = []  # stores thresholds for each instance
     metrics = {k: [] for k in keys}
     tmp = {k+'_final': [] for k in keys}
     metrics.update(tmp)
-    num_tr_exps = []
     tr_to_final_perf = []
     reached_ph = []
     for ind_f, file in enumerate(files):
+        # process name
         f_name = ntpath.basename(file)
         th = f_name[f_name.find('th_stage')+9:]
         th = float(th[:th.find('_')])
@@ -484,7 +484,7 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
             ths_mat.append(th)
             ths_count.append(1)
             ci = len(ths_mat)-1
-        # general plot
+        # get and plot metrics
         metrics, flag = plot_rew_across_training(folder=file, ax=ax,
                                                  metrics=metrics,
                                                  conv=[1, 0],
@@ -494,18 +494,15 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
                                                           'alpha': 0.5})
         if flag:
             th_index.append(th)
-            # ??? is num_tr_exps useful?
-            num_tr_exps.append(len(metrics['curr_ph'][-1]))
-            # number of trials until last phase
-            metrics, reached = time_to_reach_ph(metrics, wind_final_perf,
-                                                reach_ph)
+            # number of trials until final phase
+            metrics, reached = tr_to_final_ph(metrics, wind_final_perf,
+                                              final_ph)
             reached_ph.append(reached)
             # number of trials until final perf
-            metrics = time_to_reach_perf(metrics, reach_perf=0.75,
-                                         tr_to_final_perf=tr_to_final_perf,
-                                         reach_ph=reach_ph)
+            metrics = tr_to_reach_perf(metrics, reach_perf=final_perf,
+                                       tr_to_final_perf=tr_to_final_perf,
+                                       final_ph=final_ph)
     th_index = np.array(th_index)
-    th_index[th_index == -1] = 0.5
     if metrics[keys[0]]:
         # plot means
         for ind_met, met in enumerate(metrics.keys()):
@@ -549,15 +546,15 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
             ax_final[0, 0].set_xlabel('threshold')
             ax_final[0, 0].set_ylabel('Average performance')
             # trials to reach phase 4
-            plt_final_time_to_ph(tr_to_reach_ph=metrics['curr_ph_final'],
-                                 marker=marker, f_props=f_final_prop,
-                                 index_th=th_index, ax=ax_final[0, 1])
+            plt_final_tr_to_ph(tr_to_final_ph=metrics['curr_ph_final'],
+                               marker=marker, f_props=f_final_prop,
+                               index_th=th_index, ax=ax_final[0, 1])
             ax_final[0, 1].set_xlabel('threshold')
             ax_final[0, 1].set_ylabel('Number of trials to reach phase 4')
             # trials to reach final perf
-            plt_time_to_final_perf(tr_to_reach_perf=tr_to_final_perf,
-                                   index_th=th_index, ax=ax_final[1, 0],
-                                   f_props=f_final_prop, marker=marker)
+            plt_tr_to_final_perf(tr_to_reach_perf=tr_to_final_perf,
+                                 index_th=th_index, ax=ax_final[1, 0],
+                                 f_props=f_final_prop, marker=marker)
             ax_final[1, 0].set_xlabel('threshold')
             ax_final[1, 0].set_ylabel('Number of trials to reach' +
                                       ' final performance')
@@ -571,9 +568,9 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
         plt.close(f)
 
 
-def time_to_reach_ph(metrics, wind_final_perf, reach_ph):
+def tr_to_final_ph(metrics, wind_final_perf, final_ph):
     curr_ph = metrics['curr_ph'][-1]
-    time = np.where(curr_ph == reach_ph)[0]  # find those trials in phase 4
+    time = np.where(curr_ph == final_ph)[0]  # find those trials in phase 4
     reached = False
     if len(time) != 0:
         first_tr = np.min(time)  # min trial is first trial in phase 4
@@ -588,14 +585,14 @@ def time_to_reach_ph(metrics, wind_final_perf, reach_ph):
     return metrics, reached
 
 
-def time_to_reach_perf(metrics, reach_perf, tr_to_final_perf, reach_ph):
+def tr_to_reach_perf(metrics, reach_perf, tr_to_final_perf, final_ph):
     perf = metrics['performance'][-1]
     # find those trials which performance is over reach perf
     time = np.where(perf >= reach_perf)[0]
     curr_ph = metrics['curr_ph'][-1]
     trials = []
     for value in time:
-        if curr_ph[value] == reach_ph:
+        if curr_ph[value] == final_ph:
             # only keep those trials which are in the last phase
             trials.append(value)
     if len(trials) != 0:
@@ -619,11 +616,11 @@ def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
 
     metric = np.array(metric)
     index = np.array(index)
-    unq_index = np.unique(index)
-    for ind_th, th in enumerate(unq_index):
+    unq_ths = np.unique(index)
+    for ind_th, th in enumerate(unq_ths):
         indx = index == th
         traces_temp = metric[indx, :]
-        th_str = 'full' if th == .5 else str(th)
+        th_str = 'full' if ((th+1) < 0.01) else str(th)
         ax.plot(np.nanmean(traces_temp, axis=0), color=clrs[ind_th],
                 lw=1, label=th_str+'('+str(np.sum(indx))+')')
     if limit_ax:
@@ -631,14 +628,14 @@ def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
         ax.set_xlim([0, min_dur])
 
 
-def plt_final_time_to_ph(tr_to_reach_ph, index_th, ax, f_props, marker):
-    tr_to_reach_ph = np.array(tr_to_reach_ph)  # tr until final phase
+def plt_final_tr_to_ph(tr_to_final_ph, index_th, ax, f_props, marker):
+    tr_to_final_ph = np.array(tr_to_final_ph)  # tr until final phase
     index_th = np.array(index_th)
-    unq_index = np.unique(index_th)
-    for ind_th, th in enumerate(unq_index):
-        if th > 0.5:   # for those thresholds different than full task
+    unq_ths = np.unique(index_th)
+    for ind_th, th in enumerate(unq_ths):
+        if th != -1:   # only for those thresholds different than full task
             indx = index_th == th
-            values_temp = tr_to_reach_ph[indx]
+            values_temp = tr_to_final_ph[indx]
             if len(values_temp) != 0:
                 # plot number of trials
                 ax.errorbar([th], np.nanmean(values_temp),
@@ -647,18 +644,18 @@ def plt_final_time_to_ph(tr_to_reach_ph, index_th, ax, f_props, marker):
                             marker=marker, markersize=6)
 
 
-def plt_time_to_final_perf(tr_to_reach_perf, index_th, ax, f_props, marker):
+def plt_tr_to_final_perf(tr_to_reach_perf, index_th, ax, f_props, marker):
     tr_to_reach_perf = np.array(tr_to_reach_perf)  # trials to reach final perf
     index_th = np.array(index_th)
-    unq_index = np.unique(index_th)
-    for ind_th, th in enumerate(unq_index):
-        # if th > 0.5:
+    unq_ths = np.unique(index_th)
+    for ind_th, th in enumerate(unq_ths):
         # for each threshold obtain corresponding trials
         indx = index_th == th
         values_temp = tr_to_reach_perf[indx]
         if len(values_temp) != 0:
+            x = min(unq_ths[unq_ths > 0])-0.1 if ((th+1) < 0.01) else th
             # plot number of trials
-            ax.errorbar([th], np.nanmean(values_temp),
+            ax.errorbar([x], np.nanmean(values_temp),
                         (np.std(values_temp)/np.sqrt(len(values_temp))),
                         color=f_props['color'], label=f_props['label'],
                         marker=marker, markersize=6)
@@ -668,15 +665,16 @@ def plt_final_perf(final_perf, reached_ph, index_th, ax, f_props, marker):
     final_perf = np.array(final_perf)
     index_th = np.array(index_th)
     reached_ph = np.array(reached_ph)
-    unq_index = np.unique(index_th)
-    for ind_th, th in enumerate(unq_index):
+    unq_ths = np.unique(index_th)
+    for ind_th, th in enumerate(unq_ths):
         # only those traces with same threshold that have reached last phase
         indx = np.logical_and(index_th == th, reached_ph)
         assert len(indx) == len(index_th)
         values_temp = final_perf[indx]
         if len(values_temp) != 0:
+            x = min(unq_ths[unq_ths > 0])-0.1 if ((th+1) < 0.01) else th
             # plot final perf
-            ax.errorbar([th], np.nanmean(values_temp),
+            ax.errorbar([x], np.nanmean(values_temp),
                         (np.std(values_temp)/np.sqrt(len(values_temp))),
                         color=f_props['color'], label=f_props['label'],
                         marker=marker, markersize=6)
@@ -685,9 +683,9 @@ def plt_final_perf(final_perf, reached_ph, index_th, ax, f_props, marker):
 def prop_of_exp_reaching_ph(reached_ph, index_th, ax, f_props, marker):
     reached_ph = np.array(reached_ph)
     index_th = np.array(index_th)
-    unq_index = np.unique(index_th)
-    for ind_th, th in enumerate(unq_index):
-        if th > 0.5:  # for those thresholds different than full task
+    unq_ths = np.unique(index_th)
+    for ind_th, th in enumerate(unq_ths):
+        if th != -1:  # for those thresholds different than full task
             indx = index_th == th
             # prop of traces that reached final phase
             prop = np.mean(reached_ph[indx])
