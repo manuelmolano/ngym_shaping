@@ -695,7 +695,7 @@ def prop_of_exp_reaching_ph(reached_ph, index_th, ax, f_props, marker):
 
 def process_all_results(folder):
     algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
-    windows = ['0', '2', '4']  # , '500', '1000']
+    windows = ['0', '1', '2', '3', '4']  # , '500', '1000']
     markers = ['+', 'x', '1']
     for alg in algs:
         print(alg)
@@ -723,9 +723,9 @@ def process_all_results(folder):
 if __name__ == '__main__':
     # folder = '/Users/martafradera/Desktop/OneDrive -' +\
     #     ' Universitat de Barcelona/TFG/bsc_results/'
-    folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
+    # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     # plt.close('all')
     # process_all_results(folder)
-    # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
+    folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
     plt.close('all')
     process_all_results(folder)
