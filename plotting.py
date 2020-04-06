@@ -696,7 +696,7 @@ def prop_of_exp_reaching_ph(reached_ph, index_th, ax, f_props, marker):
 def process_all_results(folder):
     algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
     windows = ['0', '1', '2', '3', '4']  # , '500', '1000']
-    markers = ['+', 'x', '1']
+    markers = ['+', 'x', '1', 'o', '>']
     for alg in algs:
         print(alg)
         f, ax = plt.subplots(nrows=2, ncols=2, figsize=(8, 8))
