@@ -84,7 +84,7 @@ def plot_results(folder, algorithm, w, durs=False, stage2=False,
                  stage_change=False, keys=['reward', 'performance', 'curr_ph'],
                  limit_ax=True):
 
-    files = glob.glob(folder + '*_' + w + '_*_' + algorithm)
+    files = glob.glob(folder + '*_' + w + '_*_' + algorithm +'_*')
     print(folder + '*_' + w + '_*_' + algorithm)
     print(files)
     files += glob.glob(folder + '*_full_*_' + algorithm)
@@ -404,8 +404,9 @@ if __name__ == '__main__':
     figure = choices[0]
 
     plt.close('all')
-    #folder = '/Users/martafradera/Desktop/OneDrive - Universitat de Barcelona/TFG/FIGURES/train_oldth/cas3/'
-    folder = '/Users/martafradera/Desktop/OneDrive - Universitat de Barcelona/TFG/FIGURES/train/cas6/'
+    # folder = '/Users/martafradera/Desktop/OneDrive - Universitat de Barcelona/TFG/FIGURES/train_oldth/cas3/'
+    # folder = '/Users/martafradera/Desktop/OneDrive - Universitat de Barcelona/TFG/FIGURES/train/cas6/'
+    folder = '/Users/martafradera/train_stages/0/'
     algs = ['A2C']
     windows = ['300']  # , '500', '1000']
 
@@ -413,10 +414,10 @@ if __name__ == '__main__':
         for w in windows:
             if figure == 'stage_change':
                 plot_results(folder, alg, w, stage_change=True,
-                             keys=['curr_perf', 'curr_ph', 'days'])
+                             keys=['curr_perf', 'curr_ph'])  # , 'days'])
             elif figure == 'delays':
                 plot_results(folder, alg, w, durs=True,
-                             keys=['inst_perf', 'durs', 'days'])
+                             keys=['inst_perf', 'durs'])  # , 'days'])
             elif figure == 'stage2':
                 plot_results(folder, alg, w, stage2=True,
                              keys=['inst_perf', 'curr_ph'])
