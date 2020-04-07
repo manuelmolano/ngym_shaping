@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from neurogym.wrappers import monitor
 from stable_baselines.common.policies import LstmPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
-from stable_baselines import A2C, ACER  # , PPO2, ACKTR
+from stable_baselines import A2C  #, ACER  # , PPO2, ACKTR
 num_instances = 9
 main_folder = '/Users/martafradera/CV'
 task = 'CVLearning-v0'
@@ -52,6 +52,7 @@ for ind_inst in range(num_instances):
                     env = monitor.Monitor(env, folder=save_folder,
                                           sv_per=1000, sv_fig=False,
                                           verbose=True, fig_type='svg')
+                    # training
                     env = DummyVecEnv([lambda: env])
                     model = alg(LstmPolicy, env, verbose=0,
                                 policy_kwargs={'feature_extraction': "mlp"})
