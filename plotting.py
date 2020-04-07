@@ -474,9 +474,9 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
     for ind_f, file in enumerate(files):
         # process name
         f_name = ntpath.basename(file)
-        th = f_name[f_name.find('th_stage')+9:]
-        th = float(th[:th.find('_')])
-        # check if th was already visited
+        th = f_name[f_name.find('th_stage')+9:]  # TODO: make tag (e.g. tag=th_stage)
+        th = float(th[:th.find('_')])  # TODO: do not make float
+        # check if th was already visited to assign color
         if th in ths_mat:
             ci = np.where(np.array(ths_mat) == th)[0][0]
             ths_count[ci] += 1
@@ -502,7 +502,7 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
             metrics = tr_to_reach_perf(metrics, reach_perf=final_perf,
                                        tr_to_final_perf=tr_to_final_perf,
                                        final_ph=final_ph)
-    th_index = np.array(th_index)
+    th_index = np.array(th_index)  # TODO: this matrix will be a string
     if metrics[keys[0]]:
         # plot means
         for ind_met, met in enumerate(metrics.keys()):
