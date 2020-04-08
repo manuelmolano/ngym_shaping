@@ -452,14 +452,30 @@ def order_by_sufix(file_list):
     return sorted_list
 
 
+def get_tag(tag, file):
+    # process name
+    f_name = ntpath.basename(file)
+    th = f_name[f_name.find(tag)+len(tag)+1:]
+    th = th[:th.find('_')] if '_' in th else th
+    if tag == 'stages':
+        for stage in range(4):
+            if th.find(str(stage)) == -1:
+                new_th = stage
+    th = float(new_th)
+    return th
+
+
 def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
                  keys=['performance', 'curr_ph'], limit_ax=True, final_ph=4,
-                 final_perf=0.75, ax_final=None,
+                 final_perf=0.75, ax_final=None, tag='th_stage',
                  f_final_prop={'color': (0, 0, 0), 'label': ''}):
     assert ('performance' in keys) and ('curr_ph' in keys),\
         'performance and curr_ph need to be included in the metrics (keys)'
     # load files
-    files = glob.glob(folder + '*_' + algorithm + '_*_' + w)
+    if tag == 'th_stage':
+        files = glob.glob(folder + '*_' + algorithm + '_*_' + w)
+    else:
+        files = glob.glob(folder + '*_' + algorithm + '_*_stages_*')
     files = sorted(files)
     f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
                          figsize=(6, 6))
@@ -472,10 +488,7 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
     tr_to_final_perf = []
     reached_ph = []
     for ind_f, file in enumerate(files):
-        # process name
-        f_name = ntpath.basename(file)
-        th = f_name[f_name.find('th_stage')+9:]  # TODO: make tag (e.g. tag=th_stage)
-        th = float(th[:th.find('_')])  # TODO: do not make float
+        th = get_tag(tag, file)
         # check if th was already visited to assign color
         if th in ths_mat:
             ci = np.where(np.array(ths_mat) == th)[0][0]
@@ -502,7 +515,7 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
             metrics = tr_to_reach_perf(metrics, reach_perf=final_perf,
                                        tr_to_final_perf=tr_to_final_perf,
                                        final_ph=final_ph)
-    th_index = np.array(th_index)  # TODO: this matrix will be a string
+    th_index = np.array(th_index)
     if metrics[keys[0]]:
         # plot means
         for ind_met, met in enumerate(metrics.keys()):
@@ -695,7 +708,7 @@ def prop_of_exp_reaching_ph(reached_ph, index_th, ax, f_props, marker):
 
 def process_all_results(folder):
     algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
-    windows = ['0', '1', '2', '3', '4']  # , '500', '1000']
+    windows = ['0']  # , '1', '2', '3', '4']  # , '500', '1000']
     markers = ['+', 'x', '1', 'o', '>']
     for alg in algs:
         print(alg)
@@ -708,8 +721,8 @@ def process_all_results(folder):
             marker = markers[ind]
             ind += 1
             plot_results(folder, alg, w, limit_ax=False, marker=marker,
-                         ax_final=ax, f_final_prop={'color': clrs[ind_w],
-                                                    'label': str(w)})
+                         ax_final=ax, tag='stages',
+                         f_final_prop={'color': clrs[ind_w], 'label': str(w)})
 
         handles, labels = plt.gca().get_legend_handles_labels()
         by_label = dict(zip(labels, handles))
@@ -721,11 +734,11 @@ def process_all_results(folder):
 
 
 if __name__ == '__main__':
-    # folder = '/Users/martafradera/Desktop/OneDrive -' +\
-    #     ' Universitat de Barcelona/TFG/bsc_results/'
+    folder = '/Users/martafradera/Desktop/OneDrive -' +\
+             ' Universitat de Barcelona/TFG/bsc_stages/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     # plt.close('all')
     # process_all_results(folder)
-    folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
+    # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
     plt.close('all')
     process_all_results(folder)
