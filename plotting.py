@@ -457,10 +457,13 @@ def get_tag(tag, file):
     f_name = ntpath.basename(file)
     th = f_name[f_name.find(tag)+len(tag)+1:]
     th = th[:th.find('_')] if '_' in th else th
+    new_th = -1
     if tag == 'stages':
         for stage in range(4):
             if th.find(str(stage)) == -1:
                 new_th = stage
+    else:
+        new_th = th
     th = float(new_th)
     return th
 
@@ -561,7 +564,7 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
             # trials to reach phase 4
             plt_final_tr_to_ph(tr_to_final_ph=metrics['curr_ph_final'],
                                marker=marker, f_props=f_final_prop,
-                               index_th=th_index, ax=ax_final[0, 1])
+                               index_th=th_index, ax=ax_final[0, 1], tag=tag)
             ax_final[0, 1].set_xlabel('threshold')
             ax_final[0, 1].set_ylabel('Number of trials to reach phase 4')
             # trials to reach final perf
@@ -572,7 +575,7 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
             ax_final[1, 0].set_ylabel('Number of trials to reach' +
                                       ' final performance')
             # make -1s equal to total number of trials
-            prop_of_exp_reaching_ph(reached_ph=reached_ph,
+            prop_of_exp_reaching_ph(reached_ph=reached_ph, tag=tag,
                                     index_th=th_index, marker=marker,
                                     ax=ax_final[1, 1], f_props=f_final_prop)
             ax_final[1, 1].set_xlabel('threshold')
@@ -641,12 +644,12 @@ def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
         ax.set_xlim([0, min_dur])
 
 
-def plt_final_tr_to_ph(tr_to_final_ph, index_th, ax, f_props, marker):
+def plt_final_tr_to_ph(tr_to_final_ph, index_th, ax, f_props, marker, tag):
     tr_to_final_ph = np.array(tr_to_final_ph)  # tr until final phase
     index_th = np.array(index_th)
     unq_ths = np.unique(index_th)
     for ind_th, th in enumerate(unq_ths):
-        if th != -1:   # only for those thresholds different than full task
+        if th != -1 or tag == 'stages':   # only for those thresholds different than full task
             indx = index_th == th
             values_temp = tr_to_final_ph[indx]
             if len(values_temp) != 0:
@@ -666,7 +669,9 @@ def plt_tr_to_final_perf(tr_to_reach_perf, index_th, ax, f_props, marker):
         indx = index_th == th
         values_temp = tr_to_reach_perf[indx]
         if len(values_temp) != 0:
-            x = min(unq_ths[unq_ths > 0])-0.1 if ((th+1) < 0.01) else th
+            unq_ths_pos = unq_ths[unq_ths >= 0]
+            unq_ths_pos.sort()
+            x = min(unq_ths_pos)-(unq_ths_pos[1]-unq_ths_pos[0]) if ((th+1) < 0.01) else th
             # plot number of trials
             ax.errorbar([x], np.nanmean(values_temp),
                         (np.std(values_temp)/np.sqrt(len(values_temp))),
@@ -685,7 +690,9 @@ def plt_final_perf(final_perf, reached_ph, index_th, ax, f_props, marker):
         assert len(indx) == len(index_th)
         values_temp = final_perf[indx]
         if len(values_temp) != 0:
-            x = min(unq_ths[unq_ths > 0])-0.1 if ((th+1) < 0.01) else th
+            unq_ths_pos = unq_ths[unq_ths >= 0]
+            unq_ths_pos.sort()
+            x = min(unq_ths_pos)-(unq_ths_pos[1]-unq_ths_pos[0]) if ((th+1) < 0.01) else th
             # plot final perf
             ax.errorbar([x], np.nanmean(values_temp),
                         (np.std(values_temp)/np.sqrt(len(values_temp))),
@@ -693,12 +700,12 @@ def plt_final_perf(final_perf, reached_ph, index_th, ax, f_props, marker):
                         marker=marker, markersize=6)
 
 
-def prop_of_exp_reaching_ph(reached_ph, index_th, ax, f_props, marker):
+def prop_of_exp_reaching_ph(reached_ph, index_th, ax, f_props, marker, tag):
     reached_ph = np.array(reached_ph)
     index_th = np.array(index_th)
     unq_ths = np.unique(index_th)
     for ind_th, th in enumerate(unq_ths):
-        if th != -1:  # for those thresholds different than full task
+        if th != -1 or tag == 'stages':  # for those thresholds different than full task
             indx = index_th == th
             # prop of traces that reached final phase
             prop = np.mean(reached_ph[indx])
