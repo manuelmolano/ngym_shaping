@@ -88,6 +88,7 @@ def plot_results(folder, algorithm, w, durs=False, stage2=False,
     print(folder + '*_' + w + '_*_' + algorithm)
     print(files)
     files += glob.glob(folder + '*_full_*_' + algorithm)
+    files += glob.glob(folder + '*_' + algorithm + '_*_stages_*')
     files = sorted(files)
     f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1, figsize=(8, 8))
     ths_mat = []
@@ -310,7 +311,7 @@ def plot_stage_change(folder, window=200, ax=None, ytitle='', xlbl='',
                     new_x.append(n*300+150)
                 for ind in new_x:
                     curr_perf.append(mean[ind])
-                ax[ind_k].plot(new_x, curr_perf, marker='X')
+                ax[ind_k].plot(new_x, curr_perf)  # marker='X')
             ax[ind_k].set_ylabel(k)
 
             start = []
@@ -336,7 +337,7 @@ def plot_stage_change(folder, window=200, ax=None, ytitle='', xlbl='',
 
             label = True
             for ind, value in enumerate(start):
-                trials = x[start[ind]:stop[ind]]
+                trials = x[start[ind]:stop[ind]] if ind < len(stop) else x[start[ind]:stop[-1]]
                 if k == 'prova':
                     if value == start[0]:
                         ax[ind_k].plot(trials,
@@ -406,8 +407,10 @@ if __name__ == '__main__':
     plt.close('all')
     # folder = '/Users/martafradera/Desktop/OneDrive - Universitat de Barcelona/TFG/FIGURES/train_oldth/cas3/'
     # folder = '/Users/martafradera/Desktop/OneDrive - Universitat de Barcelona/TFG/FIGURES/train/cas6/'
-    folder = '/Users/martafradera/train_stages/0/'
-    algs = ['A2C']
+    # folder = '/Users/martafradera/train_stages/0/'
+    folder = '/Users/martafradera/Desktop/OneDrive -' +\
+             ' Universitat de Barcelona/TFG/prova/'
+    algs = ['ACER']
     windows = ['300']  # , '500', '1000']
 
     for alg in algs:
