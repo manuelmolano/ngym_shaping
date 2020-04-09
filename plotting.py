@@ -743,23 +743,17 @@ def process_results_diff_thresholds(folder):
         plt.close(f)
 
 
-def process_results_diff_protocols(folder):  # TODO: adapt for diff. ths results
+def process_results_diff_protocols(folder):
     algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
-    windows = ['0', '1', '2', '3', '4']  # , '500', '1000']
-    markers = ['+', 'x', '1', 'o', '>']
+    w = '0'
+    marker = '+'
     for alg in algs:
         print(alg)
+        print('xxxxxxxxxxxxxxxxxxxxxx')
         f, ax = plt.subplots(nrows=2, ncols=2, figsize=(8, 8))
-        ind = 0
-        for ind_w, w in enumerate(windows):
-            print('xxxxxxxxxxxxxxxxxxxxxxxx')
-            print('Window')
-            print(w)
-            marker = markers[ind]
-            ind += 1
-            plot_results(folder, alg, w, limit_ax=False, marker=marker,
-                         ax_final=ax, tag='th_stage',
-                         f_final_prop={'color': clrs[ind_w], 'label': str(w)})
+        plot_results(folder, alg, w, limit_ax=False, marker=marker,
+                     ax_final=ax, tag='stages',
+                     f_final_prop={'color': clrs[0], 'label': w})
 
         handles, labels = plt.gca().get_legend_handles_labels()
         by_label = dict(zip(labels, handles))
@@ -771,12 +765,12 @@ def process_results_diff_protocols(folder):  # TODO: adapt for diff. ths results
 
 
 if __name__ == '__main__':
-    # folder = '/Users/martafradera/Desktop/OneDrive -' +\
-    #          ' Universitat de Barcelona/TFG/bsc_stages/'
+    folder = '/Users/martafradera/Desktop/OneDrive -' +\
+             ' Universitat de Barcelona/TFG/bsc_stages/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
-    folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
+    # folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
     # folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
     # folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
     plt.close('all')
-    process_results_diff_windows(folder)
+    process_results_diff_protocols(folder)
