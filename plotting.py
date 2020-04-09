@@ -479,9 +479,9 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
         'performance and curr_ph need to be included in the metrics (keys)'
     # load files
     if tag == 'th_stage':
-        files = glob.glob(folder + '*_' + algorithm + '_*_' + w)
+        files = glob.glob(folder + '*' + algorithm + '*' + w)
     else:
-        files = glob.glob(folder + '*_' + algorithm + '_*_stages_*')
+        files = glob.glob(folder + '*' + algorithm + '*stages*')
     files = sorted(files)
     f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
                          figsize=(6, 6))
