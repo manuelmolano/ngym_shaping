@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 """Plotting functions."""
 
 import numpy as np
@@ -491,7 +494,7 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
     tr_to_final_perf = []
     reached_ph = []
     for ind_f, file in enumerate(files):
-        th = get_tag(tag, file)
+        th = get_tag(tag, file)  # TODO: can this process the case in which all stages are used?
         # check if th was already visited to assign color
         if th in ths_mat:
             ci = np.where(np.array(ths_mat) == th)[0][0]
@@ -601,7 +604,7 @@ def tr_to_final_ph(metrics, wind_final_perf, final_ph):
     return metrics, reached
 
 
-def tr_to_reach_perf(metrics, reach_perf, tr_to_final_perf, final_ph):
+def tr_to_reach_perf(metrics, reach_perf, tr_to_final_perf, final_ph):  # TODO: take only those that reach final phase
     perf = metrics['performance'][-1]
     # find those trials which performance is over reach perf
     time = np.where(perf >= reach_perf)[0]
@@ -713,9 +716,9 @@ def prop_of_exp_reaching_ph(reached_ph, index_th, ax, f_props, marker, tag):
                     marker=marker, markersize=6)
 
 
-def process_all_results(folder):
+def process_results_diff_thresholds(folder):
     algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
-    windows = ['0']  # , '1', '2', '3', '4']  # , '500', '1000']
+    windows = ['0', '1', '2', '3', '4']  # , '500', '1000']
     markers = ['+', 'x', '1', 'o', '>']
     for alg in algs:
         print(alg)
@@ -728,7 +731,34 @@ def process_all_results(folder):
             marker = markers[ind]
             ind += 1
             plot_results(folder, alg, w, limit_ax=False, marker=marker,
-                         ax_final=ax, tag='stages',
+                         ax_final=ax, tag='th_stage',
+                         f_final_prop={'color': clrs[ind_w], 'label': str(w)})
+
+        handles, labels = plt.gca().get_legend_handles_labels()
+        by_label = dict(zip(labels, handles))
+        ax[0, 0].legend(by_label.values(), by_label.keys())
+
+        f.savefig(folder + '/final_results_' +
+                  alg+'_'+'.png', dpi=200)
+        plt.close(f)
+
+
+def process_results_diff_protocols(folder):  # TODO: adapt for diff. ths results
+    algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
+    windows = ['0', '1', '2', '3', '4']  # , '500', '1000']
+    markers = ['+', 'x', '1', 'o', '>']
+    for alg in algs:
+        print(alg)
+        f, ax = plt.subplots(nrows=2, ncols=2, figsize=(8, 8))
+        ind = 0
+        for ind_w, w in enumerate(windows):
+            print('xxxxxxxxxxxxxxxxxxxxxxxx')
+            print('Window')
+            print(w)
+            marker = markers[ind]
+            ind += 1
+            plot_results(folder, alg, w, limit_ax=False, marker=marker,
+                         ax_final=ax, tag='th_stage',
                          f_final_prop={'color': clrs[ind_w], 'label': str(w)})
 
         handles, labels = plt.gca().get_legend_handles_labels()
@@ -741,11 +771,12 @@ def process_all_results(folder):
 
 
 if __name__ == '__main__':
-    folder = '/Users/martafradera/Desktop/OneDrive -' +\
-             ' Universitat de Barcelona/TFG/bsc_stages/'
+    # folder = '/Users/martafradera/Desktop/OneDrive -' +\
+    #          ' Universitat de Barcelona/TFG/bsc_stages/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
-    # plt.close('all')
-    # process_all_results(folder)
     # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
+    folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
+    # folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
+    # folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
     plt.close('all')
-    process_all_results(folder)
+    process_results_diff_windows(folder)
