@@ -493,6 +493,7 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
     metrics.update(tmp)
     tr_to_final_perf = []
     reached_ph = []
+    reached_perf = []
     for ind_f, file in enumerate(files):
         th = get_tag(tag, file)  # TODO: can this process the case in which all stages are used?
         # check if th was already visited to assign color
@@ -518,9 +519,10 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
                                               final_ph)
             reached_ph.append(reached)
             # number of trials until final perf
-            metrics = tr_to_reach_perf(metrics, reach_perf=final_perf,
-                                       tr_to_final_perf=tr_to_final_perf,
-                                       final_ph=final_ph)
+            metrics, reached = tr_to_reach_perf(metrics, reach_perf=final_perf,
+                                                tr_to_final_perf=tr_to_final_perf,
+                                                final_ph=final_ph)
+            reached_perf.append(reached)
     th_index = np.array(th_index)
     if metrics[keys[0]]:
         # plot means
@@ -567,22 +569,29 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
             # trials to reach phase 4
             plt_final_tr_to_ph(tr_to_final_ph=metrics['curr_ph_final'],
                                marker=marker, f_props=f_final_prop,
-                               index_th=th_index, ax=ax_final[0, 1], tag=tag)
+                               index_th=th_index, ax=ax_final[0, 1], tag=tag,
+                               reached_ph=reached_ph)
             ax_final[0, 1].set_xlabel('threshold')
             ax_final[0, 1].set_ylabel('Number of trials to reach phase 4')
             # trials to reach final perf
             plt_tr_to_final_perf(tr_to_reach_perf=tr_to_final_perf,
-                                 index_th=th_index, ax=ax_final[1, 0],
+                                 index_th=th_index, ax=ax_final[0, 2],
                                  f_props=f_final_prop, marker=marker)
-            ax_final[1, 0].set_xlabel('threshold')
-            ax_final[1, 0].set_ylabel('Number of trials to reach' +
+            ax_final[0, 2].set_xlabel('threshold')
+            ax_final[0, 2].set_ylabel('Number of trials to reach' +
                                       ' final performance')
             # make -1s equal to total number of trials
             prop_of_exp_reaching_ph(reached_ph=reached_ph, tag=tag,
                                     index_th=th_index, marker=marker,
+                                    ax=ax_final[1, 0], f_props=f_final_prop)
+            ax_final[1, 0].set_xlabel('threshold')
+            ax_final[1, 0].set_ylabel('Proportion of instances reaching phase 4')
+            # prop of trials that reach final perf
+            prop_of_exp_reaching_perf(reached_perf=reached_perf, tag=tag,
+                                    index_th=th_index, marker=marker,
                                     ax=ax_final[1, 1], f_props=f_final_prop)
             ax_final[1, 1].set_xlabel('threshold')
-            ax_final[1, 1].set_ylabel('Proportion of instances reaching phase 4')
+            ax_final[1, 1].set_ylabel('Proportion of instances reaching final perf')
     else:
         plt.close(f)
 
@@ -608,6 +617,7 @@ def tr_to_reach_perf(metrics, reach_perf, tr_to_final_perf, final_ph):  # TODO: 
     perf = metrics['performance'][-1]
     # find those trials which performance is over reach perf
     time = np.where(perf >= reach_perf)[0]
+    reached = False
     curr_ph = metrics['curr_ph'][-1]
     trials = []
     for value in time:
@@ -618,9 +628,10 @@ def tr_to_reach_perf(metrics, reach_perf, tr_to_final_perf, final_ph):  # TODO: 
         # if last phase is not reached, last trial is obtained
         first_tr = np.min(trials)
         tr_to_final_perf.append(first_tr)
+        reached = True
     else:
         tr_to_final_perf.append(len(perf))
-    return metrics
+    return metrics, reached
 
 
 def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
@@ -647,13 +658,13 @@ def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
         ax.set_xlim([0, min_dur])
 
 
-def plt_final_tr_to_ph(tr_to_final_ph, index_th, ax, f_props, marker, tag):
+def plt_final_tr_to_ph(tr_to_final_ph, index_th, ax, f_props, marker, tag, reached_ph):
     tr_to_final_ph = np.array(tr_to_final_ph)  # tr until final phase
     index_th = np.array(index_th)
     unq_ths = np.unique(index_th)
     for ind_th, th in enumerate(unq_ths):
         if th != -1 or tag == 'stages':   # only for those thresholds different than full task
-            indx = index_th == th
+            indx = np.logical_and(index_th == th, reached_ph)
             values_temp = tr_to_final_ph[indx]
             if len(values_temp) != 0:
                 # plot number of trials
@@ -716,13 +727,26 @@ def prop_of_exp_reaching_ph(reached_ph, index_th, ax, f_props, marker, tag):
                     marker=marker, markersize=6)
 
 
+def prop_of_exp_reaching_perf(reached_perf, index_th, ax, f_props, marker, tag):
+    reached_perf = np.array(reached_perf)
+    index_th = np.array(index_th)
+    unq_ths = np.unique(index_th)
+    for ind_th, th in enumerate(unq_ths):
+        if th != -1 or tag == 'stages':  # for those thresholds different than full task
+            indx = index_th == th
+            # prop of traces that reached final phase
+            prop = np.mean(reached_perf[indx])
+            ax.plot(th, prop, color=f_props['color'], label=f_props['label'],
+                    marker=marker, markersize=6)
+
+
 def process_results_diff_thresholds(folder):
     algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
     windows = ['0', '1', '2', '3', '4']  # , '500', '1000']
     markers = ['+', 'x', '1', 'o', '>']
     for alg in algs:
         print(alg)
-        f, ax = plt.subplots(nrows=2, ncols=2, figsize=(8, 8))
+        f, ax = plt.subplots(nrows=2, ncols=3)  # figsize=(8, 8))
         ind = 0
         for ind_w, w in enumerate(windows):
             print('xxxxxxxxxxxxxxxxxxxxxxxx')
@@ -743,23 +767,17 @@ def process_results_diff_thresholds(folder):
         plt.close(f)
 
 
-def process_results_diff_protocols(folder):  # TODO: adapt for diff. ths results
+def process_results_diff_protocols(folder):
     algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
-    windows = ['0', '1', '2', '3', '4']  # , '500', '1000']
-    markers = ['+', 'x', '1', 'o', '>']
+    w = '0'
+    marker = '+'
     for alg in algs:
         print(alg)
-        f, ax = plt.subplots(nrows=2, ncols=2, figsize=(8, 8))
-        ind = 0
-        for ind_w, w in enumerate(windows):
-            print('xxxxxxxxxxxxxxxxxxxxxxxx')
-            print('Window')
-            print(w)
-            marker = markers[ind]
-            ind += 1
-            plot_results(folder, alg, w, limit_ax=False, marker=marker,
-                         ax_final=ax, tag='th_stage',
-                         f_final_prop={'color': clrs[ind_w], 'label': str(w)})
+        print('xxxxxxxxxxxxxxxxxxxxxx')
+        f, ax = plt.subplots(nrows=2, ncols=3)  # figsize=(8, 8))
+        plot_results(folder, alg, w, limit_ax=False, marker=marker,
+                     ax_final=ax, tag='stages',
+                     f_final_prop={'color': clrs[0], 'label': w})
 
         handles, labels = plt.gca().get_legend_handles_labels()
         by_label = dict(zip(labels, handles))
@@ -771,12 +789,12 @@ def process_results_diff_protocols(folder):  # TODO: adapt for diff. ths results
 
 
 if __name__ == '__main__':
-    # folder = '/Users/martafradera/Desktop/OneDrive -' +\
-    #          ' Universitat de Barcelona/TFG/bsc_stages/'
+    folder = '/Users/martafradera/Desktop/OneDrive -' +\
+             ' Universitat de Barcelona/TFG/bsc_results/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
-    folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
+    # folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
     # folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
     # folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
     plt.close('all')
-    process_results_diff_windows(folder)
+    process_results_diff_thresholds(folder)
