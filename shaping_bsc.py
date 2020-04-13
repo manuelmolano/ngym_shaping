@@ -5,7 +5,7 @@ Created on Wed Apr  8 07:26:31 2020
 
 @author: manuel
 
-/home/hcli64/hcli64745/shaping_run.py --folder diff_protocols  --seed 4 --alg PPO2 --stages 0 1 2 4
+/home/.../shaping_run.py --folder test  --seed 4 --alg A2C --stages 3 4
 
 """
 import os

@@ -9,8 +9,16 @@ def get_name_and_command_from_dict(d):
     cmd = ''
     for k in d.keys():
         if k != 'folder':
-            name += k + '_' + str(d[k]) + '_'
-            cmd += ' --' + k + ' ' + str(d[k])
+            if isinstance(d[k], list):
+                name += k + '_'
+                cmd += ' --' + k
+                for el in d[k]:
+                    name += str(el)
+                    cmd += ' ' + str(el)
+                name += '_'
+            else:
+                name += k + '_' + str(d[k]) + '_'
+                cmd += ' --' + k + ' ' + str(d[k])
 
     return name[:-1], cmd
 
