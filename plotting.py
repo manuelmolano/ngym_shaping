@@ -525,38 +525,25 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
             reached_perf.append(reached)
     val_index = np.array(val_index)
     if metrics[keys[0]]:
-        # plot means
-        for ind_met, met in enumerate(metrics.keys()):
-            ind_f = met.find('_final')
-            if ind_f == -1:
-                plt_means(metric=metrics[met], index=val_index, ax=ax[ind_met],
-                          clrs=clrs, limit_ax=limit_ax)
-        np.array
-        ax[0].set_title(algorithm + ' (w: ' + w + ')')
-        ax[0].set_ylabel('Average performance')
-        ax[1].set_ylabel('Average phase')
-        ax[1].set_xlabel('Trials')
-        ax[1].legend()
-        f.savefig(folder+'/values_across_training_'+algorithm+'_'+w+'.png',
-                  dpi=200)
-        plt.close(f)
-        # plot only means
-        f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
-                             figsize=(6, 6))
-        for ind_met, met in enumerate(metrics.keys()):
-            ind_f = met.find('_final')
-            if ind_f == -1:
-                plt_means(metric=metrics[met], index=val_index, ax=ax[ind_met],
-                          clrs=clrs, limit_ax=limit_ax)
-
-        ax[0].set_title(algorithm + ' (w: ' + w + ')')
-        ax[0].set_ylabel('Average performance')
-        ax[1].set_ylabel('Average phase')
-        ax[1].set_xlabel('Trials')
-        ax[1].legend()
-        f.savefig(folder + '/mean_values_across_training_' +
-                  algorithm+'_'+w+'.png', dpi=200)
-        plt.close(f)
+        names = ['values_across_training_', 'mean_values_across_training_']
+        for ind in range(2):
+            if ind == 1:
+                f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
+                                     figsize=(6, 6))
+            # plot means
+            for ind_met, met in enumerate(metrics.keys()):
+                ind_f = met.find('_final')
+                if ind_f == -1:
+                    plt_means(metric=metrics[met], index=val_index,
+                              ax=ax[ind_met], clrs=clrs, limit_ax=limit_ax)
+            ax[0].set_title(algorithm + ' (w: ' + w + ')')
+            ax[0].set_ylabel('Average performance')
+            ax[1].set_ylabel('Average phase')
+            ax[1].set_xlabel('Trials')
+            ax[1].legend()
+            f.savefig(folder+'/'+names[ind]+algorithm+'_'+w+'.png',
+                      dpi=200)
+            plt.close(f)
         # plot final results
         if ax_final is not None:
             # plot final performance
@@ -574,7 +561,7 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
             ax_final[0, 1].set_xlabel(tag)
             ax_final[0, 1].set_ylabel('Number of trials to reach phase 4')
             # trials to reach final perf
-            plt_tr_to_perf(tr_to_reach_perf=tr_to_perf,
+            plt_tr_to_perf(tr_to_reach_perf=tr_to_perf, reached=reached_perf,
                            index_val=val_index, ax=ax_final[0, 2],
                            f_props=f_final_prop, marker=marker)
             ax_final[0, 2].set_xlabel(tag)
@@ -677,13 +664,13 @@ def plt_final_tr_to_ph(tr_to_final_ph, index_val, ax, f_props, marker, tag,
                             marker=marker, markersize=6)
 
 
-def plt_tr_to_perf(tr_to_reach_perf, index_val, ax, f_props, marker):
+def plt_tr_to_perf(tr_to_reach_perf, index_val, reached, ax, f_props, marker):
     tr_to_reach_perf = np.array(tr_to_reach_perf)  # trials to reach final perf
     index_val = np.array(index_val)
     unq_vals = np.unique(index_val)
     for ind_val, val in enumerate(unq_vals):
-        # for each threshold obtain corresponding trials
-        indx = index_val == val
+        # for each value obtain corresponding trials
+        indx = np.logical_and(index_val == val, reached)
         values_temp = tr_to_reach_perf[indx]
         if len(values_temp) != 0:
             unq_vals_pos = unq_vals[unq_vals >= 0]
@@ -703,7 +690,7 @@ def plt_final_perf(final_perf, reached_ph, index_val, ax, f_props, marker):
     reached_ph = np.array(reached_ph)
     unq_vals = np.unique(index_val)
     for ind_val, val in enumerate(unq_vals):
-        # only those traces with same threshold that have reached last phase
+        # only those traces with same value that have reached last phase
         indx = np.logical_and(index_val == val, reached_ph)
         assert len(indx) == len(index_val)
         values_temp = final_perf[indx]
