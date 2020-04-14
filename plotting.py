@@ -17,7 +17,14 @@ rcParams['font.size'] = 7
 clrs = sns.color_palette()
 
 prtcls_index_map = {'01234': -1, '1234': 0, '0234': 1, '0134': 2, '0124': 3,
-                    '34': 5}
+                    '34': 4}
+
+ths_index_map = {'full': 0.5, '0.6': 0.6, '0.65': 0.65, '0.7': 0.7, '0.75': 0.75,
+                 '0.8': 0.8, '0.85': 0.85, '0.9': 0.9}
+
+all_indx = {}
+all_indx.update(prtcls_index_map)
+all_indx.update(ths_index_map)
 
 
 def plot_env(env, num_steps_env=200, def_act=None, model=None, show_fig=True,
@@ -463,16 +470,10 @@ def get_tag(tag, file):
     f_name = ntpath.basename(file)
     val = f_name[f_name.find(tag)+len(tag)+1:]
     val = val[:val.find('_')] if '_' in val else val
-    new_val = -1
-    if tag == 'stages':
-        new_val = prtcls_index_map[val]
-    else:
-        new_val = val
-    val = float(new_val)
     return val
 
 
-def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
+def plot_results(folder, algorithm, w, wind_final_perf=100,
                  keys=['performance', 'curr_ph'], limit_ax=True, final_ph=4,
                  final_perf=0.7, ax_final=None, tag='th_stage',
                  f_final_prop={'color': (0, 0, 0), 'label': ''}):
@@ -547,46 +548,68 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
             f.savefig(folder+'/'+names[ind]+algorithm+'_'+w+'.png',
                       dpi=200)
             plt.close(f)
+        # define xticks
+        if tag == 'stages':
+            labels = list(prtcls_index_map.keys())
+            ticks = list(prtcls_index_map.values())
+        elif tag == 'th_stage':
+            labels = list(ths_index_map.keys())
+            ticks = list(ths_index_map.values())
         # plot final results
         if ax_final is not None:
             # plot final performance
             plt_final_perf(final_perf=metrics['performance_final'],
-                           marker=marker, reached_ph=reached_ph,
+                           reached_ph=reached_ph,
                            f_props=f_final_prop, index_val=val_index,
                            ax=ax_final[0, 0])
             ax_final[0, 0].set_xlabel(tag)
             ax_final[0, 0].set_ylabel('Average performance')
+            ax_final[0, 0].set_xticks(ticks)
+            ax_final[0, 0].set_xticklabels(labels)
             # trials to reach phase 4
             plt_final_tr_to_ph(tr_to_final_ph=metrics['curr_ph_final'],
-                               marker=marker, f_props=f_final_prop,
-                               index_val=val_index, ax=ax_final[0, 1], tag=tag,
+                               f_props=f_final_prop,
+                               index_val=val_index, ax=ax_final[0, 1],
                                reached_ph=reached_ph)
             ax_final[0, 1].set_xlabel(tag)
             ax_final[0, 1].set_ylabel('Number of trials to reach phase 4')
+            ax_final[0, 1].set_xticks(ticks)
+            ax_final[0, 1].set_xticklabels(labels)
             # trials to reach final perf
             plt_tr_to_perf(tr_to_reach_perf=tr_to_perf, reached=reached_perf,
                            index_val=val_index, ax=ax_final[0, 2],
-                           f_props=f_final_prop, marker=marker)
+                           f_props=f_final_prop)
             ax_final[0, 2].set_xlabel(tag)
             ax_final[0, 2].set_ylabel('Number of trials to reach' +
                                       ' final performance')
+            ax_final[0, 2].set_xticks(ticks)
+            ax_final[0, 2].set_xticklabels(labels)
             # make -1s equal to total number of trials
-            prop_of_exp_reaching_ph(reached_ph=reached_ph, tag=tag,
-                                    index_val=val_index, marker=marker,
+            prop_of_exp_reaching_ph(reached_ph=reached_ph,
+                                    index_val=val_index,
                                     ax=ax_final[1, 0], f_props=f_final_prop)
             ax_final[1, 0].set_xlabel(tag)
             ax_final[1, 0].set_ylabel('Proportion of instances reaching phase 4')
+            ax_final[1, 0].set_xticks(ticks)
+            ax_final[1, 0].set_xticklabels(labels)
             # prop of trials that reach final perf
             prop_of_exp_reaching_perf(reached_perf=reached_perf,
-                                      index_val=val_index, marker=marker,
+                                      index_val=val_index,
                                       ax=ax_final[1, 1], f_props=f_final_prop)
             ax_final[1, 1].set_xlabel(tag)
             ax_final[1, 1].set_ylabel('Proportion of instances reaching' +
                                       ' final perf')
-            exp_durations(reached_perf=reached_perf, index_val=val_index,
-                          marker=marker, ax=ax_final[1, 2], f_props=f_final_prop)
+            ax_final[1, 1].set_xticks(ticks)
+            ax_final[1, 1].set_xticklabels(labels)
+            # plot experiment durations
+            duration_experiments(exp_durs=exp_durations, index_val=val_index,
+                                 ax=ax_final[1, 2],
+                                 f_props=f_final_prop)
             ax_final[1, 2].set_xlabel(tag)
             ax_final[1, 2].set_ylabel('Experiment duration (trials)')
+            ax_final[1, 2].set_xticks(ticks)
+            ax_final[1, 2].set_xticklabels(labels)
+
     else:
         plt.close(f)
 
@@ -644,112 +667,112 @@ def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
     for ind_val, val in enumerate(unq_vals):
         indx = index == val
         traces_temp = metric[indx, :]
-        val_str = 'full' if ((val+1) < 0.01) else str(val)
         ax.plot(np.nanmean(traces_temp, axis=0), color=clrs[ind_val],
-                lw=1, label=val_str+'('+str(np.sum(indx))+')')
+                lw=1, label=val+' ('+str(np.sum(indx))+')')
     if limit_ax:
         assert limit_mean, 'limiting ax only works when mean is also limited'
         ax.set_xlim([0, min_dur])
 
 
-def plt_final_tr_to_ph(tr_to_final_ph, index_val, ax, f_props, marker, tag,
-                       reached_ph):
+def get_noise(unq_vals):
+    max_ = np.max([all_indx[x] for x in unq_vals])
+    min_ = np.min([all_indx[x] for x in unq_vals])
+    noise = (max_ - min_)/40
+    return noise
+
+
+def plot_values(values, index_val, val, reached, ax, noise, f_props):
+    # only those traces with same value that have reached last phase
+    indx = np.logical_and(index_val == val, reached)
+    values_temp = values[indx]
+    n_vals = len(values_temp)
+    if n_vals != 0:
+        # plot number of trials
+        ax.errorbar([all_indx[val]], np.nanmean(values_temp),
+                    (np.std(values_temp)/np.sqrt(n_vals)),
+                    color=f_props['color'], marker=f_props['marker'],
+                    label='w '+f_props['label']+' (mean)',
+                    markersize=6)
+        ax.plot(np.random.normal(0, noise, ((n_vals,))) + all_indx[val],
+                values_temp, marker=f_props['marker'], color=f_props['color'],
+                alpha=0.5, linestyle='None')
+
+
+def plt_final_tr_to_ph(tr_to_final_ph, index_val, ax, f_props, reached_ph):
     tr_to_final_ph = np.array(tr_to_final_ph)  # tr until final phase
     index_val = np.array(index_val)
     unq_vals = np.unique(index_val)
+    noise = get_noise(unq_vals)
     for ind_val, val in enumerate(unq_vals):
         # only for those thresholds different than full task
-        if val != -1 or tag == 'stages':
-            indx = np.logical_and(index_val == val, reached_ph)
-            values_temp = tr_to_final_ph[indx]
-            if len(values_temp) != 0:
-                # plot number of trials
-                ax.errorbar([val], np.nanmean(values_temp),
-                            (np.std(values_temp)/np.sqrt(len(values_temp))),
-                            color=f_props['color'], label=f_props['label'],
-                            marker=marker, markersize=6)
+        if val != 'full':
+            plot_values(values=tr_to_final_ph, index_val=index_val, val=val,
+                        reached=reached_ph, ax=ax, noise=noise, f_props=f_props)
 
 
-def plt_tr_to_perf(tr_to_reach_perf, index_val, reached, ax, f_props, marker):
+def plt_tr_to_perf(tr_to_reach_perf, index_val, reached, ax, f_props):
     tr_to_reach_perf = np.array(tr_to_reach_perf)  # trials to reach final perf
     index_val = np.array(index_val)
     unq_vals = np.unique(index_val)
+    noise = get_noise(unq_vals)
     for ind_val, val in enumerate(unq_vals):
         # for each value obtain corresponding trials
-        indx = np.logical_and(index_val == val, reached)
-        values_temp = tr_to_reach_perf[indx]
-        if len(values_temp) != 0:
-            unq_vals_pos = unq_vals[unq_vals >= 0]
-            unq_vals_pos.sort()
-            spacing = (unq_vals_pos[1]-unq_vals_pos[0])
-            x = min(unq_vals_pos)-spacing if ((val+1) < 0.01) else val
-            # plot number of trials
-            ax.errorbar([x], np.nanmean(values_temp),
-                        (np.std(values_temp)/np.sqrt(len(values_temp))),
-                        color=f_props['color'], label=f_props['label'],
-                        marker=marker, markersize=6)
+        plot_values(values=tr_to_reach_perf, index_val=index_val, val=val,
+                    reached=reached, ax=ax, noise=noise, f_props=f_props)
 
 
-def plt_final_perf(final_perf, reached_ph, index_val, ax, f_props, marker):
+def plt_final_perf(final_perf, reached_ph, index_val, ax, f_props):
     final_perf = np.array(final_perf)
     index_val = np.array(index_val)
     reached_ph = np.array(reached_ph)
     unq_vals = np.unique(index_val)
+    noise = get_noise(unq_vals)
     for ind_val, val in enumerate(unq_vals):
-        # only those traces with same value that have reached last phase
-        indx = np.logical_and(index_val == val, reached_ph)
-        assert len(indx) == len(index_val)
-        values_temp = final_perf[indx]
-        if len(values_temp) != 0:
-            unq_vals_pos = unq_vals[unq_vals >= 0]
-            unq_vals_pos.sort()
-            spacing = (unq_vals_pos[1]-unq_vals_pos[0])
-            x = min(unq_vals_pos)-spacing if ((val+1) < 0.01) else val
-            # plot final perf
-            ax.errorbar([x], np.nanmean(values_temp),
-                        (np.std(values_temp)/np.sqrt(len(values_temp))),
-                        color=f_props['color'], label=f_props['label'],
-                        marker=marker, markersize=6)
+        plot_values(values=final_perf, index_val=index_val, val=val,
+                    reached=reached_ph, ax=ax, noise=noise, f_props=f_props)
 
 
-def prop_of_exp_reaching_ph(reached_ph, index_val, ax, f_props, marker, tag):
+def plot_props(values, index_val, val, f_props, ax, noise=None):
+    indx = index_val == val
+    # prop of traces that reached final phase
+    prop = np.mean(values[indx])
+    ax.plot(all_indx[val], prop, color=f_props['color'],
+            label=f_props['label'], marker=f_props['marker'],
+            markersize=6)
+    if noise is not None:
+        ax.plot(np.random.normal(0, noise, ((np.sum(indx),))) + all_indx[val],
+                values[indx], marker=f_props['marker'], color=f_props['color'],
+                alpha=0.5, linestyle='None')
+
+
+def prop_of_exp_reaching_ph(reached_ph, index_val, ax, f_props):
     reached_ph = np.array(reached_ph)
     index_val = np.array(index_val)
     unq_vals = np.unique(index_val)
     for ind_val, val in enumerate(unq_vals):
         # for those thresholds different than full task
-        if val != -1 or tag == 'stages':
-            indx = index_val == val
-            # prop of traces that reached final phase
-            prop = np.mean(reached_ph[indx])
-            ax.plot(val, prop, color=f_props['color'], label=f_props['label'],
-                    marker=marker, markersize=6)
+        if val != 'full':
+            plot_props(values=reached_ph, index_val=index_val, val=val,
+                       f_props=f_props, ax=ax)
 
 
-def prop_of_exp_reaching_perf(reached_perf, index_val, ax, f_props, marker):
+def prop_of_exp_reaching_perf(reached_perf, index_val, ax, f_props):
     reached_perf = np.array(reached_perf)
     index_val = np.array(index_val)
     unq_vals = np.unique(index_val)
     for ind_val, val in enumerate(unq_vals):
-        # for those thresholds different than full task
-        indx = index_val == val
-        # prop of traces that reached final phase
-        prop = np.mean(reached_perf[indx])
-        ax.plot(val, prop, color=f_props['color'], label=f_props['label'],
-                marker=marker, markersize=6)
+        plot_props(values=reached_perf, index_val=index_val, val=val,
+                   f_props=f_props, ax=ax)
 
 
-def duration_experiments(exp_durs, index_val, ax, f_props, marker):
+def duration_experiments(exp_durs, index_val, ax, f_props):
     exp_durs = np.array(exp_durs)
     index_val = np.array(index_val)
     unq_vals = np.unique(index_val)
+    noise = get_noise(unq_vals)
     for ind_val, val in enumerate(unq_vals):
-        # for those thresholds different than full task
-        indx = index_val == val
-        # prop of traces that reached final phase
-        prop = np.mean(exp_durs[indx])
-        ax.plot(val, prop, color=f_props['color'], label=f_props['label'],
-                marker=marker, markersize=6)
+        plot_props(values=exp_durs, index_val=index_val, val=val,
+                   f_props=f_props, ax=ax, noise=noise)
 
 
 def process_results_diff_thresholds(folder):
@@ -758,7 +781,7 @@ def process_results_diff_thresholds(folder):
     markers = ['+', 'x', '1', 'o', '>']
     for alg in algs:
         print(alg)
-        f, ax = plt.subplots(nrows=2, ncols=3)  # figsize=(8, 8))
+        f, ax = plt.subplots(nrows=2, ncols=3, figsize=(15, 10))
         ind = 0
         for ind_w, w in enumerate(windows):
             print('xxxxxxxxxxxxxxxxxxxxxxxx')
@@ -766,11 +789,13 @@ def process_results_diff_thresholds(folder):
             print(w)
             marker = markers[ind]
             ind += 1
-            plot_results(folder, alg, w, limit_ax=False, marker=marker,
+            plot_results(folder, alg, w, limit_ax=False,
                          ax_final=ax, tag='th_stage',
-                         f_final_prop={'color': clrs[ind_w], 'label': str(w)})
+                         f_final_prop={'color': clrs[ind_w],
+                                       'label': str(w),
+                                       'marker': marker})
 
-        handles, labels = plt.gca().get_legend_handles_labels()
+        handles, labels = ax[0, 0].get_legend_handles_labels()
         by_label = dict(zip(labels, handles))
         ax[0, 0].legend(by_label.values(), by_label.keys())
 
@@ -780,18 +805,20 @@ def process_results_diff_thresholds(folder):
 
 
 def process_results_diff_protocols(folder):
-    algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
+    algs = ['A2C']  # , 'ACER', 'PPO2', 'ACKTR']
     w = '0'
     marker = '+'
     for alg in algs:
         print(alg)
         print('xxxxxxxxxxxxxxxxxxxxxx')
-        f, ax = plt.subplots(nrows=2, ncols=3)  # figsize=(8, 8))
-        plot_results(folder, alg, w, limit_ax=False, marker=marker,
+        f, ax = plt.subplots(nrows=2, ncols=3, figsize=(15, 10))
+        plot_results(folder, alg, w, limit_ax=False,
                      ax_final=ax, tag='stages',
-                     f_final_prop={'color': clrs[0], 'label': w})
+                     f_final_prop={'color': clrs[0],
+                                   'label': w,
+                                   'marker': marker})
 
-        handles, labels = plt.gca().get_legend_handles_labels()
+        handles, labels = ax[0, 0].get_legend_handles_labels()
         by_label = dict(zip(labels, handles))
         ax[0, 0].legend(by_label.values(), by_label.keys())
 
@@ -802,7 +829,7 @@ def process_results_diff_protocols(folder):
 
 if __name__ == '__main__':
     # folder = '/Users/martafradera/Desktop/OneDrive -' +\
-    #          ' Universitat de Barcelona/TFG/bsc_results/'
+    #          ' Universitat de Barcelona/TFG/task/bsc_stages/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
     folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
