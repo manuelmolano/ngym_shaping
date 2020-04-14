@@ -494,6 +494,7 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
     tr_to_perf = []  # stores trials to reach final performance
     reached_ph = []  # stores whether the final phase is reached
     reached_perf = []  # stores whether the pre-defiend performance is reached
+    exp_durations = []
     for ind_f, file in enumerate(files):
         val = get_tag(tag, file)
         # check if val was already visited to assign color
@@ -511,6 +512,8 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
                                                           'lw': 0.5,
                                                           'alpha': 0.5})
         if flag:
+            # store durations
+            exp_durations.append(len(metrics['curr_ph'][-1]))
             # store values
             val_index.append(val)
             # number of trials until final phase
@@ -574,12 +577,16 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
             ax_final[1, 0].set_xlabel(tag)
             ax_final[1, 0].set_ylabel('Proportion of instances reaching phase 4')
             # prop of trials that reach final perf
-            prop_of_exp_reaching_perf(reached_perf=reached_perf, tag=tag,
+            prop_of_exp_reaching_perf(reached_perf=reached_perf,
                                       index_val=val_index, marker=marker,
                                       ax=ax_final[1, 1], f_props=f_final_prop)
             ax_final[1, 1].set_xlabel(tag)
             ax_final[1, 1].set_ylabel('Proportion of instances reaching' +
                                       ' final perf')
+            exp_durations(reached_perf=reached_perf, index_val=val_index,
+                          marker=marker, ax=ax_final[1, 2], f_props=f_final_prop)
+            ax_final[1, 2].set_xlabel(tag)
+            ax_final[1, 2].set_ylabel('Experiment duration (trials)')
     else:
         plt.close(f)
 
@@ -719,18 +726,30 @@ def prop_of_exp_reaching_ph(reached_ph, index_val, ax, f_props, marker, tag):
                     marker=marker, markersize=6)
 
 
-def prop_of_exp_reaching_perf(reached_perf, index_val, ax, f_props, marker, tag):
+def prop_of_exp_reaching_perf(reached_perf, index_val, ax, f_props, marker):
     reached_perf = np.array(reached_perf)
     index_val = np.array(index_val)
     unq_vals = np.unique(index_val)
     for ind_val, val in enumerate(unq_vals):
         # for those thresholds different than full task
-        if val != -1 or tag == 'stages':
-            indx = index_val == val
-            # prop of traces that reached final phase
-            prop = np.mean(reached_perf[indx])
-            ax.plot(val, prop, color=f_props['color'], label=f_props['label'],
-                    marker=marker, markersize=6)
+        indx = index_val == val
+        # prop of traces that reached final phase
+        prop = np.mean(reached_perf[indx])
+        ax.plot(val, prop, color=f_props['color'], label=f_props['label'],
+                marker=marker, markersize=6)
+
+
+def duration_experiments(exp_durs, index_val, ax, f_props, marker):
+    exp_durs = np.array(exp_durs)
+    index_val = np.array(index_val)
+    unq_vals = np.unique(index_val)
+    for ind_val, val in enumerate(unq_vals):
+        # for those thresholds different than full task
+        indx = index_val == val
+        # prop of traces that reached final phase
+        prop = np.mean(exp_durs[indx])
+        ax.plot(val, prop, color=f_props['color'], label=f_props['label'],
+                marker=marker, markersize=6)
 
 
 def process_results_diff_thresholds(folder):
