@@ -365,7 +365,7 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
     return f
 
 
-def plot_rew_across_training(folder, window=100, ax=None, ytitle='', xlbl='',
+def plot_rew_across_training(folder, window=500, ax=None, ytitle='', xlbl='',
                              metrics={'reward': []}, fkwargs={'c': 'tab:blue'},
                              legend=False, conv=[1], wind_final_perf=200):
     data = put_together_files(folder)
@@ -474,7 +474,7 @@ def get_tag(tag, file):
 
 def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
                  keys=['performance', 'curr_ph'], limit_ax=True, final_ph=4,
-                 final_perf=0.75, ax_final=None, tag='th_stage',
+                 final_perf=0.7, ax_final=None, tag='th_stage',
                  f_final_prop={'color': (0, 0, 0), 'label': ''}):
     assert ('performance' in keys) and ('curr_ph' in keys),\
         'performance and curr_ph need to be included in the metrics (keys)'
@@ -518,7 +518,7 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
                                               final_ph)
             reached_ph.append(reached)
             # number of trials until final perf
-            metrics, reached =\
+            tr_to_perf, reached =\
                 tr_to_reach_perf(metrics, reach_perf=final_perf,
                                  tr_to_perf=tr_to_perf,
                                  final_ph=final_ph)
@@ -602,24 +602,23 @@ def tr_to_final_ph(metrics, wind_final_perf, final_ph):
 
 
 def tr_to_reach_perf(metrics, reach_perf, tr_to_perf, final_ph):
-    perf = metrics['performance'][-1]
-    # find those trials which performance is over reach perf
-    time = np.where(perf >= reach_perf)[0]
-    reached = False
+    perf = np.array(metrics['performance'][-1])
     curr_ph = metrics['curr_ph'][-1]
-    trials = []
-    for value in time:
-        if curr_ph[value] == final_ph:
-            # only keep those trials which are in the last phase
-            trials.append(value)
-    if len(trials) != 0:
-        # if last phase is not reached, last trial is obtained
-        first_tr = np.min(trials)
-        tr_to_perf.append(first_tr)
-        reached = True
-    else:
+    time_final_ph = np.where(curr_ph == final_ph)[0]
+    reached = False
+    if len(time_final_ph) == 0:
         tr_to_perf.append(len(perf))
-    return metrics, reached
+    else:
+        tr_to_ph = np.min(time_final_ph)
+        perf_in_final_ph = perf[tr_to_ph:]
+        time_above_th = np.where(perf_in_final_ph < reach_perf)[0]
+        if len(time_above_th) == 0:
+            tr_to_perf.append(len(perf))
+        else:
+            reached = True
+            tr_to_perf.append(np.max(time_above_th) +
+                              np.min(time_final_ph))
+    return tr_to_perf, reached
 
 
 def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
