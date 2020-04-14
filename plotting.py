@@ -679,10 +679,13 @@ def plt_final_tr_to_ph(tr_to_final_ph, index_val, ax, f_props, marker, tag,
                 # plot number of trials
                 ax.errorbar([val], np.nanmean(values_temp),
                             (np.std(values_temp)/np.sqrt(len(values_temp))),
-                            color=f_props['color'], label=f_props['label'],
-                            marker=marker, markersize=6)
+                            color=f_props['color'], marker=marker,
+                            label='w '+f_props['label']+' (mean)',
+                            markersize=6)
                 for value in values_temp:
-                    ax.plot([val], value, marker, color=f_props['color'], alpha=0.5)
+                    ax.plot([val], value, marker, color=f_props['color'],
+                            label='w '+f_props['label']+' (individual)',
+                            alpha=0.5)
 
 
 def plt_tr_to_perf(tr_to_reach_perf, index_val, reached, ax, f_props, marker):
@@ -701,10 +704,12 @@ def plt_tr_to_perf(tr_to_reach_perf, index_val, reached, ax, f_props, marker):
             # plot number of trials
             ax.errorbar([x], np.nanmean(values_temp),
                         (np.std(values_temp)/np.sqrt(len(values_temp))),
-                        color=f_props['color'], label=f_props['label'],
+                        color=f_props['color'],
+                        label='w '+f_props['label']+' (mean)',
                         marker=marker, markersize=6)
             for value in values_temp:
-                ax.plot([x], value, marker, color=f_props['color'], alpha=0.5)
+                ax.plot([x], value, marker, color=f_props['color'], alpha=0.5,
+                        label='w '+f_props['label']+' (individual)')
 
 
 def plt_final_perf(final_perf, reached_ph, index_val, ax, f_props, marker):
@@ -726,10 +731,12 @@ def plt_final_perf(final_perf, reached_ph, index_val, ax, f_props, marker):
             label=f_props['label']
             ax.errorbar([x], np.nanmean(values_temp),
                         (np.std(values_temp)/np.sqrt(len(values_temp))),
-                        color=f_props['color'], label=f_props['label'],
+                        color=f_props['color'],
+                        label='w '+f_props['label']+' (mean)',
                         marker=marker, markersize=6)
             for value in values_temp:
-                ax.plot([x], value, marker, color=f_props['color'], alpha=0.5)
+                ax.plot([x], value, marker, color=f_props['color'], alpha=0.5,
+                        label='w '+f_props['label']+' (individual)')
 
 
 def prop_of_exp_reaching_ph(reached_ph, index_val, ax, f_props, marker, tag):
@@ -810,7 +817,7 @@ def process_results_diff_protocols(folder):
 
 if __name__ == '__main__':
     folder = '/Users/martafradera/Desktop/OneDrive -' +\
-             ' Universitat de Barcelona/TFG/task/bsc_stages_fake/'
+             ' Universitat de Barcelona/TFG/task/bsc_stages/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
