@@ -544,6 +544,13 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
             f.savefig(folder+'/'+names[ind]+algorithm+'_'+w+'.png',
                       dpi=200)
             plt.close(f)
+        # define xticks
+        if tag == 'stages':
+            ticks = []
+            labels = []
+            for k in prtcls_index_map.keys():
+                labels.append(k)
+                ticks.append(prtcls_index_map[k])
         # plot final results
         if ax_final is not None:
             # plot final performance
@@ -553,6 +560,8 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
                            ax=ax_final[0, 0])
             ax_final[0, 0].set_xlabel(tag)
             ax_final[0, 0].set_ylabel('Average performance')
+            ax_final[0, 0].set_xticks(ticks)
+            ax_final[0, 0].set_xticklabels(labels)
             # trials to reach phase 4
             plt_final_tr_to_ph(tr_to_final_ph=metrics['curr_ph_final'],
                                marker=marker, f_props=f_final_prop,
@@ -560,6 +569,8 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
                                reached_ph=reached_ph)
             ax_final[0, 1].set_xlabel(tag)
             ax_final[0, 1].set_ylabel('Number of trials to reach phase 4')
+            ax_final[0, 1].set_xticks(ticks)
+            ax_final[0, 1].set_xticklabels(labels)
             # trials to reach final perf
             plt_tr_to_perf(tr_to_reach_perf=tr_to_perf, reached=reached_perf,
                            index_val=val_index, ax=ax_final[0, 2],
@@ -567,12 +578,16 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
             ax_final[0, 2].set_xlabel(tag)
             ax_final[0, 2].set_ylabel('Number of trials to reach' +
                                       ' final performance')
+            ax_final[0, 2].set_xticks(ticks)
+            ax_final[0, 2].set_xticklabels(labels)
             # make -1s equal to total number of trials
             prop_of_exp_reaching_ph(reached_ph=reached_ph, tag=tag,
                                     index_val=val_index, marker=marker,
                                     ax=ax_final[1, 0], f_props=f_final_prop)
             ax_final[1, 0].set_xlabel(tag)
             ax_final[1, 0].set_ylabel('Proportion of instances reaching phase 4')
+            ax_final[1, 0].set_xticks(ticks)
+            ax_final[1, 0].set_xticklabels(labels)
             # prop of trials that reach final perf
             prop_of_exp_reaching_perf(reached_perf=reached_perf, tag=tag,
                                       index_val=val_index, marker=marker,
@@ -580,6 +595,11 @@ def plot_results(folder, algorithm, w, marker, wind_final_perf=100,
             ax_final[1, 1].set_xlabel(tag)
             ax_final[1, 1].set_ylabel('Proportion of instances reaching' +
                                       ' final perf')
+            ax_final[1, 1].set_xticks(ticks)
+            ax_final[1, 1].set_xticklabels(labels)
+
+            ax_final[-1, -1].axis('off')
+      
     else:
         plt.close(f)
 
@@ -661,6 +681,8 @@ def plt_final_tr_to_ph(tr_to_final_ph, index_val, ax, f_props, marker, tag,
                             (np.std(values_temp)/np.sqrt(len(values_temp))),
                             color=f_props['color'], label=f_props['label'],
                             marker=marker, markersize=6)
+                for value in values_temp:
+                    ax.plot([val], value, marker, color=f_props['color'], alpha=0.5)
 
 
 def plt_tr_to_perf(tr_to_reach_perf, index_val, reached, ax, f_props, marker):
@@ -681,6 +703,8 @@ def plt_tr_to_perf(tr_to_reach_perf, index_val, reached, ax, f_props, marker):
                         (np.std(values_temp)/np.sqrt(len(values_temp))),
                         color=f_props['color'], label=f_props['label'],
                         marker=marker, markersize=6)
+            for value in values_temp:
+                ax.plot([x], value, marker, color=f_props['color'], alpha=0.5)
 
 
 def plt_final_perf(final_perf, reached_ph, index_val, ax, f_props, marker):
@@ -699,10 +723,13 @@ def plt_final_perf(final_perf, reached_ph, index_val, ax, f_props, marker):
             spacing = (unq_vals_pos[1]-unq_vals_pos[0])
             x = min(unq_vals_pos)-spacing if ((val+1) < 0.01) else val
             # plot final perf
+            label=f_props['label']
             ax.errorbar([x], np.nanmean(values_temp),
                         (np.std(values_temp)/np.sqrt(len(values_temp))),
                         color=f_props['color'], label=f_props['label'],
                         marker=marker, markersize=6)
+            for value in values_temp:
+                ax.plot([x], value, marker, color=f_props['color'], alpha=0.5)
 
 
 def prop_of_exp_reaching_ph(reached_ph, index_val, ax, f_props, marker, tag):
@@ -751,7 +778,7 @@ def process_results_diff_thresholds(folder):
                          ax_final=ax, tag='th_stage',
                          f_final_prop={'color': clrs[ind_w], 'label': str(w)})
 
-        handles, labels = plt.gca().get_legend_handles_labels()
+        handles, labels = ax[0, 0].get_legend_handles_labels()
         by_label = dict(zip(labels, handles))
         ax[0, 0].legend(by_label.values(), by_label.keys())
 
@@ -761,18 +788,18 @@ def process_results_diff_thresholds(folder):
 
 
 def process_results_diff_protocols(folder):
-    algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
+    algs = ['A2C']  # , 'ACER', 'PPO2', 'ACKTR']
     w = '0'
     marker = '+'
     for alg in algs:
         print(alg)
         print('xxxxxxxxxxxxxxxxxxxxxx')
-        f, ax = plt.subplots(nrows=2, ncols=3)  # figsize=(8, 8))
+        f, ax = plt.subplots(nrows=2, ncols=3, figsize=(12, 8))
         plot_results(folder, alg, w, limit_ax=False, marker=marker,
                      ax_final=ax, tag='stages',
                      f_final_prop={'color': clrs[0], 'label': w})
 
-        handles, labels = plt.gca().get_legend_handles_labels()
+        handles, labels = ax[0, 0].get_legend_handles_labels()
         by_label = dict(zip(labels, handles))
         ax[0, 0].legend(by_label.values(), by_label.keys())
 
@@ -782,11 +809,11 @@ def process_results_diff_protocols(folder):
 
 
 if __name__ == '__main__':
-    # folder = '/Users/martafradera/Desktop/OneDrive -' +\
-    #          ' Universitat de Barcelona/TFG/bsc_results/'
+    folder = '/Users/martafradera/Desktop/OneDrive -' +\
+             ' Universitat de Barcelona/TFG/task/bsc_stages_fake/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
-    folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
+    # folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
     # folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
     # folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
     plt.close('all')
