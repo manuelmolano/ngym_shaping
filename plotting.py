@@ -470,6 +470,8 @@ def get_tag(tag, file):
     f_name = ntpath.basename(file)
     val = f_name[f_name.find(tag)+len(tag)+1:]
     val = val[:val.find('_')] if '_' in val else val
+    if val == '-1.0':
+        val = 'full'
     return val
 
 
@@ -779,12 +781,13 @@ def process_results_diff_protocols(folder):
 
 
 if __name__ == '__main__':
+    plt.close('all')
     # folder = '/Users/martafradera/Desktop/OneDrive -' +\
     #          ' Universitat de Barcelona/TFG/task/bsc_stages/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
-    folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
-    # folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
-    # folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
-    plt.close('all')
+    # folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
+    folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
     process_results_diff_protocols(folder)
+    folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
+    process_results_diff_thresholds(folder)
