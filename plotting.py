@@ -558,53 +558,51 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
         # plot final results
         if ax_final is not None:
             # plot final performance
-            plt_final_perf(final_perf=metrics['performance_final'],
-                           reached_ph=reached_ph,
-                           f_props=f_final_prop, index_val=val_index,
-                           ax=ax_final[0, 0])
+            plt_perf_indicators(values=metrics['performance_final'],
+                                reached=reached_ph,
+                                f_props=f_final_prop, index_val=val_index,
+                                ax=ax_final[0, 0])
             ax_final[0, 0].set_xlabel(tag)
             ax_final[0, 0].set_ylabel('Average performance')
             ax_final[0, 0].set_xticks(ticks)
             ax_final[0, 0].set_xticklabels(labels)
             # trials to reach phase 4
-            plt_final_tr_to_ph(tr_to_final_ph=metrics['curr_ph_final'],
-                               f_props=f_final_prop,
-                               index_val=val_index, ax=ax_final[0, 1],
-                               reached_ph=reached_ph)
+            plt_perf_indicators(values=metrics['curr_ph_final'],
+                                f_props=f_final_prop,
+                                index_val=val_index, ax=ax_final[0, 1],
+                                reached=reached_ph, discard=['full'])
             ax_final[0, 1].set_xlabel(tag)
             ax_final[0, 1].set_ylabel('Number of trials to reach phase 4')
             ax_final[0, 1].set_xticks(ticks)
             ax_final[0, 1].set_xticklabels(labels)
             # trials to reach final perf
-            plt_tr_to_perf(tr_to_reach_perf=tr_to_perf, reached=reached_perf,
-                           index_val=val_index, ax=ax_final[0, 2],
-                           f_props=f_final_prop)
+            plt_perf_indicators(values=tr_to_perf, reached=reached_perf,
+                                index_val=val_index, ax=ax_final[0, 2],
+                                f_props=f_final_prop)
             ax_final[0, 2].set_xlabel(tag)
             ax_final[0, 2].set_ylabel('Number of trials to reach' +
                                       ' final performance')
             ax_final[0, 2].set_xticks(ticks)
             ax_final[0, 2].set_xticklabels(labels)
             # make -1s equal to total number of trials
-            prop_of_exp_reaching_ph(reached_ph=reached_ph,
-                                    index_val=val_index,
-                                    ax=ax_final[1, 0], f_props=f_final_prop)
+            plt_props(values=reached_ph, index_val=val_index, ax=ax_final[1, 0],
+                      f_props=f_final_prop, discard=['full'])
             ax_final[1, 0].set_xlabel(tag)
             ax_final[1, 0].set_ylabel('Proportion of instances reaching phase 4')
             ax_final[1, 0].set_xticks(ticks)
             ax_final[1, 0].set_xticklabels(labels)
             # prop of trials that reach final perf
-            prop_of_exp_reaching_perf(reached_perf=reached_perf,
-                                      index_val=val_index,
-                                      ax=ax_final[1, 1], f_props=f_final_prop)
+            plt_props(values=reached_perf, index_val=val_index,
+                      ax=ax_final[1, 1], f_props=f_final_prop)
             ax_final[1, 1].set_xlabel(tag)
             ax_final[1, 1].set_ylabel('Proportion of instances reaching' +
                                       ' final perf')
             ax_final[1, 1].set_xticks(ticks)
             ax_final[1, 1].set_xticklabels(labels)
             # plot experiment durations
-            duration_experiments(exp_durs=exp_durations, index_val=val_index,
-                                 ax=ax_final[1, 2],
-                                 f_props=f_final_prop)
+            plt_props(values=exp_durations, index_val=val_index,
+                      ax=ax_final[1, 2], f_props=f_final_prop,
+                      plot_individual_values=True)
             ax_final[1, 2].set_xlabel(tag)
             ax_final[1, 2].set_ylabel('Experiment duration (trials)')
             ax_final[1, 2].set_xticks(ticks)
@@ -681,98 +679,51 @@ def get_noise(unq_vals):
     return noise
 
 
-def plot_values(values, index_val, val, reached, ax, noise, f_props):
-    # only those traces with same value that have reached last phase
-    indx = np.logical_and(index_val == val, reached)
-    values_temp = values[indx]
-    n_vals = len(values_temp)
-    if n_vals != 0:
-        # plot number of trials
-        ax.errorbar([all_indx[val]], np.nanmean(values_temp),
-                    (np.std(values_temp)/np.sqrt(n_vals)),
-                    color=f_props['color'], marker=f_props['marker'],
-                    label='w '+f_props['label']+' (mean)',
-                    markersize=6)
-        ax.plot(np.random.normal(0, noise, ((n_vals,))) + all_indx[val],
-                values_temp, marker=f_props['marker'], color=f_props['color'],
-                alpha=0.5, linestyle='None')
-
-
-def plt_final_tr_to_ph(tr_to_final_ph, index_val, ax, f_props, reached_ph):
-    tr_to_final_ph = np.array(tr_to_final_ph)  # tr until final phase
+def plt_perf_indicators(values, index_val, ax, f_props, reached, discard=[]):
+    values = np.array(values)  # tr until final phase
     index_val = np.array(index_val)
     unq_vals = np.unique(index_val)
     noise = get_noise(unq_vals)
     for ind_val, val in enumerate(unq_vals):
         # only for those thresholds different than full task
-        if val != 'full':
-            plot_values(values=tr_to_final_ph, index_val=index_val, val=val,
-                        reached=reached_ph, ax=ax, noise=noise, f_props=f_props)
+        if val not in discard:
+            # only those traces with same value that have reached last phase
+            indx = np.logical_and(index_val == val, reached)
+            values_temp = values[indx]
+            n_vals = len(values_temp)
+            if n_vals != 0:
+                # plot number of trials
+                ax.errorbar([all_indx[val]], np.nanmean(values_temp),
+                            (np.std(values_temp)/np.sqrt(n_vals)),
+                            color=f_props['color'], marker=f_props['marker'],
+                            label='w '+f_props['label']+' (mean)',
+                            markersize=6)
+                xs = np.random.normal(0, noise, ((n_vals,))) + all_indx[val]
+                ax.plot(xs, values_temp, marker=f_props['marker'],
+                        color=f_props['color'], alpha=0.5, linestyle='None')
 
 
-def plt_tr_to_perf(tr_to_reach_perf, index_val, reached, ax, f_props):
-    tr_to_reach_perf = np.array(tr_to_reach_perf)  # trials to reach final perf
+def plt_props(values, index_val, ax, f_props, discard=[],
+              plot_individual_values=False):
+    values = np.array(values)
     index_val = np.array(index_val)
     unq_vals = np.unique(index_val)
-    noise = get_noise(unq_vals)
-    for ind_val, val in enumerate(unq_vals):
-        # for each value obtain corresponding trials
-        plot_values(values=tr_to_reach_perf, index_val=index_val, val=val,
-                    reached=reached, ax=ax, noise=noise, f_props=f_props)
-
-
-def plt_final_perf(final_perf, reached_ph, index_val, ax, f_props):
-    final_perf = np.array(final_perf)
-    index_val = np.array(index_val)
-    reached_ph = np.array(reached_ph)
-    unq_vals = np.unique(index_val)
-    noise = get_noise(unq_vals)
-    for ind_val, val in enumerate(unq_vals):
-        plot_values(values=final_perf, index_val=index_val, val=val,
-                    reached=reached_ph, ax=ax, noise=noise, f_props=f_props)
-
-
-def plot_props(values, index_val, val, f_props, ax, noise=None):
-    indx = index_val == val
-    # prop of traces that reached final phase
-    prop = np.mean(values[indx])
-    ax.plot(all_indx[val], prop, color=f_props['color'],
-            label=f_props['label'], marker=f_props['marker'],
-            markersize=6)
-    if noise is not None:
-        ax.plot(np.random.normal(0, noise, ((np.sum(indx),))) + all_indx[val],
-                values[indx], marker=f_props['marker'], color=f_props['color'],
-                alpha=0.5, linestyle='None')
-
-
-def prop_of_exp_reaching_ph(reached_ph, index_val, ax, f_props):
-    reached_ph = np.array(reached_ph)
-    index_val = np.array(index_val)
-    unq_vals = np.unique(index_val)
+    if plot_individual_values:
+        std_noise = get_noise(unq_vals)
     for ind_val, val in enumerate(unq_vals):
         # for those thresholds different than full task
-        if val != 'full':
-            plot_props(values=reached_ph, index_val=index_val, val=val,
-                       f_props=f_props, ax=ax)
-
-
-def prop_of_exp_reaching_perf(reached_perf, index_val, ax, f_props):
-    reached_perf = np.array(reached_perf)
-    index_val = np.array(index_val)
-    unq_vals = np.unique(index_val)
-    for ind_val, val in enumerate(unq_vals):
-        plot_props(values=reached_perf, index_val=index_val, val=val,
-                   f_props=f_props, ax=ax)
-
-
-def duration_experiments(exp_durs, index_val, ax, f_props):
-    exp_durs = np.array(exp_durs)
-    index_val = np.array(index_val)
-    unq_vals = np.unique(index_val)
-    noise = get_noise(unq_vals)
-    for ind_val, val in enumerate(unq_vals):
-        plot_props(values=exp_durs, index_val=index_val, val=val,
-                   f_props=f_props, ax=ax, noise=noise)
+        if val not in discard:
+            indx = index_val == val
+            # prop of traces that reached final phase
+            prop = np.mean(values[indx])
+            ax.plot(all_indx[val], prop, color=f_props['color'],
+                    label=f_props['label'], marker=f_props['marker'],
+                    markersize=6)
+            if plot_individual_values:
+                xs = np.random.normal(0, std_noise, ((np.sum(indx),))) +\
+                    all_indx[val]
+                ax.plot(xs, values[indx], marker=f_props['marker'],
+                        color=f_props['color'], alpha=0.5, linestyle='None')
 
 
 def process_results_diff_thresholds(folder):
