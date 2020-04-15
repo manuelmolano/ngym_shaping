@@ -641,14 +641,18 @@ def tr_to_reach_perf(metrics, reach_perf, tr_to_perf, final_ph):
     else:
         tr_to_ph = np.min(time_final_ph)
         perf_in_final_ph = perf[tr_to_ph:]
-        time_above_th = np.where(perf_in_final_ph < reach_perf)[0]
+        time_above_th = np.where(perf_in_final_ph > reach_perf)[0]
         if len(time_above_th) == 0:
             tr_to_perf.append(len(perf))
         else:
             reached = True
-            tr_to_perf.append(np.max(time_above_th) +
+            tr_to_perf.append(np.min(time_above_th) +
                               np.min(time_final_ph))
     return tr_to_perf, reached
+
+
+def compute_stability(metrics, tr_to_reach):
+    perf = np.array(metrics['performance'][-1])
 
 
 def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
