@@ -498,6 +498,7 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
     reached_ph = []  # stores whether the final phase is reached
     reached_perf = []  # stores whether the pre-defiend performance is reached
     exp_durations = []
+    instability_mat = []
     for ind_f, file in enumerate(files):
         val = get_tag(tag, file)
         # check if val was already visited to assign color
@@ -529,6 +530,9 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
                                  tr_to_perf=tr_to_perf,
                                  final_ph=final_ph)
             reached_perf.append(reached)
+            # stability
+            instability_mat.append(compute_stability(metrics=metrics,
+                                                     tr_above_th=tr_to_perf[-1]))
     val_index = np.array(val_index)
     if metrics[keys[0]]:
         names = ['values_across_training_', 'mean_values_across_training_']
@@ -645,27 +649,17 @@ def tr_to_reach_perf(metrics, reach_perf, tr_to_perf, final_ph):
         if len(time_above_th) == 0:
             tr_to_perf.append(len(perf))
         else:
-            tr_to_stable_perf, reached =\
-                compute_stability(metrics, time_above_th, tr_to_ph, reached)
-            tr_to_perf.append(tr_to_stable_perf)
+            reached = True
+            tr_to_perf.append(np.min(time_above_th) +
+                              np.min(time_final_ph))
     return tr_to_perf, reached
 
 
-def compute_stability(metrics, time_above_th, tr_to_ph, reached):
-    perf = np.array(metrics['performance'][-1])
-    tr_to_stable_perf = []
-    for tr in time_above_th:
-        perf_after_reach_th = perf[(tr_to_ph+tr):]
-        forgetting = np.where(perf_after_reach_th <= 0.5)[0]
-        instability = len(forgetting)/len(perf_after_reach_th)
-        if instability < 0.3:  # TODO: define a number of min stability
-            tr_to_stable_perf.append(tr)
-    if len(tr_to_stable_perf) != 0:
-        tr_stable_perf = tr_to_ph + np.min(tr_to_stable_perf)
-        reached = True
-    else:
-        tr_stable_perf = len(perf)
-    return tr_stable_perf, reached
+def compute_stability(metrics, tr_above_th):
+    perf = np.array(metrics['performance'][-1])[tr_above_th:]
+    forgetting_times = perf < 0.5
+    instability = np.sum(forgetting_times)/perf.shape[0]
+    return instability
 
 
 def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
@@ -775,7 +769,7 @@ def process_results_diff_thresholds(folder):
 
 
 def process_results_diff_protocols(folder):
-    algs = ['A2C']  # , 'ACER', 'PPO2', 'ACKTR']
+    algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
     w = '0'
     marker = '+'
     for alg in algs:
@@ -799,11 +793,11 @@ def process_results_diff_protocols(folder):
 
 if __name__ == '__main__':
     plt.close('all')
-    folder = '/Users/martafradera/Desktop/OneDrive -' +\
-             ' Universitat de Barcelona/TFG/task/bsc_results/'
+    # folder = '/Users/martafradera/Desktop/OneDrive -' +\
+    #          ' Universitat de Barcelona/TFG/task/bsc_results/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
-    # folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
+    folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
     # folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
     # process_results_diff_protocols(folder)
     # folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
