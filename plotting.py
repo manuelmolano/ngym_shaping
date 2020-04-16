@@ -605,12 +605,12 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
                                       ' final perf')
             ax_final[1, 1].set_xticks(ticks)
             ax_final[1, 1].set_xticklabels(labels)
-            # plot experiment durations
-            plt_props(values=exp_durations, index_val=val_index,
-                      ax=ax_final[1, 2], f_props=f_final_prop,
-                      plot_individual_values=True)
+            # plot instability
+            plt_perf_indicators(values=instability_mat, index_val=val_index,
+                                ax=ax_final[1, 2], f_props=f_final_prop,
+                                reached=reached_perf)
             ax_final[1, 2].set_xlabel(tag)
-            ax_final[1, 2].set_ylabel('Experiment duration (trials)')
+            ax_final[1, 2].set_ylabel('Instability')
             ax_final[1, 2].set_xticks(ticks)
             ax_final[1, 2].set_xticklabels(labels)
 
@@ -659,6 +659,7 @@ def compute_stability(metrics, tr_above_th):
     perf = np.array(metrics['performance'][-1])[tr_above_th:]
     forgetting_times = perf < 0.5
     instability = np.sum(forgetting_times)/perf.shape[0]
+    print(instability)
     return instability
 
 
@@ -793,11 +794,11 @@ def process_results_diff_protocols(folder):
 
 if __name__ == '__main__':
     plt.close('all')
-    # folder = '/Users/martafradera/Desktop/OneDrive -' +\
-    #          ' Universitat de Barcelona/TFG/task/bsc_results/'
+    folder = '/Users/martafradera/Desktop/OneDrive -' +\
+             ' Universitat de Barcelona/TFG/task/bsc_results/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
-    folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
+    # folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
     # folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
     # process_results_diff_protocols(folder)
     # folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
