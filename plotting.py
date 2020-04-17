@@ -468,6 +468,7 @@ def order_by_sufix(file_list):
 def get_tag(tag, file):
     # process name
     f_name = ntpath.basename(file)
+    assert f_name.find(tag) != -1, 'Tag not found'
     val = f_name[f_name.find(tag)+len(tag)+1:]
     val = val[:val.find('_')] if '_' in val else val
     if val == '-1.0':
@@ -498,7 +499,7 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
     reached_ph = []  # stores whether the final phase is reached
     reached_perf = []  # stores whether the pre-defiend performance is reached
     exp_durations = []
-    instability_mat = []
+    stability_mat = []
     for ind_f, file in enumerate(files):
         val = get_tag(tag, file)
         # check if val was already visited to assign color
@@ -531,9 +532,15 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
                                  final_ph=final_ph)
             reached_perf.append(reached)
             # stability
-            instability_mat.append(compute_stability(metrics=metrics,
-                                                     tr_above_th=tr_to_perf[-1]))
+            stability_mat.append(compute_stability(metrics=metrics,
+                                                   tr_above_th=tr_to_perf[-1]))
     val_index = np.array(val_index)
+    metrics['tr_to_perf'] = tr_to_perf
+    metrics['reached_ph'] = reached_ph
+    metrics['reached_perf'] = reached_perf
+    metrics['exp_durations'] = exp_durations
+    metrics['stability_mat'] = stability_mat
+    np.savez(folder+'/data_'+algorithm+'_'+w+'.npz', **metrics)
     if metrics[keys[0]]:
         names = ['values_across_training_', 'mean_values_across_training_']
         for ind in range(2):
@@ -541,11 +548,9 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
                 f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
                                      figsize=(6, 6))
             # plot means
-            for ind_met, met in enumerate(metrics.keys()):
-                ind_f = met.find('_final')
-                if ind_f == -1:
-                    plt_means(metric=metrics[met], index=val_index,
-                              ax=ax[ind_met], clrs=clrs, limit_ax=limit_ax)
+            for ind_met, met in enumerate(keys):
+                plt_means(metric=metrics[met], index=val_index,
+                          ax=ax[ind_met], clrs=clrs, limit_ax=limit_ax)
             ax[0].set_title(algorithm + ' (w: ' + w + ')')
             ax[0].set_ylabel('Average performance')
             ax[1].set_ylabel('Average phase')
@@ -554,6 +559,12 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
             f.savefig(folder+'/'+names[ind]+algorithm+'_'+w+'.png',
                       dpi=200)
             plt.close(f)
+        f, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 6))
+        ax.plot(metrics['exp_durations'], metrics['stability_mat'], '+')
+        corr_ = np.corrcoef(metrics['exp_durations'], metrics['stability_mat'])
+        ax.set_title('Correlation: '+str(np.round(corr_[0, 1], 2)))
+        f.savefig(folder+'/corr_stablty_dur'+algorithm+'_'+w+'.png', dpi=200)
+        plt.close(f)
         # define xticks
         if tag == 'stages':
             labels = list(prtcls_index_map.keys())
@@ -565,7 +576,7 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
         if ax_final is not None:
             # plot final performance
             plt_perf_indicators(values=metrics['performance_final'],
-                                reached=reached_ph,
+                                reached=metrics['reached_ph'],
                                 f_props=f_final_prop, index_val=val_index,
                                 ax=ax_final[0, 0])
             ax_final[0, 0].set_xlabel(tag)
@@ -576,13 +587,14 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
             plt_perf_indicators(values=metrics['curr_ph_final'],
                                 f_props=f_final_prop,
                                 index_val=val_index, ax=ax_final[0, 1],
-                                reached=reached_ph, discard=['full'])
+                                reached=metrics['reached_ph'], discard=['full'])
             ax_final[0, 1].set_xlabel(tag)
             ax_final[0, 1].set_ylabel('Number of trials to reach phase 4')
             ax_final[0, 1].set_xticks(ticks)
             ax_final[0, 1].set_xticklabels(labels)
             # trials to reach final perf
-            plt_perf_indicators(values=tr_to_perf, reached=reached_perf,
+            plt_perf_indicators(values=metrics['tr_to_perf'],
+                                reached=metrics['reached_perf'],
                                 index_val=val_index, ax=ax_final[0, 2],
                                 f_props=f_final_prop)
             ax_final[0, 2].set_xlabel(tag)
@@ -591,26 +603,31 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
             ax_final[0, 2].set_xticks(ticks)
             ax_final[0, 2].set_xticklabels(labels)
             # make -1s equal to total number of trials
-            plt_props(values=reached_ph, index_val=val_index, ax=ax_final[1, 0],
-                      f_props=f_final_prop, discard=['full'])
+            plt_perf_indicators(values=metrics['reached_ph'],
+                                index_val=val_index, ax=ax_final[1, 0],
+                                f_props=f_final_prop, discard=['full'],
+                                errorbars=False, plot_individual_values=False)
             ax_final[1, 0].set_xlabel(tag)
             ax_final[1, 0].set_ylabel('Proportion of instances reaching phase 4')
             ax_final[1, 0].set_xticks(ticks)
             ax_final[1, 0].set_xticklabels(labels)
             # prop of trials that reach final perf
-            plt_props(values=reached_perf, index_val=val_index,
-                      ax=ax_final[1, 1], f_props=f_final_prop)
+            plt_perf_indicators(values=metrics['reached_perf'],
+                                index_val=val_index, ax=ax_final[1, 1],
+                                f_props=f_final_prop, errorbars=False,
+                                plot_individual_values=False)
             ax_final[1, 1].set_xlabel(tag)
             ax_final[1, 1].set_ylabel('Proportion of instances reaching' +
                                       ' final perf')
             ax_final[1, 1].set_xticks(ticks)
             ax_final[1, 1].set_xticklabels(labels)
-            # plot instability
-            plt_perf_indicators(values=instability_mat, index_val=val_index,
-                                ax=ax_final[1, 2], f_props=f_final_prop,
-                                reached=reached_perf)
+            # plot stability
+            plt_perf_indicators(values=metrics['stability_mat'],
+                                index_val=val_index,  ax=ax_final[1, 2],
+                                f_props=f_final_prop,
+                                reached=metrics['reached_perf'])
             ax_final[1, 2].set_xlabel(tag)
-            ax_final[1, 2].set_ylabel('Instability')
+            ax_final[1, 2].set_ylabel('Stability')
             ax_final[1, 2].set_xticks(ticks)
             ax_final[1, 2].set_xticklabels(labels)
 
@@ -658,9 +675,8 @@ def tr_to_reach_perf(metrics, reach_perf, tr_to_perf, final_ph):
 def compute_stability(metrics, tr_above_th):
     perf = np.array(metrics['performance'][-1])[tr_above_th:]
     forgetting_times = perf < 0.5
-    instability = np.sum(forgetting_times)/perf.shape[0]
-    print(instability)
-    return instability
+    stability = 1 - np.sum(forgetting_times)/perf.shape[0]
+    return stability
 
 
 def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
@@ -693,50 +709,35 @@ def get_noise(unq_vals):
     return noise
 
 
-def plt_perf_indicators(values, index_val, ax, f_props, reached, discard=[]):
+def plt_perf_indicators(values, index_val, ax, f_props, reached=None, discard=[],
+                        plot_individual_values=True, errorbars=True):
     values = np.array(values)  # tr until final phase
-    index_val = np.array(index_val)
-    unq_vals = np.unique(index_val)
-    noise = get_noise(unq_vals)
-    for ind_val, val in enumerate(unq_vals):
-        # only for those thresholds different than full task
-        if val not in discard:
-            # only those traces with same value that have reached last phase
-            indx = np.logical_and(index_val == val, reached)
-            values_temp = values[indx]
-            n_vals = len(values_temp)
-            if n_vals != 0:
-                # plot number of trials
-                ax.errorbar([all_indx[val]], np.nanmean(values_temp),
-                            (np.std(values_temp)/np.sqrt(n_vals)),
-                            color=f_props['color'], marker=f_props['marker'],
-                            label='w '+f_props['label']+' (mean)',
-                            markersize=6)
-                xs = np.random.normal(0, noise, ((n_vals,))) + all_indx[val]
-                ax.plot(xs, values_temp, marker=f_props['marker'],
-                        color=f_props['color'], alpha=0.5, linestyle='None')
-
-
-def plt_props(values, index_val, ax, f_props, discard=[],
-              plot_individual_values=False):
-    values = np.array(values)
     index_val = np.array(index_val)
     unq_vals = np.unique(index_val)
     if plot_individual_values:
         std_noise = get_noise(unq_vals)
     for ind_val, val in enumerate(unq_vals):
-        # for those thresholds different than full task
+        # only for those thresholds different than full task
         if val not in discard:
-            indx = index_val == val
-            # prop of traces that reached final phase
-            prop = np.mean(values[indx])
-            ax.plot(all_indx[val], prop, color=f_props['color'],
-                    label=f_props['label'], marker=f_props['marker'],
-                    markersize=6)
+            # only those traces with same value that have reached last phase
+            if reached is not None:
+                indx = np.logical_and(index_val == val, reached)
+            else:
+                indx = index_val == val
+            values_temp = values[indx]
+            n_vals = len(values_temp)
+            if n_vals != 0:
+                # plot number of trials
+                f_props['markersize'] = 6
+                if errorbars:
+                    ax.errorbar([all_indx[val]], np.nanmean(values_temp),
+                                (np.std(values_temp)/np.sqrt(n_vals)), **f_props)
+                else:
+                    ax.plot(all_indx[val], np.nanmean(values_temp), **f_props)
             if plot_individual_values:
                 xs = np.random.normal(0, std_noise, ((np.sum(indx),))) +\
                     all_indx[val]
-                ax.plot(xs, values[indx], marker=f_props['marker'],
+                ax.plot(xs, values_temp, marker=f_props['marker'],
                         color=f_props['color'], alpha=0.5, linestyle='None')
 
 
@@ -794,12 +795,12 @@ def process_results_diff_protocols(folder):
 
 if __name__ == '__main__':
     plt.close('all')
-    folder = '/Users/martafradera/Desktop/OneDrive -' +\
-             ' Universitat de Barcelona/TFG/task/bsc_results/'
+    # folder = '/Users/martafradera/Desktop/OneDrive -' +\
+    #          ' Universitat de Barcelona/TFG/task/bsc_results/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
-    # folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
-    # process_results_diff_protocols(folder)
-    # folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
+    folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
+    process_results_diff_protocols(folder)
+    folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
     process_results_diff_thresholds(folder)
