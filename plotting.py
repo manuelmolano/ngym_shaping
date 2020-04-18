@@ -530,7 +530,8 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
         metrics['stability_mat'] = stability_mat
         np.savez(folder+'/data_'+algorithm+'_'+w+'.npz', **metrics)
 
-    metrics = np.load(folder+'/data_'+algorithm+'_'+w+'.npz')
+    metrics = np.load(folder+'/data_'+algorithm+'_'+w+'.npz',
+                      allow_pickle=True)
     names = ['values_across_training_', 'mean_values_across_training_']
     val_index = metrics['val_index']
     for ind in range(2):
@@ -541,7 +542,7 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
             if limit_tr is not None:
                 metric = []
                 for trace in metrics[met]:
-                    assert len(trace) > limit_tr
+                    assert len(trace) >= limit_tr
                     metric.append(trace[0:limit_tr])
             else:
                 metric = metrics[met]
@@ -772,7 +773,7 @@ def process_results_diff_thresholds(folder):
 
 
 def process_results_diff_protocols(folder):
-    algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
+    algs = ['A2C']   # , 'ACER', 'PPO2', 'ACKTR']
     w = '0'
     marker = '+'
     for alg in algs:
@@ -797,11 +798,11 @@ def process_results_diff_protocols(folder):
 if __name__ == '__main__':
     plt.close('all')
     folder = '/Users/martafradera/Desktop/OneDrive -' +\
-             ' Universitat de Barcelona/TFG/task/bsc_results/'
+             ' Universitat de Barcelona/TFG/task/data/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
     # folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
     # process_results_diff_protocols(folder)
     # folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
-    process_results_diff_thresholds(folder)
+    process_results_diff_protocols(folder)
