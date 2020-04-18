@@ -373,7 +373,7 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
 
 
 def data_extraction(folder, window=500, metrics={'reward': []}, conv=[1],
-                    wind_final_perf=200):
+                    wind_final_perf=200, curr_perf=False):
     data = put_together_files(folder)
     data_flag = True
     if data:
@@ -393,6 +393,9 @@ def data_extraction(folder, window=500, metrics={'reward': []}, conv=[1],
             elif k != 'curr_ph_final':
                 metric = data[k[:ind_f]]
                 metrics[k].append(np.mean(metric[-wind_final_perf:]))
+        if curr_perf is True:
+            metric = {'curr_perf': data['curr_perf']}
+            metrics.update(metric)
     else:
         print('No data in: ', folder)
         data_flag = False
@@ -470,7 +473,7 @@ def get_tag(tag, file):
 
 def plot_results(folder, algorithm, w, wind_final_perf=100,
                  keys=['performance', 'curr_ph'], limit_ax=True, final_ph=4,
-                 final_perf=0.7, ax_final=None, tag='th_stage',
+                 final_perf=0.7, ax_final=None, tag='th_stage', limit_tr=None,
                  f_final_prop={'color': (0, 0, 0), 'label': ''}):
     assert ('performance' in keys) and ('curr_ph' in keys),\
         'performance and curr_ph need to be included in the metrics (keys)'
@@ -535,13 +538,20 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
                              figsize=(6, 6))
         # plot means
         for ind_met, met in enumerate(keys):
+            if limit_tr is not None:
+                metric = []
+                for trace in metrics[met]:
+                    assert len(trace) > limit_tr
+                    metric.append(trace[0:limit_tr])
+            else:
+                metric = metrics[met]
             if ind == 0:
-                plot_rew_across_training(metric=metrics[met], index=val_index,
+                plot_rew_across_training(metric=metric, index=val_index,
                                          ax=ax[ind_met], clrs=clrs)
-                plt_means(metric=metrics[met], index=val_index,
+                plt_means(metric=metric, index=val_index,
                           ax=ax[ind_met], clrs=clrs, limit_ax=limit_ax)
             elif ind == 1:
-                plt_means(metric=metrics[met], index=val_index,
+                plt_means(metric=metric, index=val_index,
                           ax=ax[ind_met], clrs=clrs, limit_ax=limit_ax)
         ax[0].set_title(algorithm + ' (w: ' + w + ')')
         ax[0].set_ylabel('Average performance')
@@ -787,7 +797,7 @@ def process_results_diff_protocols(folder):
 if __name__ == '__main__':
     plt.close('all')
     folder = '/Users/martafradera/Desktop/OneDrive -' +\
-             ' Universitat de Barcelona/TFG/task/data/'
+             ' Universitat de Barcelona/TFG/task/bsc_results/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
