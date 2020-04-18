@@ -19,8 +19,8 @@ clrs = sns.color_palette()
 prtcls_index_map = {'01234': -1, '1234': 0, '0234': 1, '0134': 2, '0124': 3,
                     '34': 4}
 
-ths_index_map = {'full': 0.5, '0.6': 0.6, '0.65': 0.65, '0.7': 0.7, '0.75': 0.75,
-                 '0.8': 0.8, '0.85': 0.85, '0.9': 0.9}
+ths_index_map = {'full': 0.5, '0.6': 0.6, '0.65': 0.65, '0.7': 0.7,
+                 '0.75': 0.75, '0.8': 0.8, '0.85': 0.85, '0.9': 0.9}
 
 all_indx = {}
 all_indx.update(prtcls_index_map)
@@ -371,21 +371,12 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
 
     return f
 
-# TODO: separate function into data extraction and plotting so it does not plot.
-# TODO: remove unnecessary parameters
 
-
-def plot_rew_across_training(folder, window=500, ax=None, ytitle='', xlbl='',
-                             metrics={'reward': []}, fkwargs={'c': 'tab:blue'},
-                             legend=False, conv=[1], wind_final_perf=200):
+def data_extraction(folder, window=500, metrics={'reward': []}, conv=[1],
+                    wind_final_perf=200):
     data = put_together_files(folder)
     data_flag = True
     if data:
-        sv_fig = False
-        if ax is None:
-            sv_fig = True
-            f, ax = plt.subplots(nrows=len(metrics.keys()), ncols=1,
-                                 figsize=(6, 6))
         for ind_k, k in enumerate(metrics.keys()):
             ind_f = k.find('_final')
             if ind_f == -1:
@@ -399,27 +390,25 @@ def plot_rew_across_training(folder, window=500, ax=None, ytitle='', xlbl='',
                 else:
                     mean = metric
                 metrics[k].append(mean)
-                ax[ind_k].plot(mean, **fkwargs)  # add color, label etc.
-                ax[ind_k].set_xlabel(xlbl)
-                # figure props
-                if not ytitle:
-                    ax[ind_k].set_ylabel('mean ' + k)
-                else:
-                    ax[ind_k].set_ylabel(ytitle)
-                if legend:
-                    ax[ind_k].legend()
-                if ind_k == len(metrics.keys())-1:
-                    ax[ind_k].set_xlabel('trials')
             elif k != 'curr_ph_final':
                 metric = data[k[:ind_f]]
                 metrics[k].append(np.mean(metric[-wind_final_perf:]))
-        if sv_fig:
-            f.savefig(folder + '/mean_reward_across_training.png')
     else:
         print('No data in: ', folder)
         data_flag = False
 
     return metrics, data_flag
+
+
+def plot_rew_across_training(metric, index, ax, clrs):
+    metric = np.array(metric)
+    index = np.array(index)
+    unq_vals = np.unique(index)
+    for ind_val, val in enumerate(unq_vals):
+        indx = index == val
+        traces_temp = metric[indx]
+        for trace in traces_temp:
+            ax.plot(trace, color=clrs[ind_val], alpha=0.5, lw=0.5)
 
 
 def find_reaching_phase_time(trace, phase=4):
@@ -492,8 +481,6 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
         else:
             files = glob.glob(folder + '*' + algorithm + '*stages*')
         files = sorted(files)
-        f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
-                             figsize=(6, 6))  # TODO: this would be removed
         vals_mat = []  # stores unique values associated with tag
         val_index = []  # stores values for each instance
         metrics = {k: [] for k in keys}
@@ -507,19 +494,12 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
         for ind_f, file in enumerate(files):
             val = get_tag(tag, file)
             # check if val was already visited to assign color
-            if val in vals_mat:
-                ci = np.where(np.array(vals_mat) == val)[0][0]
-            else:
+            if val not in vals_mat:
                 vals_mat.append(val)
-                ci = len(vals_mat)-1
-            # get and plot metrics
-            metrics, flag = plot_rew_across_training(folder=file, ax=ax,
-                                                     metrics=metrics,
-                                                     conv=[1, 0],
-                                                     wind_final_perf=wind_final_perf,
-                                                     fkwargs={'c': clrs[ci],
-                                                              'lw': 0.5,
-                                                              'alpha': 0.5})
+            # get metrics
+            metrics, flag = data_extraction(folder=file, metrics=metrics,
+                                            conv=[1, 0],
+                                            wind_final_perf=wind_final_perf)
             if flag:
                 # store durations
                 exp_durations.append(len(metrics['curr_ph'][-1]))
@@ -539,6 +519,7 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
                 stability_mat.append(compute_stability(metrics=metrics,
                                                        tr_above_th=tr_to_perf[-1]))
         val_index = np.array(val_index)
+        metrics['val_index'] = val_index
         metrics['tr_to_perf'] = tr_to_perf
         metrics['reached_ph'] = reached_ph
         metrics['reached_perf'] = reached_perf
@@ -548,15 +529,20 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
 
     metrics = np.load(folder+'/data_'+algorithm+'_'+w+'.npz')
     names = ['values_across_training_', 'mean_values_across_training_']
+    val_index = metrics['val_index']
     for ind in range(2):
-        if ind == 1:  # TODO: this would be removed
-            f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
-                                 figsize=(6, 6))
+        f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
+                             figsize=(6, 6))
         # plot means
         for ind_met, met in enumerate(keys):
-            # TODO: if ind == 0 plot single traces
-            plt_means(metric=metrics[met], index=val_index,
-                      ax=ax[ind_met], clrs=clrs, limit_ax=limit_ax)
+            if ind == 0:
+                plot_rew_across_training(metric=metrics[met], index=val_index,
+                                         ax=ax[ind_met], clrs=clrs)
+                plt_means(metric=metrics[met], index=val_index,
+                          ax=ax[ind_met], clrs=clrs, limit_ax=limit_ax)
+            elif ind == 1:
+                plt_means(metric=metrics[met], index=val_index,
+                          ax=ax[ind_met], clrs=clrs, limit_ax=limit_ax)
         ax[0].set_title(algorithm + ' (w: ' + w + ')')
         ax[0].set_ylabel('Average performance')
         ax[1].set_ylabel('Average phase')
@@ -712,8 +698,9 @@ def get_noise(unq_vals):
     return noise
 
 
-def plt_perf_indicators(values, index_val, ax, f_props, reached=None, discard=[],
-                        plot_individual_values=True, errorbars=True):
+def plt_perf_indicators(values, index_val, ax, f_props, reached=None,
+                        discard=[], plot_individual_values=True,
+                        errorbars=True):
     values = np.array(values)  # tr until final phase
     index_val = np.array(index_val)
     unq_vals = np.unique(index_val)
@@ -734,7 +721,8 @@ def plt_perf_indicators(values, index_val, ax, f_props, reached=None, discard=[]
                 f_props['markersize'] = 6
                 if errorbars:
                     ax.errorbar([all_indx[val]], np.nanmean(values_temp),
-                                (np.std(values_temp)/np.sqrt(n_vals)), **f_props)
+                                (np.std(values_temp)/np.sqrt(n_vals)),
+                                **f_props)
                 else:
                     ax.plot(all_indx[val], np.nanmean(values_temp), **f_props)
             if plot_individual_values:
@@ -798,12 +786,12 @@ def process_results_diff_protocols(folder):
 
 if __name__ == '__main__':
     plt.close('all')
-    # folder = '/Users/martafradera/Desktop/OneDrive -' +\
-    #          ' Universitat de Barcelona/TFG/task/bsc_results/'
+    folder = '/Users/martafradera/Desktop/OneDrive -' +\
+             ' Universitat de Barcelona/TFG/task/data/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
-    folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
-    process_results_diff_protocols(folder)
-    folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
+    # folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
+    # process_results_diff_protocols(folder)
+    # folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
     process_results_diff_thresholds(folder)
