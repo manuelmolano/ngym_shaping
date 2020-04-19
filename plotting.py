@@ -386,16 +386,17 @@ def data_extraction(folder, w_conv_perf=500, metrics={'reward': []},
     data_flag = True
     if data:
         for ind_k, k in enumerate(metrics.keys()):
-            metric = data[k]
-            if conv[ind_k]:
-                mean = np.convolve(metric, np.ones((w_conv_perf,))/w_conv_perf,
-                                   mode='valid')
+            if k in data.keys():
+                metric = data[k]
+                if conv[ind_k]:
+                    mean = np.convolve(metric,
+                                       np.ones((w_conv_perf,))/w_conv_perf,
+                                       mode='valid')
+                else:
+                    mean = metric
             else:
-                mean = metric
+                mean = []
             metrics[k].append(mean)
-        if curr_perf is True:
-            metric = {'curr_perf': data['curr_perf']}
-            metrics.update(metric)
     else:
         print('No data in: ', folder)
         data_flag = False
@@ -438,9 +439,10 @@ def get_tag(tag, file):
 
 
 def plot_results(folder, algorithm, w, w_conv_perf=500,
-                 keys=['performance', 'curr_ph'], limit_ax=True, final_ph=4,
-                 perf_th=0.7, ax_final=None, tag='th_stage', limit_tr=False,
-                 f_final_prop={'color': (0, 0, 0), 'label': ''}, rerun=False):
+                 keys=['performance', 'curr_ph', 'num_stps', 'curr_perf'],
+                 limit_ax=True, final_ph=4, perf_th=0.7, ax_final=None,
+                 tag='th_stage', limit_tr=False, rerun=False,
+                 f_final_prop={'color': (0, 0, 0), 'label': ''}):
     assert ('performance' in keys) and ('curr_ph' in keys),\
         'performance and curr_ph need to be included in the metrics (keys)'
     # PROCESS RAW DATA
@@ -452,12 +454,13 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
         files = sorted(files)
         val_index = []  # stores values for each instance
         metrics = {k: [] for k in keys}
+        keys = np.array(keys)
         for ind_f, file in enumerate(files):
             val = get_tag(tag, file)
             # get metrics
             metrics, flag = data_extraction(folder=file, metrics=metrics,
                                             w_conv_perf=w_conv_perf,
-                                            conv=[1, 0])
+                                            conv=(keys == 'performance'))
             # store values
             val_index.append(val)
         metrics['val_index'] = np.array(val_index)
@@ -480,32 +483,46 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
     stability_mat = []
     final_perf = []
     tr_to_ph = []
+    stps_to_perf = []
+    stps_to_ph = []
     for ind_f in range(len(metrics['curr_ph'])):
         # store durations
         exp_durations.append(len(metrics['curr_ph'][ind_f]))
-        metrics['curr_ph'][ind_f] = metrics['curr_ph'][ind_f][:min_dur]
+        for k in metrics.keys():
+            metrics[k][ind_f] = metrics[k][ind_f][:min_dur]
+        # phase analysis
         curr_ph = metrics['curr_ph'][ind_f]
         # number of trials until final phase
         tr_to_ph, reached = tr_to_final_ph(curr_ph, tr_to_ph, w_conv_perf,
                                            final_ph)
         reached_ph.append(reached)
-        # number of trials until final perf
-        metrics['performance'][ind_f] = metrics['performance'][ind_f][:min_dur]
+        # performance analysis
         perf = np.array(metrics['performance'][ind_f])
         # get final performance
         final_perf.append(np.mean(perf[-1]))
-        # get trials to specified performance
+        # get trials to reach specified performance
         tt_ph = tr_to_ph[-1]
-        tr_to_perf, reached = tr_to_reach_perf(perf=perf, tr_to_ph=tt_ph,
+        tr_to_perf, reached = tr_to_reach_perf(perf=perf.copy(), tr_to_ph=tt_ph,
                                                reach_perf=perf_th,
                                                tr_to_perf=tr_to_perf,
                                                final_ph=final_ph)
         reached_perf.append(reached)
-        # stability
-        stability_mat.append(compute_stability(perf=perf,
-                                               tr_ab_th=tr_to_perf[-1]))
+        # performance stability
+        tt_prf = tr_to_perf[-1]
+        stability_mat.append(compute_stability(perf=perf.copy(),
+                                               tr_ab_th=tt_prf))
+        # # number of steps
+        if len(metrics['num_stps'][ind_f]) != 0:
+            num_steps = np.cumsum(metrics['num_stps'][ind_f])
+            stps_to_perf.append(num_steps[tt_prf])
+            stps_to_ph.append(num_steps[tt_ph])
+        else:
+            stps_to_perf.append(num_steps[tt_prf])
+            stps_to_ph.append(num_steps[tt_ph])
+
     # plot results
     names = ['values_across_training_', 'mean_values_across_training_']
+    ylabels = ['Performance', 'Phase', 'Number of steps', 'Session performance']
     val_index = metrics['val_index']
     for ind in range(2):
         f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
@@ -521,11 +538,10 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
             elif ind == 1:
                 plt_means(metric=metric, index=val_index,
                           ax=ax[ind_met], clrs=clrs, limit_ax=limit_ax)
+            ax[ind_met].set_ylabel(ylabels[ind_met])
         ax[0].set_title(algorithm + ' (w: ' + w + ')')
-        ax[0].set_ylabel('Average performance')
-        ax[1].set_ylabel('Average phase')
-        ax[1].set_xlabel('Trials')
-        ax[1].legend()
+        ax[len(keys)-1].set_xlabel('Trials')
+        ax[len(keys)-1].legend()
         f.savefig(folder+'/'+names[ind]+algorithm+'_'+w+'_'+str(limit_tr)+'.png',
                   dpi=200)
         plt.close(f)
@@ -634,8 +650,11 @@ def tr_to_reach_perf(perf, tr_to_ph, reach_perf, tr_to_perf, final_ph):
 
 def compute_stability(perf, tr_ab_th):
     perf = np.array(perf)[tr_ab_th:]
-    forgetting_times = perf < 0.5
-    stability = 1 - np.sum(forgetting_times)/perf.shape[0]
+    if perf.shape[0] != 0:
+        forgetting_times = perf < 0.5
+        stability = 1 - np.sum(forgetting_times)/perf.shape[0]
+    else:
+        stability = np.nan
     return stability
 
 
@@ -772,10 +791,10 @@ if __name__ == '__main__':
     #          ' Universitat de Barcelona/TFG/task/data/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
-    # folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
-    folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
+    folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
+    # folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
     process_results_diff_protocols(folder, limit_tr=True)
     process_results_diff_protocols(folder, limit_tr=False)
-    folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
-    process_results_diff_thresholds(folder, limit_tr=True)
-    process_results_diff_thresholds(folder, limit_tr=False)
+    # folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
+    # process_results_diff_thresholds(folder, limit_tr=True)
+    # process_results_diff_thresholds(folder, limit_tr=False)
