@@ -440,7 +440,7 @@ def get_tag(tag, file):
 def plot_results(folder, algorithm, w, w_conv_perf=500,
                  keys=['performance', 'curr_ph'], limit_ax=True, final_ph=4,
                  perf_th=0.7, ax_final=None, tag='th_stage', limit_tr=False,
-                 f_final_prop={'color': (0, 0, 0), 'label': ''}, rerun=True):
+                 f_final_prop={'color': (0, 0, 0), 'label': ''}, rerun=False):
     assert ('performance' in keys) and ('curr_ph' in keys),\
         'performance and curr_ph need to be included in the metrics (keys)'
     # PROCESS RAW DATA
@@ -744,7 +744,7 @@ def process_results_diff_thresholds(folder, limit_tr=True):
 
 
 def process_results_diff_protocols(folder, limit_tr=True):
-    algs = ['A2C']   # , 'ACER', 'PPO2', 'ACKTR']
+    algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
     w = '0'
     marker = '+'
     for alg in algs:
@@ -772,8 +772,10 @@ if __name__ == '__main__':
     #          ' Universitat de Barcelona/TFG/task/data/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
-    folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
-    # folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
+    # folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
+    folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
     process_results_diff_protocols(folder, limit_tr=True)
-    # folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
-    # process_results_diff_thresholds(folder)
+    process_results_diff_protocols(folder, limit_tr=False)
+    folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
+    process_results_diff_thresholds(folder, limit_tr=True)
+    process_results_diff_thresholds(folder, limit_tr=False)
