@@ -514,11 +514,11 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
         # # number of steps
         if len(metrics['num_stps'][ind_f]) != 0:
             num_steps = np.cumsum(metrics['num_stps'][ind_f])
-            stps_to_perf.append(num_steps[tt_prf])
-            stps_to_ph.append(num_steps[tt_ph])
+            stps_to_perf.append(num_steps[tt_prf-1])
+            stps_to_ph.append(num_steps[tt_ph-1])
         else:
-            stps_to_perf.append(num_steps[tt_prf])
-            stps_to_ph.append(num_steps[tt_ph])
+            stps_to_perf.append(np.nan)
+            stps_to_ph.append(np.nan)
 
     # plot results
     names = ['values_across_training_', 'mean_values_across_training_']
@@ -553,70 +553,50 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
               str(limit_tr)+'.png', dpi=200)
     plt.close(f)
     # define xticks
+    ax_props = {'tag': tag}
     if tag == 'stages':
-        labels = list(prtcls_index_map.keys())
-        ticks = list(prtcls_index_map.values())
+        ax_props['labels'] = list(prtcls_index_map.keys())
+        ax_props['ticks'] = list(prtcls_index_map.values())
     elif tag == 'th_stage':
-        labels = list(ths_index_map.keys())
-        ticks = list(ths_index_map.values())
+        ax_props['labels'] = list(ths_index_map.keys())
+        ax_props['ticks'] = list(ths_index_map.values())
     # plot final results
     if ax_final is not None:
         # plot final performance
+        ax_props['ylabel'] = 'Average performance'
         plt_perf_indicators(values=final_perf,
                             reached=reached_ph,
                             f_props=f_final_prop, index_val=val_index,
-                            ax=ax_final[0, 0])
-        ax_final[0, 0].set_xlabel(tag)
-        ax_final[0, 0].set_ylabel('Average performance')
-        ax_final[0, 0].set_xticks(ticks)
-        ax_final[0, 0].set_xticklabels(labels)
+                            ax=ax_final[0], ax_props=ax_props)
         # trials to reach phase 4
+        ax_props['ylabel'] = 'Number of trials to reach phase 4'
         plt_perf_indicators(values=tr_to_ph,
-                            f_props=f_final_prop,
-                            index_val=val_index, ax=ax_final[0, 1],
+                            f_props=f_final_prop, ax_props=ax_props,
+                            index_val=val_index, ax=ax_final[1],
                             reached=reached_ph, discard=['full'])
-        ax_final[0, 1].set_xlabel(tag)
-        ax_final[0, 1].set_ylabel('Number of trials to reach phase 4')
-        ax_final[0, 1].set_xticks(ticks)
-        ax_final[0, 1].set_xticklabels(labels)
         # trials to reach final perf
+        ax_props['ylabel'] = 'Number of trials to reach final performance'
         plt_perf_indicators(values=tr_to_perf,
                             reached=reached_perf,
-                            index_val=val_index, ax=ax_final[0, 2],
-                            f_props=f_final_prop)
-        ax_final[0, 2].set_xlabel(tag)
-        ax_final[0, 2].set_ylabel('Number of trials to reach' +
-                                  ' final performance')
-        ax_final[0, 2].set_xticks(ticks)
-        ax_final[0, 2].set_xticklabels(labels)
+                            index_val=val_index, ax=ax_final[2],
+                            f_props=f_final_prop, ax_props=ax_props)
         # make -1s equal to total number of trials
-        plt_perf_indicators(values=reached_ph,
-                            index_val=val_index, ax=ax_final[1, 0],
-                            f_props=f_final_prop, discard=['full'],
+        ax_props['ylabel'] = 'Proportion of instances reaching phase 4'
+        plt_perf_indicators(values=reached_ph, index_val=val_index,
+                            ax=ax_final[3], f_props=f_final_prop,
+                            ax_props=ax_props, discard=['full'],
                             errorbars=False, plot_individual_values=False)
-        ax_final[1, 0].set_xlabel(tag)
-        ax_final[1, 0].set_ylabel('Proportion of instances reaching phase 4')
-        ax_final[1, 0].set_xticks(ticks)
-        ax_final[1, 0].set_xticklabels(labels)
         # prop of trials that reach final perf
-        plt_perf_indicators(values=reached_perf,
-                            index_val=val_index, ax=ax_final[1, 1],
-                            f_props=f_final_prop, errorbars=False,
+        ax_props['ylabel'] = 'Proportion of instances reaching final perf'
+        plt_perf_indicators(values=reached_perf, index_val=val_index,
+                            ax=ax_final[4], f_props=f_final_prop,
+                            ax_props=ax_props, errorbars=False,
                             plot_individual_values=False)
-        ax_final[1, 1].set_xlabel(tag)
-        ax_final[1, 1].set_ylabel('Proportion of instances reaching' +
-                                  ' final perf')
-        ax_final[1, 1].set_xticks(ticks)
-        ax_final[1, 1].set_xticklabels(labels)
         # plot stability
-        plt_perf_indicators(values=stability_mat,
-                            index_val=val_index,  ax=ax_final[1, 2],
-                            f_props=f_final_prop,
-                            reached=reached_perf)
-        ax_final[1, 2].set_xlabel(tag)
-        ax_final[1, 2].set_ylabel('Stability')
-        ax_final[1, 2].set_xticks(ticks)
-        ax_final[1, 2].set_xticklabels(labels)
+        ax_props['ylabel'] = 'Stability'
+        plt_perf_indicators(values=stability_mat, index_val=val_index,
+                            ax=ax_final[5], f_props=f_final_prop,
+                            ax_props=ax_props, reached=reached_perf)
 
 
 def tr_to_final_ph(curr_ph, tr_to_ph, wind_final_perf, final_ph):
@@ -699,7 +679,7 @@ def get_noise(unq_vals):
     return noise
 
 
-def plt_perf_indicators(values, index_val, ax, f_props, reached=None,
+def plt_perf_indicators(values, index_val, ax, f_props, ax_props, reached=None,
                         discard=[], plot_individual_values=True,
                         errorbars=True):
     values = np.array(values)  # tr until final phase
@@ -729,8 +709,11 @@ def plt_perf_indicators(values, index_val, ax, f_props, reached=None,
             if plot_individual_values:
                 xs = np.random.normal(0, std_noise, ((np.sum(indx),))) +\
                     all_indx[val]
-                ax.plot(xs, values_temp, marker=f_props['marker'],
-                        color=f_props['color'], alpha=0.5, linestyle='None')
+                ax.plot(xs, values_temp, alpha=0.5, linestyle='None', **f_props)
+    ax.set_xlabel(ax_props['tag'])
+    ax.set_ylabel(ax_props['ylabel'])
+    ax.set_xticks(ax_props['ticks'])
+    ax.set_xticklabels(ax_props['labels'])
 
 
 def process_results_diff_thresholds(folder, limit_tr=True):
@@ -739,7 +722,8 @@ def process_results_diff_thresholds(folder, limit_tr=True):
     markers = ['+', 'x', '1', 'o', '>']
     for alg in algs:
         print(alg)
-        f, ax = plt.subplots(nrows=2, ncols=3, figsize=(15, 10))
+        f, ax = plt.subplots(nrows=2, ncols=4, figsize=(24, 16))
+        ax = ax.flatten()
         ind = 0
         for ind_w, w in enumerate(windows):
             print('xxxxxxxxxxxxxxxxxxxxxxxx')
@@ -753,9 +737,9 @@ def process_results_diff_thresholds(folder, limit_tr=True):
                                        'label': str(w),
                                        'marker': marker})
 
-        handles, labels = ax[0, 0].get_legend_handles_labels()
+        handles, labels = ax[0].get_legend_handles_labels()
         by_label = dict(zip(labels, handles))
-        ax[0, 0].legend(by_label.values(), by_label.keys())
+        ax[0].legend(by_label.values(), by_label.keys())
 
         f.savefig(folder + '/final_results_' +
                   alg+'_'+str(limit_tr)+'.png', dpi=200)
@@ -763,22 +747,23 @@ def process_results_diff_thresholds(folder, limit_tr=True):
 
 
 def process_results_diff_protocols(folder, limit_tr=True):
-    algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
+    algs = ['A2C']  # , 'ACER', 'PPO2', 'ACKTR']
     w = '0'
     marker = '+'
     for alg in algs:
         print(alg)
         print('xxxxxxxxxxxxxxxxxxxxxx')
-        f, ax = plt.subplots(nrows=2, ncols=3, figsize=(15, 10))
+        f, ax = plt.subplots(nrows=2, ncols=4, figsize=(24, 16))
+        ax = ax.flatten()
         plot_results(folder, alg, w, limit_ax=False,
                      ax_final=ax, tag='stages', limit_tr=limit_tr,
                      f_final_prop={'color': clrs[0],
                                    'label': w,
                                    'marker': marker})
 
-        handles, labels = ax[0, 0].get_legend_handles_labels()
+        handles, labels = ax[0].get_legend_handles_labels()
         by_label = dict(zip(labels, handles))
-        ax[0, 0].legend(by_label.values(), by_label.keys())
+        ax[0].legend(by_label.values(), by_label.keys())
 
         f.savefig(folder + '/final_results_' +
                   alg+'_'+str(limit_tr)+'.png', dpi=200)
