@@ -477,35 +477,46 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
         metrics = {k: [] for k in keys}
         tmp = {k+'_final': [] for k in keys}
         metrics.update(tmp)
-        tr_to_perf = []  # stores trials to reach final performance
-        reached_ph = []  # stores whether the final phase is reached
-        reached_perf = []  # stores whether the pre-defined perf is reached
-        exp_durations = []
-        stability_mat = []
         for ind_f, file in enumerate(files):
             val = get_tag(tag, file)
             # get metrics
             metrics, flag = data_extraction(folder=file, metrics=metrics,
                                             conv=[1, 0],
                                             wind_final_perf=wind_final_perf)
-            if flag:
-                # store durations
-                exp_durations.append(len(metrics['curr_ph'][-1]))
-                # store values
-                val_index.append(val)
-                # number of trials until final phase
-                metrics, reached = tr_to_final_ph(metrics, wind_final_perf,
-                                                  final_ph)
-                reached_ph.append(reached)
-                # number of trials until final perf
-                tr_to_perf, reached =\
-                    tr_to_reach_perf(metrics, reach_perf=final_perf,
-                                     tr_to_perf=tr_to_perf,
-                                     final_ph=final_ph)
-                reached_perf.append(reached)
-                # stability
-                stability_mat.append(compute_stability(metrics=metrics,
-                                                       tr_ab_th=tr_to_perf[-1]))
+            # store values
+            val_index.append(val)
+
+        if limit_tr:
+            min_dur = np.min([len(x) for x in metrics['curr_ph']])
+        else:
+            min_dur = int(10e10)
+        tr_to_perf = []  # stores trials to reach final performance
+        reached_ph = []  # stores whether the final phase is reached
+        reached_perf = []  # stores whether the pre-defined perf is reached
+        exp_durations = []
+        stability_mat = []
+        for ind_f in range(len(metrics['curr_ph'])):
+            # store durations
+            exp_durations.append(len(metrics['curr_ph'][ind_f]))
+            metrics['curr_ph'][ind_f] = metrics['curr_ph'][ind_f][:min_dur]
+            curr_ph = metrics['curr_ph'][ind_f]
+            # number of trials until final phase
+            metrics, reached = tr_to_final_ph(curr_ph, metrics, wind_final_perf,
+                                              final_ph)
+            reached_ph.append(reached)
+            # number of trials until final perf
+            metrics['performance'][ind_f] =\
+                metrics['performance'][ind_f][:min_dur]
+            perf = np.array(metrics['performance'][ind_f])
+            tr_to_ph = metrics['curr_ph_final'][-1]
+            tr_to_perf, reached = tr_to_reach_perf(perf=perf, tr_to_ph=tr_to_ph,
+                                                   reach_perf=final_perf,
+                                                   tr_to_perf=tr_to_perf,
+                                                   final_ph=final_ph)
+            reached_perf.append(reached)
+            # stability
+            stability_mat.append(compute_stability(perf=perf,
+                                                   tr_ab_th=tr_to_perf[-1]))
         val_index = np.array(val_index)
         metrics['val_index'] = val_index
         metrics['tr_to_perf'] = tr_to_perf
@@ -616,8 +627,7 @@ def plot_results(folder, algorithm, w, wind_final_perf=100,
         ax_final[1, 2].set_xticklabels(labels)
 
 
-def tr_to_final_ph(metrics, wind_final_perf, final_ph):
-    curr_ph = metrics['curr_ph'][-1]
+def tr_to_final_ph(curr_ph, metrics, wind_final_perf, final_ph):
     time = np.where(curr_ph == final_ph)[0]  # find those trials in phase 4
     reached = False
     if len(time) != 0:
@@ -633,28 +643,21 @@ def tr_to_final_ph(metrics, wind_final_perf, final_ph):
     return metrics, reached
 
 
-def tr_to_reach_perf(metrics, reach_perf, tr_to_perf, final_ph):
-    perf = np.array(metrics['performance'][-1])
-    curr_ph = metrics['curr_ph'][-1]
-    time_final_ph = np.where(curr_ph == final_ph)[0]
+def tr_to_reach_perf(perf, tr_to_ph, reach_perf, tr_to_perf, final_ph):
     reached = False
-    if len(time_final_ph) == 0:
+    perf_in_final_ph = perf[tr_to_ph:]
+    time_above_th = np.where(perf_in_final_ph > reach_perf)[0]
+    if len(time_above_th) == 0:
         tr_to_perf.append(len(perf))
     else:
-        tr_to_ph = np.min(time_final_ph)
-        perf_in_final_ph = perf[tr_to_ph:]
-        time_above_th = np.where(perf_in_final_ph > reach_perf)[0]
-        if len(time_above_th) == 0:
-            tr_to_perf.append(len(perf))
-        else:
-            reached = True
-            tr_to_perf.append(np.min(time_above_th) +
-                              np.min(time_final_ph))
+        reached = True
+        tr_to_perf.append(np.min(time_above_th) +
+                          np.min(tr_to_ph))
     return tr_to_perf, reached
 
 
-def compute_stability(metrics, tr_ab_th):
-    perf = np.array(metrics['performance'][-1])[tr_ab_th:]
+def compute_stability(perf, tr_ab_th):
+    perf = np.array(perf)[tr_ab_th:]
     forgetting_times = perf < 0.5
     stability = 1 - np.sum(forgetting_times)/perf.shape[0]
     return stability
@@ -735,7 +738,7 @@ def plt_perf_indicators(values, index_val, ax, f_props, reached=None,
                         color=f_props['color'], alpha=0.5, linestyle='None')
 
 
-def process_results_diff_thresholds(folder):
+def process_results_diff_thresholds(folder, limit_tr=True):
     algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
     windows = ['0', '1', '2', '3', '4']  # , '500', '1000']
     markers = ['+', 'x', '1', 'o', '>']
@@ -750,7 +753,7 @@ def process_results_diff_thresholds(folder):
             marker = markers[ind]
             ind += 1
             plot_results(folder, alg, w, limit_ax=False,
-                         ax_final=ax, tag='th_stage',
+                         ax_final=ax, tag='th_stage', limit_tr=limit_tr,
                          f_final_prop={'color': clrs[ind_w],
                                        'label': str(w),
                                        'marker': marker})
@@ -760,11 +763,11 @@ def process_results_diff_thresholds(folder):
         ax[0, 0].legend(by_label.values(), by_label.keys())
 
         f.savefig(folder + '/final_results_' +
-                  alg+'_'+'.png', dpi=200)
+                  alg+'_'+str(limit_tr)+'.png', dpi=200)
         plt.close(f)
 
 
-def process_results_diff_protocols(folder):
+def process_results_diff_protocols(folder, limit_tr=True):
     algs = ['A2C']   # , 'ACER', 'PPO2', 'ACKTR']
     w = '0'
     marker = '+'
@@ -773,7 +776,7 @@ def process_results_diff_protocols(folder):
         print('xxxxxxxxxxxxxxxxxxxxxx')
         f, ax = plt.subplots(nrows=2, ncols=3, figsize=(15, 10))
         plot_results(folder, alg, w, limit_ax=False,
-                     ax_final=ax, tag='stages', limit_tr=None,
+                     ax_final=ax, tag='stages', limit_tr=limit_tr,
                      f_final_prop={'color': clrs[0],
                                    'label': w,
                                    'marker': marker})
@@ -783,7 +786,7 @@ def process_results_diff_protocols(folder):
         ax[0, 0].legend(by_label.values(), by_label.keys())
 
         f.savefig(folder + '/final_results_' +
-                  alg+'_'+'.png', dpi=200)
+                  alg+'_'+str(limit_tr)+'.png', dpi=200)
         plt.close(f)
 
 
@@ -797,4 +800,4 @@ if __name__ == '__main__':
     # folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
     # process_results_diff_protocols(folder)
     # folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
-    process_results_diff_protocols(folder)
+    process_results_diff_protocols(folder, limit_tr=False)
