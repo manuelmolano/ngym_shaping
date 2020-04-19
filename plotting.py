@@ -12,7 +12,7 @@ import ntpath
 from matplotlib import rcParams
 rcParams['font.family'] = 'sans-serif'
 rcParams['font.sans-serif'] = ['Arial']
-rcParams['font.size'] = 7
+rcParams['font.size'] = 12
 
 clrs = sns.color_palette()
 
@@ -514,8 +514,8 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
         # # number of steps
         if len(metrics['num_stps'][ind_f]) != 0:
             num_steps = np.cumsum(metrics['num_stps'][ind_f])
-            stps_to_perf.append(num_steps[tt_prf-1])
-            stps_to_ph.append(num_steps[tt_ph-1])
+            stps_to_perf.append(num_steps[tt_prf-1]/1000)
+            stps_to_ph.append(num_steps[tt_ph-1]/1000)
         else:
             stps_to_perf.append(np.nan)
             stps_to_ph.append(np.nan)
@@ -597,6 +597,18 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
         plt_perf_indicators(values=stability_mat, index_val=val_index,
                             ax=ax_final[5], f_props=f_final_prop,
                             ax_props=ax_props, reached=reached_perf)
+        # steps to reach phase 4
+        ax_props['ylabel'] = 'Number of steps to reach phase 4'
+        plt_perf_indicators(values=stps_to_ph,
+                            f_props=f_final_prop, ax_props=ax_props,
+                            index_val=val_index, ax=ax_final[6],
+                            reached=reached_ph, discard=['full'])
+        # steps to reach final perf
+        ax_props['ylabel'] = 'Number of steps to reach final performance'
+        plt_perf_indicators(values=stps_to_perf,
+                            reached=reached_perf,
+                            index_val=val_index, ax=ax_final[7],
+                            f_props=f_final_prop, ax_props=ax_props)
 
 
 def tr_to_final_ph(curr_ph, tr_to_ph, wind_final_perf, final_ph):
@@ -699,10 +711,10 @@ def plt_perf_indicators(values, index_val, ax, f_props, ax_props, reached=None,
             n_vals = len(values_temp)
             if n_vals != 0:
                 # plot number of trials
-                f_props['markersize'] = 6
+                f_props['markersize'] = 10
                 if errorbars:
                     ax.errorbar([all_indx[val]], np.nanmean(values_temp),
-                                (np.std(values_temp)/np.sqrt(n_vals)),
+                                (np.nanstd(values_temp)/np.sqrt(n_vals)),
                                 **f_props)
                 else:
                     ax.plot(all_indx[val], np.nanmean(values_temp), **f_props)
@@ -722,7 +734,7 @@ def process_results_diff_thresholds(folder, limit_tr=True):
     markers = ['+', 'x', '1', 'o', '>']
     for alg in algs:
         print(alg)
-        f, ax = plt.subplots(nrows=2, ncols=4, figsize=(24, 16))
+        f, ax = plt.subplots(nrows=2, ncols=4, figsize=(27, 16))
         ax = ax.flatten()
         ind = 0
         for ind_w, w in enumerate(windows):
@@ -753,7 +765,7 @@ def process_results_diff_protocols(folder, limit_tr=True):
     for alg in algs:
         print(alg)
         print('xxxxxxxxxxxxxxxxxxxxxx')
-        f, ax = plt.subplots(nrows=2, ncols=4, figsize=(24, 16))
+        f, ax = plt.subplots(nrows=2, ncols=4, figsize=(30, 16))
         ax = ax.flatten()
         plot_results(folder, alg, w, limit_ax=False,
                      ax_final=ax, tag='stages', limit_tr=limit_tr,
