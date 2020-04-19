@@ -372,6 +372,14 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
     return f
 
 
+def load_data(path):
+    data = {}
+    file_data = np.load(path, allow_pickle=True)
+    for key in file_data.keys():
+        data[key] = file_data[key]
+    return data
+
+
 def data_extraction(folder, w_conv_perf=500, metrics={'reward': []},
                     conv=[1], curr_perf=False):
     data = put_together_files(folder)
@@ -395,21 +403,6 @@ def data_extraction(folder, w_conv_perf=500, metrics={'reward': []},
     return metrics, data_flag
 
 
-def find_reaching_phase_time(trace, phase=4):
-    trials = 1
-    stop = False
-    fphase = trace[0][-1]
-    fstart = 0
-    for curr_ph in trace[0]:
-        if curr_ph != phase and stop is False:
-            trials += 1
-        else:
-            stop = True
-        if curr_ph != fphase:
-            fstart += 1
-    return trials, fphase, fstart
-
-
 def put_together_files(folder):
     files = glob.glob(folder + '/*_bhvr_data*npz')
     data = {}
@@ -424,14 +417,6 @@ def put_together_files(folder):
             for key in file_data.keys():
                 data[key] = np.concatenate((data[key], file_data[key]))
         np.savez(folder + '/bhvr_data_all.npz', **data)
-    return data
-
-
-def load_data(path):
-    data = {}
-    file_data = np.load(path, allow_pickle=True)
-    for key in file_data.keys():
-        data[key] = file_data[key]
     return data
 
 
@@ -458,7 +443,7 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
                  f_final_prop={'color': (0, 0, 0), 'label': ''}, rerun=True):
     assert ('performance' in keys) and ('curr_ph' in keys),\
         'performance and curr_ph need to be included in the metrics (keys)'
-    # load files
+    # PROCESS RAW DATA
     if not os.path.exists(folder+'/data_'+algorithm+'_'+w+'.npz') or rerun:
         if tag == 'th_stage':
             files = glob.glob(folder + '*' + algorithm + '*' + w)
@@ -478,9 +463,9 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
         metrics['val_index'] = np.array(val_index)
         np.savez(folder+'/data_'+algorithm+'_'+w+'.npz', **metrics)
 
-    # load and process data
+    # LOAD AND (POST)PROCESS DATA
     tmp = np.load(folder+'/data_'+algorithm+'_'+w+'.npz', allow_pickle=True)
-    # I do this because the loaded file does not allow to modifying it
+    # the loaded file does not allow to modifying it
     metrics = {}
     for k in tmp.keys():
         metrics[k] = tmp[k]
