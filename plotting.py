@@ -460,7 +460,7 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
             # get metrics
             metrics, flag = data_extraction(folder=file, metrics=metrics,
                                             w_conv_perf=w_conv_perf,
-                                            conv=(keys == 'performance'))
+                                            conv=[1, 0, 1, 0])
             # store values
             val_index.append(val)
         metrics['val_index'] = np.array(val_index)
@@ -475,7 +475,7 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
     if limit_tr:
         min_dur = np.min([len(x) for x in metrics['curr_ph']])
     else:
-        min_dur = int(10e10)
+        min_dur = np.max([len(x) for x in metrics['curr_ph']])
     tr_to_perf = []  # stores trials to reach final performance
     reached_ph = []  # stores whether the final phase is reached
     reached_perf = []  # stores whether the pre-defined perf is reached
@@ -490,6 +490,8 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
         exp_durations.append(len(metrics['curr_ph'][ind_f]))
         for k in metrics.keys():
             metrics[k][ind_f] = metrics[k][ind_f][:min_dur]
+            if len(metrics[k][ind_f]) == 0:
+                metrics[k][ind_f] = np.nan*np.ones((min_dur,))
         # phase analysis
         curr_ph = metrics['curr_ph'][ind_f]
         # number of trials until final phase
@@ -526,7 +528,7 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
     val_index = metrics['val_index']
     for ind in range(2):
         f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
-                             figsize=(6, 6))
+                             figsize=(12, 12))
         # plot means
         for ind_met, met in enumerate(keys):
             metric = metrics[met]
@@ -544,8 +546,8 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
         ax[len(keys)-1].legend()
         f.savefig(folder+'/'+names[ind]+algorithm+'_'+w+'_'+str(limit_tr)+'.png',
                   dpi=200)
-        plt.close(f)
-    f, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 6))
+        # plt.close(f)
+    f, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 12))
     ax.plot(exp_durations, stability_mat, '+')
     corr_ = np.corrcoef(exp_durations, stability_mat)
     ax.set_title('Correlation: '+str(np.round(corr_[0, 1], 2)))
@@ -791,7 +793,7 @@ if __name__ == '__main__':
     folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
     # folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
     process_results_diff_protocols(folder, limit_tr=True)
-    process_results_diff_protocols(folder, limit_tr=False)
+    # process_results_diff_protocols(folder, limit_tr=False)
     # folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
     # process_results_diff_thresholds(folder, limit_tr=True)
     # process_results_diff_thresholds(folder, limit_tr=False)
