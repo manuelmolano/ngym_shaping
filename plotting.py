@@ -442,7 +442,8 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
                  keys=['performance', 'curr_ph', 'num_stps', 'curr_perf'],
                  limit_ax=True, final_ph=4, perf_th=0.7, ax_final=None,
                  tag='th_stage', limit_tr=False, rerun=False,
-                 f_final_prop={'color': (0, 0, 0), 'label': ''}):
+                 f_final_prop={'color': (0, 0, 0), 'label': ''},
+                 plt_ind_vals=True):
     assert ('performance' in keys) and ('curr_ph' in keys),\
         'performance and curr_ph need to be included in the metrics (keys)'
     # PROCESS RAW DATA
@@ -471,7 +472,7 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
     # the loaded file does not allow to modifying it
     metrics = {}
     for k in tmp.keys():
-        metrics[k] = tmp[k]
+        metrics[k] = list(tmp[k])
     if limit_tr:
         min_dur = np.min([len(x) for x in metrics['curr_ph']])
     else:
@@ -546,7 +547,7 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
         ax[len(keys)-1].legend()
         f.savefig(folder+'/'+names[ind]+algorithm+'_'+w+'_'+str(limit_tr)+'.png',
                   dpi=200)
-        # plt.close(f)
+        plt.close(f)
     f, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 12))
     ax.plot(exp_durations, stability_mat, '+')
     corr_ = np.corrcoef(exp_durations, stability_mat)
@@ -569,19 +570,22 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
         plt_perf_indicators(values=final_perf,
                             reached=reached_ph,
                             f_props=f_final_prop, index_val=val_index,
-                            ax=ax_final[0], ax_props=ax_props)
+                            ax=ax_final[0], ax_props=ax_props,
+                            plot_individual_values=plt_ind_vals)
         # trials to reach phase 4
         ax_props['ylabel'] = 'Number of trials to reach phase 4'
         plt_perf_indicators(values=tr_to_ph,
                             f_props=f_final_prop, ax_props=ax_props,
                             index_val=val_index, ax=ax_final[1],
-                            reached=reached_ph, discard=['full'])
+                            reached=reached_ph, discard=['full'],
+                            plot_individual_values=plt_ind_vals)
         # trials to reach final perf
         ax_props['ylabel'] = 'Number of trials to reach final performance'
         plt_perf_indicators(values=tr_to_perf,
                             reached=reached_perf,
                             index_val=val_index, ax=ax_final[2],
-                            f_props=f_final_prop, ax_props=ax_props)
+                            f_props=f_final_prop, ax_props=ax_props,
+                            plot_individual_values=plt_ind_vals)
         # make -1s equal to total number of trials
         ax_props['ylabel'] = 'Proportion of instances reaching phase 4'
         plt_perf_indicators(values=reached_ph, index_val=val_index,
@@ -598,19 +602,22 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
         ax_props['ylabel'] = 'Stability'
         plt_perf_indicators(values=stability_mat, index_val=val_index,
                             ax=ax_final[5], f_props=f_final_prop,
-                            ax_props=ax_props, reached=reached_perf)
+                            ax_props=ax_props, reached=reached_perf,
+                            plot_individual_values=plt_ind_vals)
         # steps to reach phase 4
         ax_props['ylabel'] = 'Number of steps to reach phase 4'
         plt_perf_indicators(values=stps_to_ph,
                             f_props=f_final_prop, ax_props=ax_props,
                             index_val=val_index, ax=ax_final[6],
-                            reached=reached_ph, discard=['full'])
+                            reached=reached_ph, discard=['full'],
+                            plot_individual_values=plt_ind_vals)
         # steps to reach final perf
         ax_props['ylabel'] = 'Number of steps to reach final performance'
         plt_perf_indicators(values=stps_to_perf,
                             reached=reached_perf,
                             index_val=val_index, ax=ax_final[7],
-                            f_props=f_final_prop, ax_props=ax_props)
+                            f_props=f_final_prop, ax_props=ax_props,
+                            plot_individual_values=plt_ind_vals)
 
 
 def tr_to_final_ph(curr_ph, tr_to_ph, wind_final_perf, final_ph):
@@ -679,8 +686,9 @@ def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
     for ind_val, val in enumerate(unq_vals):
         indx = index == val
         traces_temp = metric[indx, :]
-        ax.plot(np.nanmean(traces_temp, axis=0), color=clrs[ind_val],
-                lw=1, label=val+' ('+str(np.sum(indx))+')')
+        if not (np.isnan(traces_temp)).all():
+            ax.plot(np.nanmean(traces_temp, axis=0), color=clrs[ind_val],
+                    lw=1, label=val+' ('+str(np.sum(indx))+')')
     if limit_ax:
         assert limit_mean, 'limiting ax only works when mean is also limited'
         ax.set_xlim([0, min_dur])
@@ -731,7 +739,7 @@ def plt_perf_indicators(values, index_val, ax, f_props, ax_props, reached=None,
 
 
 def process_results_diff_thresholds(folder, limit_tr=True):
-    algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
+    algs = ['PPO2', 'ACKTR', 'A2C', 'ACER']
     windows = ['0', '1', '2', '3', '4']  # , '500', '1000']
     markers = ['+', 'x', '1', 'o', '>']
     for alg in algs:
@@ -745,7 +753,7 @@ def process_results_diff_thresholds(folder, limit_tr=True):
             print(w)
             marker = markers[ind]
             ind += 1
-            plot_results(folder, alg, w, limit_ax=False,
+            plot_results(folder, alg, w, limit_ax=False, plt_ind_vals=False,
                          ax_final=ax, tag='th_stage', limit_tr=limit_tr,
                          f_final_prop={'color': clrs[ind_w],
                                        'label': str(w),
@@ -788,12 +796,9 @@ if __name__ == '__main__':
     plt.close('all')
     # folder = '/Users/martafradera/Desktop/OneDrive -' +\
     #          ' Universitat de Barcelona/TFG/task/data/'
-    # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
-    # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
-    folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
+    # folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
     # folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
-    process_results_diff_protocols(folder, limit_tr=True)
-    # process_results_diff_protocols(folder, limit_tr=False)
+    # process_results_diff_protocols(folder, limit_tr=True)
+    folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
     # folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
-    # process_results_diff_thresholds(folder, limit_tr=True)
-    # process_results_diff_thresholds(folder, limit_tr=False)
+    process_results_diff_thresholds(folder, limit_tr=True)
