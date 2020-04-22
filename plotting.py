@@ -3,6 +3,7 @@
 
 """Plotting functions."""
 import os
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import glob
@@ -17,7 +18,7 @@ rcParams['font.size'] = 12
 clrs = sns.color_palette()
 
 prtcls_index_map = {'01234': -1, '1234': 0, '0234': 1, '0134': 2, '0124': 3,
-                    '34': 4}
+                    '34': 4, '-1': 5}
 
 ths_index_map = {'full': 0.5, '0.6': 0.6, '0.65': 0.65, '0.7': 0.7,
                  '0.75': 0.75, '0.8': 0.8, '0.85': 0.85, '0.9': 0.9}
@@ -404,22 +405,21 @@ def data_extraction(folder, w_conv_perf=500, metrics={'reward': []},
     return metrics, data_flag
 
 
-def days_under_performance(metric, ax, index, clrs, trials_day=300):
+def perf_hist(metric, ax, index, clrs, trials_day=300):
     metric = np.array(metric)
     index = np.array(index)
     unq_vals = np.unique(index)
+    bins = np.linspace(0, 1, 20)
     for ind_val, val in enumerate(unq_vals):
         indx = index == val
-        traces_temp = metric[indx]
-        mean = np.mean(traces_temp, axis=0)
-        new_x = [150]
-        curr_perf = []
-        for n in range(1, int(len(mean)/trials_day)):
-            new_x.append(n*trials_day+trials_day/2)
-        for ind in new_x:
-            curr_perf.append(mean[int(ind)])
-        sns.distplot(curr_perf, hist=False, kde=True, color=clrs[ind_val],
-                     kde_kws={'linewidth': 3}, label=val)
+        traces_temp = metric[indx].flatten()
+        hist_, plt_bins = np.histogram(traces_temp, bins=bins)
+        hist_ = hist_/np.sum(hist_)
+        plt_bins = plt_bins[:-1] + (plt_bins[1]-plt_bins[0])/2
+        ax.plot(plt_bins, hist_, label=val, color=clrs[ind_val])
+    ax.legend()
+    ax.set_xlabel('Performance')
+    ax.set_ylabel('Days')
 
 
 def put_together_files(folder):
@@ -451,7 +451,7 @@ def get_tag(tag, file):
     assert f_name.find(tag) != -1, 'Tag not found'
     val = f_name[f_name.find(tag)+len(tag)+1:]
     val = val[:val.find('_')] if '_' in val else val
-    if val == '-1.0':
+    if val.find('-1') != -1:
         val = 'full'
     return val
 
@@ -486,6 +486,7 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
         np.savez(folder+'/data_'+algorithm+'_'+w+'.npz', **metrics)
 
     # LOAD AND (POST)PROCESS DATA
+    print('Loading data')
     tmp = np.load(folder+'/data_'+algorithm+'_'+w+'.npz', allow_pickle=True)
     # the loaded file does not allow to modifying it
     metrics = {}
@@ -540,7 +541,7 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
         else:
             stps_to_perf.append(np.nan)
             stps_to_ph.append(np.nan)
-
+    print('Plotting results')
     # plot results
     names = ['values_across_training_', 'mean_values_across_training_']
     ylabels = ['Performance', 'Phase', 'Number of steps', 'Session performance']
@@ -565,20 +566,16 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
         ax[len(keys)-1].legend()
         f.savefig(folder+'/'+names[ind]+algorithm+'_'+w+'_'+str(limit_tr)+'.png',
                   dpi=200)
+        plt.close(f)
 
     # days under perf
     if 'curr_perf' in keys:
         f, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 12))
         metric = metrics['curr_perf']
-        days_under_performance(metric, ax=ax, clrs=clrs, index=val_index,
-                               trials_day=300)
-        ax.legend()
-        ax.set_title('Days under performance')
-        ax.set_xlabel('Performance')
-        ax.set_ylabel('Days')
-        f.savefig(folder+'/days_under_perf_'+algorithm+'_'+w+'.png', dpi=200)
+        perf_hist(metric, ax=ax, clrs=clrs, index=val_index, trials_day=300)
+        ax.set_title('Performance histogram ('+algorithm+')')
+        f.savefig(folder+'/perf_hist_'+algorithm+'_'+w+'.png', dpi=200)
         plt.close(f)
-        # plt.close(f)
 
     f, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 12))
     ax.plot(exp_durations, stability_mat, '+')
@@ -801,7 +798,7 @@ def process_results_diff_thresholds(folder, limit_tr=True):
 
 
 def process_results_diff_protocols(folder, limit_tr=True):
-    algs = ['A2C']  # , 'ACER', 'PPO2', 'ACKTR']
+    algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
     w = '0'
     marker = '+'
     for alg in algs:
@@ -826,18 +823,18 @@ def process_results_diff_protocols(folder, limit_tr=True):
 
 if __name__ == '__main__':
     plt.close('all')
-<<<<<<< HEAD
-    # folder = '/Users/martafradera/Desktop/OneDrive -' +\
-    #          ' Universitat de Barcelona/TFG/task/data/'
-=======
-    folder = '/Users/martafradera/Desktop/OneDrive -' +\
-             ' Universitat de Barcelona/TFG/task/data/'
+    if len(sys.argv) == 0:
+        folder = '/Users/martafradera/Desktop/OneDrive -' +\
+            ' Universitat de Barcelona/TFG/task/data/'
+    elif len (sys.argv) == 2:
+        folder = sys.argv[1]
+        
     # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
->>>>>>> 4a77dc335bfd4928ce3ceedc5408aef408ff8e84
     # folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
     # folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
-    # process_results_diff_protocols(folder, limit_tr=True)
-    folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
+    # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
     # folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
-    process_results_diff_thresholds(folder, limit_tr=True)
+        
+    process_results_diff_protocols(folder+'/diff_protocols/', limit_tr=True)
+    process_results_diff_thresholds(folder+'/one_agent_control/', limit_tr=True)
