@@ -422,6 +422,28 @@ def perf_hist(metric, ax, index, clrs, trials_day=300):
     ax.set_ylabel('Days')
 
 
+def trials_per_stage(metric, ax, index, clrs):
+    metric = np.array(metric)
+    index = np.array(index)
+    unq_vals = np.unique(index)
+    for ind_val, val in enumerate(unq_vals):
+        indx = index == val
+        traces_temp = metric[indx]
+        for stage in np.arange(4):
+            total_trials_stage = []
+            for trace in traces_temp:
+                trials_in_stage = np.where(trace == stage)[-1]
+                num_trials = len(trials_in_stage)
+                total_trials_stage.append(num_trials)
+            ax.plot(stage, np.mean(total_trials_stage), 'x', label=val,
+                    color=clrs[ind_val])
+    handles, labels = ax.get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    ax.legend(by_label.values(), by_label.keys())
+    ax.set_xlabel('Stage')
+    ax.set_ylabel('Trials')
+
+
 def put_together_files(folder):
     files = glob.glob(folder + '/*_bhvr_data*npz')
     data = {}
@@ -584,6 +606,16 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
     f.savefig(folder+'/corr_stablty_dur'+algorithm+'_'+w+'_' +
               str(limit_tr)+'.png', dpi=200)
     plt.close(f)
+    
+    # trials per stage
+    if 'curr_ph' in keys:
+        f, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 12))
+        metric = metrics['curr_ph']
+        trials_per_stage(metric, ax=ax, clrs=clrs, index=val_index)
+        ax.set_title('Average number of trials per stage ('+algorithm+')')
+        f.savefig(folder+'/trials_stage_'+algorithm+'_'+w+'.png', dpi=200)
+        plt.close(f)
+    
     # define xticks
     ax_props = {'tag': tag}
     if tag == 'stages':
@@ -828,7 +860,7 @@ if __name__ == '__main__':
             ' Universitat de Barcelona/TFG/task/data/'
     elif len (sys.argv) == 2:
         folder = sys.argv[1]
-        
+
     # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
