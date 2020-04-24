@@ -15,17 +15,19 @@ rcParams['font.family'] = 'sans-serif'
 rcParams['font.sans-serif'] = ['Arial']
 rcParams['font.size'] = 12
 
-clrs = sns.color_palette()
+CLRS = sns.color_palette()
 
-prtcls_index_map = {'01234': -1, '1234': 0, '0234': 1, '0134': 2, '0124': 3,
-                    '34': 4, '-1': 5}
+STAGES = [0, 1, 2, 3, 4]
 
-ths_index_map = {'full': 0.5, '0.6': 0.6, '0.65': 0.65, '0.7': 0.7,
-                 '0.75': 0.75, '0.8': 0.8, '0.85': 0.85, '0.9': 0.9}
+PRTCLS_IND_MAP = {'01234': -1, '1234': 0, '0234': 1, '0134': 2, '0124': 3,
+                  '34': 4, 'full': 5}
 
-all_indx = {}
-all_indx.update(prtcls_index_map)
-all_indx.update(ths_index_map)
+THS_IND_MAP = {'full': 0.5, '0.6': 0.6, '0.65': 0.65, '0.7': 0.7,
+               '0.75': 0.75, '0.8': 0.8, '0.85': 0.85, '0.9': 0.9}
+
+ALL_INDX = {}
+ALL_INDX.update(PRTCLS_IND_MAP)
+ALL_INDX.update(THS_IND_MAP)
 
 
 def plot_env(env, num_steps_env=200, def_act=None, model=None, show_fig=True,
@@ -405,7 +407,7 @@ def data_extraction(folder, w_conv_perf=500, metrics={'reward': []},
     return metrics, data_flag
 
 
-def perf_hist(metric, ax, index, clrs, trials_day=300):
+def perf_hist(metric, ax, index, trials_day=300):
     metric = np.array(metric)
     index = np.array(index)
     unq_vals = np.unique(index)
@@ -416,27 +418,25 @@ def perf_hist(metric, ax, index, clrs, trials_day=300):
         hist_, plt_bins = np.histogram(traces_temp, bins=bins)
         hist_ = hist_/np.sum(hist_)
         plt_bins = plt_bins[:-1] + (plt_bins[1]-plt_bins[0])/2
-        ax.plot(plt_bins, hist_, label=val, color=clrs[ind_val])
+        ax.plot(plt_bins, hist_, label=val, color=CLRS[ind_val])
     ax.legend()
     ax.set_xlabel('Performance')
     ax.set_ylabel('Days')
 
 
-def trials_per_stage(metric, ax, index, clrs):
+def trials_per_stage(metric, ax, index):
     metric = np.array(metric)
     index = np.array(index)
     unq_vals = np.unique(index)
     for ind_val, val in enumerate(unq_vals):
         indx = index == val
         traces_temp = metric[indx]
-        for stage in np.arange(4):
-            total_trials_stage = []
-            for trace in traces_temp:
-                trials_in_stage = np.where(trace == stage)[-1]
-                num_trials = len(trials_in_stage)
-                total_trials_stage.append(num_trials)
-            ax.plot(stage, np.mean(total_trials_stage), 'x', label=val,
-                    color=clrs[ind_val])
+        traces_flatten = traces_temp.flatten()
+        counts = np.histogram(traces_flatten, bins=np.linspace(STAGES[0]-0.5,
+                                                               STAGES[-2]+.5,
+                                                               len(STAGES)))[0]
+        counts = counts/np.sum(indx)
+        ax.plot(STAGES[:-1], counts, '+', label=val, color=CLRS[ind_val])
     handles, labels = ax.get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
     ax.legend(by_label.values(), by_label.keys())
@@ -483,7 +483,7 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
                  limit_ax=True, final_ph=4, perf_th=0.7, ax_final=None,
                  tag='th_stage', limit_tr=False, rerun=False,
                  f_final_prop={'color': (0, 0, 0), 'label': ''},
-                 plt_ind_vals=True):
+                 plt_ind_vals=True, plt_all_traces=False):
     assert ('performance' in keys) and ('curr_ph' in keys),\
         'performance and curr_ph need to be included in the metrics (keys)'
     # PROCESS RAW DATA
@@ -543,7 +543,7 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
         # performance analysis
         perf = np.array(metrics['performance'][ind_f])
         # get final performance
-        final_perf.append(np.mean(perf[-1]))
+        final_perf.append(perf[-1])
         # get trials to reach specified performance
         tt_ph = tr_to_ph[-1]
         tr_to_perf, reached = tr_to_reach_perf(perf=perf.copy(), tr_to_ph=tt_ph,
@@ -564,6 +564,16 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
             stps_to_perf.append(np.nan)
             stps_to_ph.append(np.nan)
     print('Plotting results')
+    # define xticks
+    ax_props = {'tag': tag}
+    if tag == 'stages':
+        ALL_INDX['full'] = 5
+        ax_props['labels'] = list(PRTCLS_IND_MAP.keys())
+        ax_props['ticks'] = list(PRTCLS_IND_MAP.values())
+    elif tag == 'th_stage':
+        ax_props['labels'] = list(THS_IND_MAP.keys())
+        ax_props['ticks'] = list(THS_IND_MAP.values())
+
     # plot results
     names = ['values_across_training_', 'mean_values_across_training_']
     ylabels = ['Performance', 'Phase', 'Number of steps', 'Session performance']
@@ -574,14 +584,14 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
         # plot means
         for ind_met, met in enumerate(keys):
             metric = metrics[met]
-            if ind == 0:
+            if ind == 0 and plt_all_traces:
                 plot_rew_across_training(metric=metric, index=val_index,
-                                         ax=ax[ind_met], clrs=clrs)
+                                         ax=ax[ind_met])
                 plt_means(metric=metric, index=val_index,
-                          ax=ax[ind_met], clrs=clrs, limit_ax=limit_ax)
+                          ax=ax[ind_met], limit_ax=limit_ax)
             elif ind == 1:
                 plt_means(metric=metric, index=val_index,
-                          ax=ax[ind_met], clrs=clrs, limit_ax=limit_ax)
+                          ax=ax[ind_met], limit_ax=limit_ax)
             ax[ind_met].set_ylabel(ylabels[ind_met])
         ax[0].set_title(algorithm + ' (w: ' + w + ')')
         ax[len(keys)-1].set_xlabel('Trials')
@@ -594,7 +604,7 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
     if 'curr_perf' in keys:
         f, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 12))
         metric = metrics['curr_perf']
-        perf_hist(metric, ax=ax, clrs=clrs, index=val_index, trials_day=300)
+        perf_hist(metric, ax=ax, index=val_index, trials_day=300)
         ax.set_title('Performance histogram ('+algorithm+')')
         f.savefig(folder+'/perf_hist_'+algorithm+'_'+w+'.png', dpi=200)
         plt.close(f)
@@ -606,24 +616,16 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
     f.savefig(folder+'/corr_stablty_dur'+algorithm+'_'+w+'_' +
               str(limit_tr)+'.png', dpi=200)
     plt.close(f)
-    
+
     # trials per stage
     if 'curr_ph' in keys:
         f, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 12))
         metric = metrics['curr_ph']
-        trials_per_stage(metric, ax=ax, clrs=clrs, index=val_index)
+        trials_per_stage(metric, ax=ax, index=val_index)
         ax.set_title('Average number of trials per stage ('+algorithm+')')
         f.savefig(folder+'/trials_stage_'+algorithm+'_'+w+'.png', dpi=200)
         plt.close(f)
-    
-    # define xticks
-    ax_props = {'tag': tag}
-    if tag == 'stages':
-        ax_props['labels'] = list(prtcls_index_map.keys())
-        ax_props['ticks'] = list(prtcls_index_map.values())
-    elif tag == 'th_stage':
-        ax_props['labels'] = list(ths_index_map.keys())
-        ax_props['ticks'] = list(ths_index_map.values())
+
     # plot final results
     if ax_final is not None:
         # plot final performance
@@ -720,7 +722,7 @@ def compute_stability(perf, tr_ab_th):
     return stability
 
 
-def plot_rew_across_training(metric, index, ax, clrs):
+def plot_rew_across_training(metric, index, ax):
     metric = np.array(metric)
     index = np.array(index)
     unq_vals = np.unique(index)
@@ -728,10 +730,10 @@ def plot_rew_across_training(metric, index, ax, clrs):
         indx = index == val
         traces_temp = metric[indx]
         for trace in traces_temp:
-            ax.plot(trace, color=clrs[ind_val], alpha=0.5, lw=0.5)
+            ax.plot(trace, color=CLRS[ind_val], alpha=0.5, lw=0.5)
 
 
-def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
+def plt_means(metric, index, ax, limit_mean=True, limit_ax=True):
     if limit_mean:
         min_dur = np.min([len(x) for x in metric])
         metric = [x[:min_dur] for x in metric]
@@ -748,7 +750,7 @@ def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
         indx = index == val
         traces_temp = metric[indx, :]
         if not (np.isnan(traces_temp)).all():
-            ax.plot(np.nanmean(traces_temp, axis=0), color=clrs[ind_val],
+            ax.plot(np.nanmean(traces_temp, axis=0), color=CLRS[ind_val],
                     lw=1, label=val+' ('+str(np.sum(indx))+')')
     if limit_ax:
         assert limit_mean, 'limiting ax only works when mean is also limited'
@@ -756,8 +758,8 @@ def plt_means(metric, index, ax, clrs, limit_mean=True, limit_ax=True):
 
 
 def get_noise(unq_vals):
-    max_ = np.max([all_indx[x] for x in unq_vals])
-    min_ = np.min([all_indx[x] for x in unq_vals])
+    max_ = np.max([ALL_INDX[x] for x in unq_vals])
+    min_ = np.min([ALL_INDX[x] for x in unq_vals])
     noise = (max_ - min_)/40
     return noise
 
@@ -784,14 +786,14 @@ def plt_perf_indicators(values, index_val, ax, f_props, ax_props, reached=None,
                 # plot number of trials
                 f_props['markersize'] = 10
                 if errorbars:
-                    ax.errorbar([all_indx[val]], np.nanmean(values_temp),
+                    ax.errorbar([ALL_INDX[val]], np.nanmean(values_temp),
                                 (np.nanstd(values_temp)/np.sqrt(n_vals)),
                                 **f_props)
                 else:
-                    ax.plot(all_indx[val], np.nanmean(values_temp), **f_props)
+                    ax.plot(ALL_INDX[val], np.nanmean(values_temp), **f_props)
             if plot_individual_values:
                 xs = np.random.normal(0, std_noise, ((np.sum(indx),))) +\
-                    all_indx[val]
+                    ALL_INDX[val]
                 ax.plot(xs, values_temp, alpha=0.5, linestyle='None', **f_props)
     ax.set_xlabel(ax_props['tag'])
     ax.set_ylabel(ax_props['ylabel'])
@@ -816,7 +818,7 @@ def process_results_diff_thresholds(folder, limit_tr=True):
             ind += 1
             plot_results(folder, alg, w, limit_ax=False, plt_ind_vals=False,
                          ax_final=ax, tag='th_stage', limit_tr=limit_tr,
-                         f_final_prop={'color': clrs[ind_w],
+                         f_final_prop={'color': CLRS[ind_w],
                                        'label': str(w),
                                        'marker': marker})
 
@@ -840,7 +842,7 @@ def process_results_diff_protocols(folder, limit_tr=True):
         ax = ax.flatten()
         plot_results(folder, alg, w, limit_ax=False,
                      ax_final=ax, tag='stages', limit_tr=limit_tr,
-                     f_final_prop={'color': clrs[0],
+                     f_final_prop={'color': CLRS[0],
                                    'label': w,
                                    'marker': marker})
 
@@ -855,18 +857,20 @@ def process_results_diff_protocols(folder, limit_tr=True):
 
 if __name__ == '__main__':
     plt.close('all')
-    if len(sys.argv) == 0:
-        folder = '/Users/martafradera/Desktop/OneDrive -' +\
-            ' Universitat de Barcelona/TFG/task/data/'
-    elif len (sys.argv) == 2:
+    if len(sys.argv) == 1:
+        # folder = '/Users/martafradera/Desktop/OneDrive -' +\
+        #     ' Universitat de Barcelona/TFG/task/data/'
+        folder = '/home/manuel/CV-Learning/results/results_2303/'
+    elif len(sys.argv) == 2:
         folder = sys.argv[1]
-
+    print(sys.argv)
     # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
-    # folder = '/home/manuel/CV-Learning/results/results_2303/diff_protocols/'
+
     # folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
     # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
     # folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
-        
+
     process_results_diff_protocols(folder+'/diff_protocols/', limit_tr=True)
-    process_results_diff_thresholds(folder+'/one_agent_control/', limit_tr=True)
+    # process_results_diff_thresholds(folder+'/one_agent_control/',
+    #                                 limit_tr=True)
