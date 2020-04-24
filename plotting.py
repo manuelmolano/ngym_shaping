@@ -497,7 +497,7 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
                  limit_ax=True, final_ph=4, perf_th=0.7, ax_final=None,
                  tag='th_stage', limit_tr=False, rerun=False,
                  f_final_prop={'color': (0, 0, 0), 'label': ''},
-                 plt_ind_vals=True, plt_all_traces=False):
+                 plt_ind_vals=True, plt_all_traces=True):
     assert ('performance' in keys) and ('curr_ph' in keys),\
         'performance and curr_ph need to be included in the metrics (keys)'
     # PROCESS RAW DATA
