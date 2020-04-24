@@ -425,18 +425,32 @@ def perf_hist(metric, ax, index, trials_day=300):
 
 
 def trials_per_stage(metric, ax, index):
+    bins = np.linspace(STAGES[0]-0.5, STAGES[-2]+.5, len(STAGES))
     metric = np.array(metric)
     index = np.array(index)
     unq_vals = np.unique(index)
     for ind_val, val in enumerate(unq_vals):
         indx = index == val
         traces_temp = metric[indx]
-        traces_flatten = traces_temp.flatten()
-        counts = np.histogram(traces_flatten, bins=np.linspace(STAGES[0]-0.5,
-                                                               STAGES[-2]+.5,
-                                                               len(STAGES)))[0]
-        counts = counts/np.sum(indx)
-        ax.plot(STAGES[:-1], counts, '+', label=val, color=CLRS[ind_val])
+        counts_mat = []
+        n_traces = len(traces_temp)
+        if val == '0234':
+            plt.figure()
+            for ind in range(n_traces):
+                plt.plot(traces_temp[ind]+4*ind)
+            # print('asdas')
+        for ind_tr in range(n_traces):
+            counts = np.histogram(traces_temp[ind_tr], bins=bins)[0]
+            # ax.plot(STAGES[:-1]+np.random.normal(0, 0.01, 4), counts, '+',
+            #         color=CLRS[ind_val], alpha=0.5)
+            counts_mat.append(counts)
+        counts_mat = np.array(counts_mat)
+        mean_counts = np.mean(counts_mat, axis=0)
+        std_counts = np.std(counts_mat, axis=0)/np.sqrt(n_traces)
+        # TODO: don't plot stages that are never visited
+        # (e.g. in protocol 0234, don't plot stage 1)
+        ax.errorbar(np.array(STAGES[:-1]), mean_counts, std_counts, marker='+',
+                    color=CLRS[ind_val], label=val)
     handles, labels = ax.get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
     ax.legend(by_label.values(), by_label.keys())
@@ -619,7 +633,7 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
 
     # trials per stage
     if 'curr_ph' in keys:
-        f, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 12))
+        f, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 8))
         metric = metrics['curr_ph']
         trials_per_stage(metric, ax=ax, index=val_index)
         ax.set_title('Average number of trials per stage ('+algorithm+')')
@@ -635,13 +649,12 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
                             f_props=f_final_prop, index_val=val_index,
                             ax=ax_final[0], ax_props=ax_props,
                             plot_individual_values=plt_ind_vals)
-        # trials to reach phase 4
-        ax_props['ylabel'] = 'Number of trials to reach phase 4'
-        plt_perf_indicators(values=tr_to_ph,
-                            f_props=f_final_prop, ax_props=ax_props,
-                            index_val=val_index, ax=ax_final[1],
-                            reached=reached_ph, discard=['full'],
-                            plot_individual_values=plt_ind_vals)
+        # prop of trials that reach final perf
+        ax_props['ylabel'] = 'Proportion of instances reaching final perf'
+        plt_perf_indicators(values=reached_perf, index_val=val_index,
+                            ax=ax_final[1], f_props=f_final_prop,
+                            ax_props=ax_props, errorbars=False,
+                            plot_individual_values=False)
         # trials to reach final perf
         ax_props['ylabel'] = 'Number of trials to reach final performance'
         plt_perf_indicators(values=tr_to_perf,
@@ -649,23 +662,25 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
                             index_val=val_index, ax=ax_final[2],
                             f_props=f_final_prop, ax_props=ax_props,
                             plot_individual_values=plt_ind_vals)
-        # make -1s equal to total number of trials
-        ax_props['ylabel'] = 'Proportion of instances reaching phase 4'
-        plt_perf_indicators(values=reached_ph, index_val=val_index,
-                            ax=ax_final[3], f_props=f_final_prop,
-                            ax_props=ax_props, discard=['full'],
-                            errorbars=False, plot_individual_values=False)
-        # prop of trials that reach final perf
-        ax_props['ylabel'] = 'Proportion of instances reaching final perf'
-        plt_perf_indicators(values=reached_perf, index_val=val_index,
-                            ax=ax_final[4], f_props=f_final_prop,
-                            ax_props=ax_props, errorbars=False,
-                            plot_individual_values=False)
         # plot stability
         ax_props['ylabel'] = 'Stability'
         plt_perf_indicators(values=stability_mat, index_val=val_index,
-                            ax=ax_final[5], f_props=f_final_prop,
+                            ax=ax_final[3], f_props=f_final_prop,
                             ax_props=ax_props, reached=reached_perf,
+                            plot_individual_values=plt_ind_vals)
+
+        # make -1s equal to total number of trials
+        ax_props['ylabel'] = 'Proportion of instances reaching phase 4'
+        plt_perf_indicators(values=reached_ph, index_val=val_index,
+                            ax=ax_final[4], f_props=f_final_prop,
+                            ax_props=ax_props, discard=['full'],
+                            errorbars=False, plot_individual_values=False)
+        # trials to reach phase 4
+        ax_props['ylabel'] = 'Number of trials to reach phase 4'
+        plt_perf_indicators(values=tr_to_ph,
+                            f_props=f_final_prop, ax_props=ax_props,
+                            index_val=val_index, ax=ax_final[5],
+                            reached=reached_ph, discard=['full'],
                             plot_individual_values=plt_ind_vals)
         # steps to reach phase 4
         ax_props['ylabel'] = 'Number of steps to reach phase 4'
