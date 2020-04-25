@@ -20,7 +20,7 @@ CLRS = sns.color_palette()
 STAGES = [0, 1, 2, 3, 4]
 
 PRTCLS_IND_MAP = {'01234': -1, '1234': 0, '0234': 1, '0134': 2, '0124': 3,
-                  '34': 4, 'full': 5}
+                  '34': 4, 'full': 5, '4': 5}
 
 THS_IND_MAP = {'full': 0.5, '0.6': 0.6, '0.65': 0.65, '0.7': 0.7,
                '0.75': 0.75, '0.8': 0.8, '0.85': 0.85, '0.9': 0.9}
@@ -434,11 +434,6 @@ def trials_per_stage(metric, ax, index):
         traces_temp = metric[indx]
         counts_mat = []
         n_traces = len(traces_temp)
-        if val == '0234':
-            plt.figure()
-            for ind in range(n_traces):
-                plt.plot(traces_temp[ind]+4*ind)
-            # print('asdas')
         for ind_tr in range(n_traces):
             counts = np.histogram(traces_temp[ind_tr], bins=bins)[0]
             # ax.plot(STAGES[:-1]+np.random.normal(0, 0.01, 4), counts, '+',
@@ -497,7 +492,7 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
                  limit_ax=True, final_ph=4, perf_th=0.7, ax_final=None,
                  tag='th_stage', limit_tr=False, rerun=False,
                  f_final_prop={'color': (0, 0, 0), 'label': ''},
-                 plt_ind_vals=True, plt_all_traces=True):
+                 plt_ind_vals=True, plt_all_traces=False):
     assert ('performance' in keys) and ('curr_ph' in keys),\
         'performance and curr_ph need to be included in the metrics (keys)'
     # PROCESS RAW DATA
@@ -591,7 +586,7 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
     # plot results
     names = ['values_across_training_', 'mean_values_across_training_']
     ylabels = ['Performance', 'Phase', 'Number of steps', 'Session performance']
-    val_index = metrics['val_index']
+    val_index = np.array(metrics['val_index'])
     for ind in range(2):
         f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
                              figsize=(12, 12))
@@ -643,57 +638,58 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
     # plot final results
     if ax_final is not None:
         # plot final performance
+        ind_block = 4
         ax_props['ylabel'] = 'Average performance'
         plt_perf_indicators(values=final_perf,
                             reached=reached_ph,
                             f_props=f_final_prop, index_val=val_index,
-                            ax=ax_final[0], ax_props=ax_props,
+                            ax=ax_final[ind_block], ax_props=ax_props,
                             plot_individual_values=plt_ind_vals)
         # prop of trials that reach final perf
         ax_props['ylabel'] = 'Proportion of instances reaching final perf'
         plt_perf_indicators(values=reached_perf, index_val=val_index,
-                            ax=ax_final[1], f_props=f_final_prop,
-                            ax_props=ax_props, errorbars=False,
-                            plot_individual_values=False)
+                            ax=ax_final[ind_block+1], f_props=f_final_prop,
+                            reached=reached_ph, ax_props=ax_props,
+                            errorbars=False, plot_individual_values=False)
         # trials to reach final perf
         ax_props['ylabel'] = 'Number of trials to reach final performance'
         plt_perf_indicators(values=tr_to_perf,
                             reached=reached_perf,
-                            index_val=val_index, ax=ax_final[2],
+                            index_val=val_index, ax=ax_final[ind_block+2],
                             f_props=f_final_prop, ax_props=ax_props,
                             plot_individual_values=plt_ind_vals)
         # plot stability
         ax_props['ylabel'] = 'Stability'
         plt_perf_indicators(values=stability_mat, index_val=val_index,
-                            ax=ax_final[3], f_props=f_final_prop,
+                            ax=ax_final[ind_block+3], f_props=f_final_prop,
                             ax_props=ax_props, reached=reached_perf,
                             plot_individual_values=plt_ind_vals)
-
+        ind_block = 0
         # make -1s equal to total number of trials
         ax_props['ylabel'] = 'Proportion of instances reaching phase 4'
         plt_perf_indicators(values=reached_ph, index_val=val_index,
-                            ax=ax_final[4], f_props=f_final_prop,
+                            ax=ax_final[ind_block], f_props=f_final_prop,
                             ax_props=ax_props, discard=['full'],
                             errorbars=False, plot_individual_values=False)
         # trials to reach phase 4
         ax_props['ylabel'] = 'Number of trials to reach phase 4'
         plt_perf_indicators(values=tr_to_ph,
                             f_props=f_final_prop, ax_props=ax_props,
-                            index_val=val_index, ax=ax_final[5],
+                            index_val=val_index, ax=ax_final[ind_block+1],
                             reached=reached_ph, discard=['full'],
                             plot_individual_values=plt_ind_vals)
         # steps to reach phase 4
         ax_props['ylabel'] = 'Number of steps to reach phase 4'
         plt_perf_indicators(values=stps_to_ph,
                             f_props=f_final_prop, ax_props=ax_props,
-                            index_val=val_index, ax=ax_final[6],
+                            index_val=val_index, ax=ax_final[ind_block+2],
                             reached=reached_ph, discard=['full'],
                             plot_individual_values=plt_ind_vals)
         # steps to reach final perf
         ax_props['ylabel'] = 'Number of steps to reach final performance'
         plt_perf_indicators(values=stps_to_perf,
                             reached=reached_perf,
-                            index_val=val_index, ax=ax_final[7],
+                            index_val=val_index, ax=ax_final[ind_block+3],
                             f_props=f_final_prop, ax_props=ax_props,
                             plot_individual_values=plt_ind_vals)
 
@@ -816,6 +812,8 @@ def plt_perf_indicators(values, index_val, ax, f_props, ax_props, reached=None,
     ax.set_xticklabels(ax_props['labels'])
 
 
+# TODO: merge the 2 functions below
+
 def process_results_diff_thresholds(folder, limit_tr=True):
     algs = ['PPO2', 'ACKTR', 'A2C', 'ACER']
     windows = ['0', '1', '2', '3', '4']  # , '500', '1000']
@@ -867,7 +865,7 @@ def process_results_diff_protocols(folder, limit_tr=True):
 
         f.savefig(folder + '/final_results_' +
                   alg+'_'+str(limit_tr)+'.png', dpi=200)
-        plt.close(f)
+        # plt.close(f)
 
 
 if __name__ == '__main__':
@@ -886,6 +884,8 @@ if __name__ == '__main__':
     # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
     # folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
 
-    process_results_diff_protocols(folder+'/diff_protocols/', limit_tr=True)
+    # process_results_diff_protocols(folder+'/diff_protocols/', limit_tr=True)
     # process_results_diff_thresholds(folder+'/one_agent_control/',
     #                                 limit_tr=True)
+    process_results_diff_protocols(folder+'/large_actObs_space/',
+                                   limit_tr=True)
