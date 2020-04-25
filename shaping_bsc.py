@@ -33,7 +33,7 @@ def test_env(env, kwargs, num_steps=100):
     env = gym.make(env, **kwargs)
     env.reset()
     for stp in range(num_steps):
-        action = env.action_space.sample()
+        action = 0
         state, rew, done, info = env.step(action)
         if done:
             env.reset()
@@ -63,6 +63,9 @@ def arg_parser():
     parser.add_argument('--num_trials',
                         help='number of trials to train', type=int,
                         default=None)
+    parser.add_argument('--n_lstm',
+                        help='number of units in the network',
+                        type=int, default=None)
     parser.add_argument('--rollout',
                         help='rollout used to train the network',
                         type=int, default=None)
@@ -87,6 +90,9 @@ def arg_parser():
     parser.add_argument('--stages',
                         help='stages used for training',
                         type=int, nargs='+', default=None)
+    parser.add_argument('--n_ch',
+                        help='number of stimuli and actions',
+                        type=int, default=None)
 
     # trial_hist wrapper parameters
     parser.add_argument('--probs', help='prob of main transition in the ' +
@@ -132,7 +138,7 @@ def make_env(env_id, rank, seed=0, wrapps={}, n_args={}, **kwargs):
 
 
 def run(alg, alg_kwargs, task, task_kwargs, wrappers_kwargs, n_args,
-        rollout, num_trials, folder, n_cpu):
+        rollout, num_trials, folder, n_cpu, n_lstm):
     env = test_env(task, kwargs=task_kwargs, num_steps=1000)
     num_timesteps = int(1000 * num_trials / (env.num_tr))
     if not os.path.exists(folder + 'bhvr_data_all.npz'):
@@ -151,7 +157,8 @@ def run(alg, alg_kwargs, task, task_kwargs, wrappers_kwargs, n_args,
                              for i in range(n_cpu)])
         model = algo(LstmPolicy, env, verbose=0, n_steps=rollout,
                      n_cpu_tf_sess=n_cpu,
-                     policy_kwargs={"feature_extraction": "mlp"},
+                     policy_kwargs={"feature_extraction": "mlp",
+                                    "n_lstm": n_lstm},
                      **alg_kwargs)
         model.learn(total_timesteps=num_timesteps)
         model.save(f"{folder}model")
@@ -160,9 +167,9 @@ def run(alg, alg_kwargs, task, task_kwargs, wrappers_kwargs, n_args,
 
 
 if __name__ == "__main__":
-    # main_folder = '/gpfs/projects/hcli64/shaping/'
+    main_folder = '/gpfs/projects/hcli64/molano/neurogym/20200417/'
     # main_folder = '/home/molano/priors/codes/experiments_parameters/'
-    main_folder = '/home/manuel/CV-Learning/results/'
+    # main_folder = '/home/manuel/ngym_usage/'
     # get params from call
     n_arg_parser = arg_parser()
     n_args, unknown_args = n_arg_parser.parse_known_args(sys.argv)
@@ -199,7 +206,9 @@ if __name__ == "__main__":
     num_trials = int(gen_params['num_trials'])
     rollout = int(gen_params['rollout'])
     num_cpu = int(gen_params['num_cpu'])
+    n_lstm = int(gen_params['n_lstm'])
     task_kwargs = params.task_kwargs[gen_params['task']]
     run(alg=alg, alg_kwargs=alg_kwargs, task=task, task_kwargs=task_kwargs,
         wrappers_kwargs=params.wrapps, n_args=n_args, rollout=rollout,
-        num_trials=num_trials, folder=instance_folder, n_cpu=num_cpu)
+        num_trials=num_trials, folder=instance_folder, n_cpu=num_cpu,
+        n_lstm=n_lstm)
