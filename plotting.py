@@ -425,7 +425,7 @@ def perf_hist(metric, ax, index, trials_day=300):
 
 
 def trials_per_stage(metric, ax, index):
-    bins = np.linspace(STAGES[0]-0.5, STAGES[-2]+.5, len(STAGES))
+    bins = np.linspace(STAGES[0]-0.5, STAGES[-1]+.5, len(STAGES)+1)
     metric = np.array(metric)
     index = np.array(index)
     unq_vals = np.unique(index)
@@ -436,18 +436,25 @@ def trials_per_stage(metric, ax, index):
         n_traces = len(traces_temp)
         for ind_tr in range(n_traces):
             counts = np.histogram(traces_temp[ind_tr], bins=bins)[0]
-            # ax.plot(STAGES[:-1]+np.random.normal(0, 0.01, 4), counts, '+',
-            #         color=CLRS[ind_val], alpha=0.5)
+            indx = counts != 0
+            noise = np.random.normal(0, 0.01, np.sum(indx))
+            ax.plot(np.array(STAGES)[indx]+noise, counts[indx], '+',
+                    color=CLRS[ind_val], alpha=0.5)
             counts_mat.append(counts)
         counts_mat = np.array(counts_mat)
         mean_counts = np.mean(counts_mat, axis=0)
-        std_counts = np.std(counts_mat, axis=0)/np.sqrt(n_traces)
         # TODO: don't plot stages that are never visited
         # (e.g. in protocol 0234, don't plot stage 1)
-        ax.errorbar(np.array(STAGES[:-1]), mean_counts, std_counts, marker='+',
-                    color=CLRS[ind_val], label=val)
+        # ax.errorbar(np.array(STAGES), mean_counts, std_counts, marker='+',
+        #             color=CLRS[ind_val], label=val)
+        # std_counts = np.std(counts_mat, axis=0)/np.sqrt(n_traces)
+        indx = mean_counts != 0
+        ax.plot(np.array(STAGES)[indx], mean_counts[indx], marker='+',
+                linestyle='--', color=CLRS[ind_val], label=val)
+
     handles, labels = ax.get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
+    plt.yscale('log')
     ax.legend(by_label.values(), by_label.keys())
     ax.set_xlabel('Stage')
     ax.set_ylabel('Trials')
@@ -616,15 +623,7 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
         perf_hist(metric, ax=ax, index=val_index, trials_day=300)
         ax.set_title('Performance histogram ('+algorithm+')')
         f.savefig(folder+'/perf_hist_'+algorithm+'_'+w+'.png', dpi=200)
-        plt.close(f)
-
-    f, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 12))
-    ax.plot(exp_durations, stability_mat, '+')
-    corr_ = np.corrcoef(exp_durations, stability_mat)
-    ax.set_title('Correlation: '+str(np.round(corr_[0, 1], 2)))
-    f.savefig(folder+'/corr_stablty_dur'+algorithm+'_'+w+'_' +
-              str(limit_tr)+'.png', dpi=200)
-    plt.close(f)
+        # plt.close(f)
 
     # trials per stage
     if 'curr_ph' in keys:
@@ -633,7 +632,7 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
         trials_per_stage(metric, ax=ax, index=val_index)
         ax.set_title('Average number of trials per stage ('+algorithm+')')
         f.savefig(folder+'/trials_stage_'+algorithm+'_'+w+'.png', dpi=200)
-        plt.close(f)
+        # plt.close(f)
 
     # plot final results
     if ax_final is not None:
