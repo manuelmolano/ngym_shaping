@@ -827,7 +827,7 @@ def batch_results(algs, setup_vals, markers, tag, setup_nm, folder,
             plot_results(folder, alg, setup=setup, setup_nm=setup_nm,
                          limit_ax=False, ax_final=ax, tag=tag,
                          limit_tr=limit_tr,
-                         f_final_prop={'color': CLRS[0],
+                         f_final_prop={'color': CLRS[ind_setup],
                                        'label': setup,
                                        'marker': markers[ind_setup]},
                          rerun=rerun)
