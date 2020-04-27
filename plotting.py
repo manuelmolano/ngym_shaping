@@ -10,6 +10,7 @@ import glob
 import gym
 import seaborn as sns
 import ntpath
+import itertools
 from matplotlib import rcParams
 rcParams['font.family'] = 'sans-serif'
 rcParams['font.sans-serif'] = ['Arial']
@@ -414,7 +415,8 @@ def perf_hist(metric, ax, index, trials_day=300):
     bins = np.linspace(0, 1, 20)
     for ind_val, val in enumerate(unq_vals):
         indx = index == val
-        traces_temp = metric[indx].flatten()
+        traces_temp = metric[indx]
+        traces_temp = list(itertools.chain.from_iterable(traces_temp))
         hist_, plt_bins = np.histogram(traces_temp, bins=bins)
         hist_ = hist_/np.sum(hist_)
         plt_bins = plt_bins[:-1] + (plt_bins[1]-plt_bins[0])/2
@@ -526,7 +528,8 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
                  **metrics)
 
     # LOAD AND (POST)PROCESS DATA
-    print('Loading data')
+    print('Loading data from: ', folder+'/data_'+algorithm+'_'+setup_nm +
+          '_'+setup+'.npz')
     tmp = np.load(folder+'/data_'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
                   allow_pickle=True)
     # the loaded file does not allow to modifying it
@@ -577,8 +580,8 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
         # # number of steps
         if len(metrics['num_stps'][ind_f]) != 0:
             num_steps = np.cumsum(metrics['num_stps'][ind_f])
-            stps_to_perf.append(num_steps[tt_prf-1]/1000)
-            stps_to_ph.append(num_steps[tt_ph-1]/1000)
+            stps_to_perf.append(num_steps[max(0, tt_prf-1)]/1000)
+            stps_to_ph.append(num_steps[max(0, tt_prf-1)]/1000)
         else:
             stps_to_perf.append(np.nan)
             stps_to_ph.append(np.nan)
@@ -673,21 +676,21 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
         ax_props['ylabel'] = 'Proportion of instances reaching phase 4'
         plt_perf_indicators(values=reached_ph, index_val=val_index,
                             ax=ax_final[ind_block], f_props=f_final_prop,
-                            ax_props=ax_props, discard=['full'],
+                            ax_props=ax_props, discard=['full', '4'],
                             errorbars=False, plot_individual_values=False)
         # trials to reach phase 4
         ax_props['ylabel'] = 'Number of trials to reach phase 4'
         plt_perf_indicators(values=tr_to_ph,
                             f_props=f_final_prop, ax_props=ax_props,
                             index_val=val_index, ax=ax_final[ind_block+1],
-                            reached=reached_ph, discard=['full'],
+                            reached=reached_ph, discard=['full', '4'],
                             plot_individual_values=plt_ind_vals)
         # steps to reach phase 4
         ax_props['ylabel'] = 'Number of steps to reach phase 4'
         plt_perf_indicators(values=stps_to_ph,
                             f_props=f_final_prop, ax_props=ax_props,
                             index_val=val_index, ax=ax_final[ind_block+2],
-                            reached=reached_ph, discard=['full'],
+                            reached=reached_ph, discard=['full', '4'],
                             plot_individual_values=plt_ind_vals)
         # steps to reach final perf
         ax_props['ylabel'] = 'Number of steps to reach final performance'
@@ -850,7 +853,7 @@ if __name__ == '__main__':
     elif len(sys.argv) == 2:
         main_folder = sys.argv[1]
     print(sys.argv)
-    rerun = True
+    rerun = False
     algs = ['A2C']
     n_ch = ['2', '10', '20']
     markers = ['+', 'x', '1']
@@ -858,7 +861,7 @@ if __name__ == '__main__':
     tag = 'stages'
     folder = main_folder+'/large_actObs_space/'
     batch_results(algs=algs, setup_vals=n_ch, markers=markers, tag=tag,
-                  setup_nm=setup_nm, folder=folder, limit_tr=True, rerun=rerun)
+                  setup_nm=setup_nm, folder=folder, limit_tr=False, rerun=rerun)
     # algs = ['PPO2', 'ACKTR', 'A2C', 'ACER']
     # winds = ['0', '1', '2', '3', '4']  # , '500', '1000']
     # markers = ['+', 'x', '1', 'o', '>']
