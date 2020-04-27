@@ -642,6 +642,82 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
                   '.png', dpi=200)
         # plt.close(f)
 
+    # final figures
+    f, ax = plt.subplots(nrows=1, ncols=2, figsize=(15, 8))
+    # prop of instances reaching phase 4
+    ax_props['ylabel'] = 'Proportion of instances reaching phase 4'
+    plt_perf_indicators(values=reached_ph, index_val=val_index,
+                        ax=ax_final[0], f_props=f_final_prop,
+                        ax_props=ax_props, discard=['full', '4'],
+                        errorbars=False, plot_individual_values=False)
+    # trials to reach phase 4
+    ax_props['ylabel'] = 'Number of trials to reach phase 4'
+    plt_perf_indicators(values=tr_to_ph,
+                        f_props=f_final_prop, ax_props=ax_props,
+                        index_val=val_index, ax=ax_final[1],
+                        reached=reached_ph, discard=['full', '4'],
+                        plot_individual_values=plt_ind_vals)
+    handles, labels = ax[0].get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    ax[0].legend(by_label.values(), by_label.keys())
+    f.savefig(folder + '/_final_phase_results_' + algorithm + '_' +
+              str(limit_tr) + '.png', dpi=200)
+
+    f, ax = plt.subplots(nrows=1, ncols=2, figsize=(15, 8))
+    # steps to reach phase 4
+    ax_props['ylabel'] = 'Number of steps to reach phase 4'
+    plt_perf_indicators(values=stps_to_ph,
+                        f_props=f_final_prop, ax_props=ax_props,
+                        index_val=val_index, ax=ax_final[0],
+                        reached=reached_ph, discard=['full', '4'],
+                        plot_individual_values=plt_ind_vals)
+    # steps to reach final perf
+    ax_props['ylabel'] = 'Number of steps to reach final performance'
+    plt_perf_indicators(values=stps_to_perf,
+                        reached=reached_perf,
+                        index_val=val_index, ax=ax_final[1],
+                        f_props=f_final_prop, ax_props=ax_props,
+                        plot_individual_values=plt_ind_vals)
+    handles, labels = ax[0].get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    ax[0].legend(by_label.values(), by_label.keys())
+    f.savefig(folder + '/total_number_steps_' + algorithm + '_' +
+              str(limit_tr) + '.png', dpi=200)
+
+    f, ax = plt.subplots(nrows=2, ncols=2, figsize=(16, 16))
+    # plot final performance
+    ind_block = 0
+    ax_props['ylabel'] = 'Average performance'
+    plt_perf_indicators(values=final_perf,
+                        reached=reached_ph,
+                        f_props=f_final_prop, index_val=val_index,
+                        ax=ax_final[ind_block], ax_props=ax_props,
+                        plot_individual_values=plt_ind_vals)
+    # prop of trials that reach final perf
+    ax_props['ylabel'] = 'Proportion of instances reaching final perf'
+    plt_perf_indicators(values=reached_perf, index_val=val_index,
+                        ax=ax_final[ind_block+1], f_props=f_final_prop,
+                        reached=reached_ph, ax_props=ax_props,
+                        errorbars=False, plot_individual_values=False)
+    # trials to reach final perf
+    ax_props['ylabel'] = 'Number of trials to reach final performance'
+    plt_perf_indicators(values=tr_to_perf,
+                        reached=reached_perf,
+                        index_val=val_index, ax=ax_final[ind_block+2],
+                        f_props=f_final_prop, ax_props=ax_props,
+                        plot_individual_values=plt_ind_vals)
+    # plot stability
+    ax_props['ylabel'] = 'Stability'
+    plt_perf_indicators(values=stability_mat, index_val=val_index,
+                        ax=ax_final[ind_block+3], f_props=f_final_prop,
+                        ax_props=ax_props, reached=reached_perf,
+                        plot_individual_values=plt_ind_vals)
+    handles, labels = ax[0].get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    ax[0].legend(by_label.values(), by_label.keys())
+    f.savefig(folder + '/final_performance_results_' + algorithm + '_' +
+              str(limit_tr) + '.png', dpi=200)
+
     # plot final results
     if ax_final is not None:
         # plot final performance
@@ -847,9 +923,9 @@ def batch_results(algs, setup_vals, markers, tag, setup_nm, folder,
 if __name__ == '__main__':
     plt.close('all')
     if len(sys.argv) == 1:
-        # folder = '/Users/martafradera/Desktop/OneDrive -' +\
-        #     ' Universitat de Barcelona/TFG/task/data/'
-        main_folder = '/home/manuel/CV-Learning/results/results_2303/'
+        main_folder = '/Users/martafradera/Desktop/OneDrive -' +\
+                      ' Universitat de Barcelona/TFG/task/data/'
+        # main_folder = '/home/manuel/CV-Learning/results/results_2303/'
     elif len(sys.argv) == 2:
         main_folder = sys.argv[1]
     print(sys.argv)
