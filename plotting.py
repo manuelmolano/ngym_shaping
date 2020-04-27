@@ -486,7 +486,7 @@ def order_by_sufix(file_list):
 def get_tag(tag, file):
     # process name
     f_name = ntpath.basename(file)
-    assert f_name.find(tag) != -1, 'Tag not found'
+    assert f_name.find(tag) != -1, 'Tag '+tag+' not found in '+f_name
     val = f_name[f_name.find(tag)+len(tag)+1:]
     val = val[:val.find('_')] if '_' in val else val
     if val.find('-1') != -1:
@@ -494,7 +494,7 @@ def get_tag(tag, file):
     return val
 
 
-def plot_results(folder, algorithm, w, w_conv_perf=500,
+def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
                  keys=['performance', 'curr_ph', 'num_stps', 'curr_perf'],
                  limit_ax=True, final_ph=4, perf_th=0.7, ax_final=None,
                  tag='th_stage', limit_tr=False, rerun=False,
@@ -503,11 +503,12 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
     assert ('performance' in keys) and ('curr_ph' in keys),\
         'performance and curr_ph need to be included in the metrics (keys)'
     # PROCESS RAW DATA
-    if not os.path.exists(folder+'/data_'+algorithm+'_'+w+'.npz') or rerun:
-        if tag == 'th_stage':
-            files = glob.glob(folder + '*' + algorithm + '*' + w)
-        else:
-            files = glob.glob(folder + '*' + algorithm + '*stages*')
+    if not os.path.exists(folder+'/data_'+algorithm+'_'+setup_nm+'_'+setup +
+                          '.npz') or rerun:
+        print('Pre-processing raw data')
+        files = glob.glob(folder+'alg_'+algorithm+'*'+setup_nm+'_'+setup+'_*')
+        assert len(files) > 0, 'No files of the form: '+folder+'*'+algorithm +\
+            '*'+setup_nm+'_'+setup+'_*'
         files = sorted(files)
         val_index = []  # stores values for each instance
         metrics = {k: [] for k in keys}
@@ -521,11 +522,13 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
             # store values
             val_index.append(val)
         metrics['val_index'] = np.array(val_index)
-        np.savez(folder+'/data_'+algorithm+'_'+w+'.npz', **metrics)
+        np.savez(folder+'/data_'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
+                 **metrics)
 
     # LOAD AND (POST)PROCESS DATA
     print('Loading data')
-    tmp = np.load(folder+'/data_'+algorithm+'_'+w+'.npz', allow_pickle=True)
+    tmp = np.load(folder+'/data_'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
+                  allow_pickle=True)
     # the loaded file does not allow to modifying it
     metrics = {}
     for k in tmp.keys():
@@ -609,11 +612,11 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
                 plt_means(metric=metric, index=val_index,
                           ax=ax[ind_met], limit_ax=limit_ax)
             ax[ind_met].set_ylabel(ylabels[ind_met])
-        ax[0].set_title(algorithm + ' (w: ' + w + ')')
+        ax[0].set_title(algorithm + ' ('+setup_nm+': ' + setup + ')')
         ax[len(keys)-1].set_xlabel('Trials')
         ax[len(keys)-1].legend()
-        f.savefig(folder+'/'+names[ind]+algorithm+'_'+w+'_'+str(limit_tr)+'.png',
-                  dpi=200)
+        f.savefig(folder+'/'+names[ind]+algorithm+'_'+setup_nm+'_'+setup+'_' +
+                  str(limit_tr)+'.png', dpi=200)
         plt.close(f)
 
     # days under perf
@@ -622,7 +625,8 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
         metric = metrics['curr_perf']
         perf_hist(metric, ax=ax, index=val_index, trials_day=300)
         ax.set_title('Performance histogram ('+algorithm+')')
-        f.savefig(folder+'/perf_hist_'+algorithm+'_'+w+'.png', dpi=200)
+        f.savefig(folder+'/perf_hist_'+algorithm+'_'+setup_nm+'_'+setup+'.png',
+                  dpi=200)
         # plt.close(f)
 
     # trials per stage
@@ -631,7 +635,8 @@ def plot_results(folder, algorithm, w, w_conv_perf=500,
         metric = metrics['curr_ph']
         trials_per_stage(metric, ax=ax, index=val_index)
         ax.set_title('Average number of trials per stage ('+algorithm+')')
-        f.savefig(folder+'/trials_stage_'+algorithm+'_'+w+'.png', dpi=200)
+        f.savefig(folder+'/trials_stage_'+algorithm+'_'+setup_nm+'_'+setup +
+                  '.png', dpi=200)
         # plt.close(f)
 
     # plot final results
@@ -811,52 +816,21 @@ def plt_perf_indicators(values, index_val, ax, f_props, ax_props, reached=None,
     ax.set_xticklabels(ax_props['labels'])
 
 
-# TODO: merge the 2 functions below
-
-def process_results_diff_thresholds(folder, limit_tr=True):
-    algs = ['PPO2', 'ACKTR', 'A2C', 'ACER']
-    windows = ['0', '1', '2', '3', '4']  # , '500', '1000']
-    markers = ['+', 'x', '1', 'o', '>']
-    for alg in algs:
-        print(alg)
-        f, ax = plt.subplots(nrows=2, ncols=4, figsize=(27, 16))
-        ax = ax.flatten()
-        ind = 0
-        for ind_w, w in enumerate(windows):
-            print('xxxxxxxxxxxxxxxxxxxxxxxx')
-            print('Window')
-            print(w)
-            marker = markers[ind]
-            ind += 1
-            plot_results(folder, alg, w, limit_ax=False, plt_ind_vals=False,
-                         ax_final=ax, tag='th_stage', limit_tr=limit_tr,
-                         f_final_prop={'color': CLRS[ind_w],
-                                       'label': str(w),
-                                       'marker': marker})
-
-        handles, labels = ax[0].get_legend_handles_labels()
-        by_label = dict(zip(labels, handles))
-        ax[0].legend(by_label.values(), by_label.keys())
-
-        f.savefig(folder + '/final_results_' +
-                  alg+'_'+str(limit_tr)+'.png', dpi=200)
-        plt.close(f)
-
-
-def process_results_diff_protocols(folder, limit_tr=True):
-    algs = ['A2C', 'ACER', 'PPO2', 'ACKTR']
-    w = '0'
-    marker = '+'
+def batch_results(algs, setup_vals, markers, tag, setup_nm, folder,
+                  limit_tr=True, rerun=False):
     for alg in algs:
         print(alg)
         print('xxxxxxxxxxxxxxxxxxxxxx')
         f, ax = plt.subplots(nrows=2, ncols=4, figsize=(30, 16))
         ax = ax.flatten()
-        plot_results(folder, alg, w, limit_ax=False,
-                     ax_final=ax, tag='stages', limit_tr=limit_tr,
-                     f_final_prop={'color': CLRS[0],
-                                   'label': w,
-                                   'marker': marker})
+        for ind_setup, setup in enumerate(setup_vals):
+            plot_results(folder, alg, setup=setup, setup_nm=setup_nm,
+                         limit_ax=False, ax_final=ax, tag=tag,
+                         limit_tr=limit_tr,
+                         f_final_prop={'color': CLRS[0],
+                                       'label': setup,
+                                       'marker': markers[ind_setup]},
+                         rerun=rerun)
 
         handles, labels = ax[0].get_legend_handles_labels()
         by_label = dict(zip(labels, handles))
@@ -872,19 +846,32 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         # folder = '/Users/martafradera/Desktop/OneDrive -' +\
         #     ' Universitat de Barcelona/TFG/task/data/'
-        folder = '/home/manuel/CV-Learning/results/results_2303/'
+        main_folder = '/home/manuel/CV-Learning/results/results_2303/'
     elif len(sys.argv) == 2:
-        folder = sys.argv[1]
+        main_folder = sys.argv[1]
     print(sys.argv)
-    # folder = '/home/manuel/CV-Learning/results/results_2303/RL_algs/'
-    # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
-
-    # folder = '/gpfs/projects/hcli64/shaping/diff_protocols/'
-    # folder = '/home/manuel/CV-Learning/results/results_2303/one_agent_control/'
-    # folder = '/gpfs/projects/hcli64/shaping/one_agent_control/'
-
-    # process_results_diff_protocols(folder+'/diff_protocols/', limit_tr=True)
-    # process_results_diff_thresholds(folder+'/one_agent_control/',
-    #                                 limit_tr=True)
-    process_results_diff_protocols(folder+'/large_actObs_space/',
-                                   limit_tr=True)
+    rerun = True
+    algs = ['A2C']
+    n_ch = ['2', '10', '20']
+    markers = ['+', 'x', '1']
+    setup_nm = 'n_ch'
+    tag = 'stages'
+    folder = main_folder+'/large_actObs_space/'
+    batch_results(algs=algs, setup_vals=n_ch, markers=markers, tag=tag,
+                  setup_nm=setup_nm, folder=folder, limit_tr=True, rerun=rerun)
+    # algs = ['PPO2', 'ACKTR', 'A2C', 'ACER']
+    # winds = ['0', '1', '2', '3', '4']  # , '500', '1000']
+    # markers = ['+', 'x', '1', 'o', '>']
+    # setup_nm = 'w'
+    # tag = 'th_stage'
+    # folder = main_folder+'/one_agent_control/'
+    # batch_results(algs=algs, setup_vals=winds, markers=markers, tag=tag,
+    #               setup_nm=setup_nm, folder=folder, limit_tr=True)
+    # algs = ['PPO2', 'ACKTR', 'A2C', 'ACER']
+    # n_ch = ['']
+    # markers = ['+']
+    # setup_nm = ''
+    # tag = 'stages'
+    # folder = main_folder+'/diff_protocols/'
+    # batch_results(algs=algs, setup_vals=n_ch, markers=markers, tag=tag,
+    #               setup_nm=setup_nm, folder=folder, limit_tr=True)
