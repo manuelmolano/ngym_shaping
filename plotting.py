@@ -869,7 +869,7 @@ def batch_results(algs, setup_vals, markers, tag, setup_nm, folder,
         print('xxxxxxxxxxxxxxxxxxxxxx')
         f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(15, 8))
         f2, ax2 = plt.subplots(nrows=1, ncols=2, figsize=(15, 8))
-        f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(12, 16))
+        f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(15, 16))
         ax = [ax1, ax2, ax3]
         for ind_setup, setup in enumerate(setup_vals):
             plot_results(folder, alg, setup=setup, setup_nm=setup_nm,
