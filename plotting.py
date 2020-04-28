@@ -501,7 +501,7 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
                  limit_ax=True, final_ph=4, perf_th=0.7, ax_final=None,
                  tag='th_stage', limit_tr=False, rerun=False,
                  f_final_prop={'color': (0, 0, 0), 'label': ''},
-                 plt_ind_vals=True, plt_all_traces=False):
+                 plt_ind_vals=True, plt_all_traces=True):
     assert ('performance' in keys) and ('curr_ph' in keys),\
         'performance and curr_ph need to be included in the metrics (keys)'
     # PROCESS RAW DATA
@@ -818,7 +818,7 @@ def plt_means(metric, index, ax, limit_mean=True, limit_ax=True):
 def get_noise(unq_vals):
     max_ = np.max([ALL_INDX[x] for x in unq_vals])
     min_ = np.min([ALL_INDX[x] for x in unq_vals])
-    noise = (max_ - min_)/40
+    noise = (max_ - min_)/80
     return noise
 
 
@@ -879,6 +879,13 @@ def batch_results(algs, setup_vals, markers, tag, setup_nm, folder,
                                        'label': setup,
                                        'marker': markers[ind_setup]},
                          rerun=rerun)
+            if ind_setup == 0:
+                f1.savefig(folder + '/final_results_phase_' +
+                           alg+'_'+str(limit_tr)+setup+'.png', dpi=200)
+                f2.savefig(folder + '/final_results_steps_' +
+                           alg+'_'+str(limit_tr)+setup+'.png', dpi=200)
+                f3.savefig(folder + '/final_results_performance_' +
+                           alg+'_'+str(limit_tr)+setup+'.png', dpi=200)
 
         f1.savefig(folder + '/final_results_phase_' +
                    alg+'_'+str(limit_tr)+'.png', dpi=200)
@@ -892,8 +899,8 @@ def batch_results(algs, setup_vals, markers, tag, setup_nm, folder,
 if __name__ == '__main__':
     plt.close('all')
     if len(sys.argv) == 1:
-        main_folder = '/Users/martafradera/Desktop/data/'
-        # main_folder = '/home/manuel/CV-Learning/results/results_2303/'
+        # main_folder = '/Users/martafradera/Desktop/data/'
+        main_folder = '/home/molano/CV-Learning/results_280420/'
     elif len(sys.argv) == 2:
         main_folder = sys.argv[1]
     print(sys.argv)
