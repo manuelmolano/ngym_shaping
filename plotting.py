@@ -500,7 +500,7 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
                  limit_ax=True, final_ph=4, perf_th=0.7, ax_final=None,
                  tag='th_stage', limit_tr=False, rerun=False,
                  f_final_prop={'color': (0, 0, 0), 'label': ''},
-                 plt_ind_vals=True, plt_all_traces=False):
+                 plt_ind_vals=True, plt_all_traces=True):
     assert ('performance' in keys) and ('curr_ph' in keys),\
         'performance and curr_ph need to be included in the metrics (keys)'
     # PROCESS RAW DATA
@@ -620,7 +620,7 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
         ax[len(keys)-1].legend()
         f.savefig(folder+'/'+names[ind]+algorithm+'_'+setup_nm+'_'+setup+'_' +
                   str(limit_tr)+'.png', dpi=200)
-        # plt.close(f)
+        plt.close(f)
 
     # days under perf
     if 'curr_perf' in keys:
@@ -630,7 +630,7 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
         ax.set_title('Performance histogram ('+algorithm+')')
         f.savefig(folder+'/perf_hist_'+algorithm+'_'+setup_nm+'_'+setup+'.png',
                   dpi=200)
-        # plt.close(f)
+        plt.close(f)
 
     # trials per stage
     if 'curr_ph' in keys:
@@ -640,7 +640,7 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
         ax.set_title('Average number of trials per stage ('+algorithm+')')
         f.savefig(folder+'/trials_stage_'+algorithm+'_'+setup_nm+'_'+setup +
                   '.png', dpi=200)
-        # plt.close(f)
+        plt.close(f)
 
         ax1 = ax_final[0]
         ax2 = ax_final[1]
@@ -837,9 +837,9 @@ def batch_results(algs, setup_vals, markers, tag, setup_nm, folder,
     for alg in algs:
         print(alg)
         print('xxxxxxxxxxxxxxxxxxxxxx')
-        f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(15, 8))
-        f2, ax2 = plt.subplots(nrows=1, ncols=2, figsize=(15, 8))
-        f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(15, 16))
+        f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
+        f2, ax2 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
+        f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(12, 12))
         ax = [ax1, ax2, ax3]
         for ind_setup, setup in enumerate(setup_vals):
             plot_results(folder, alg, setup=setup, setup_nm=setup_nm,
@@ -863,7 +863,9 @@ def batch_results(algs, setup_vals, markers, tag, setup_nm, folder,
                    alg+'_'+str(limit_tr)+'.png', dpi=200)
         f3.savefig(folder + '/final_results_performance_' +
                    alg+'_'+str(limit_tr)+'.png', dpi=200)
-        # plt.close(f)
+        plt.close(f1)
+        plt.close(f2)
+        plt.close(f3)
 
 
 if __name__ == '__main__':
