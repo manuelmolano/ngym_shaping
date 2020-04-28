@@ -580,7 +580,8 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
         if len(metrics['num_stps'][ind_f]) != 0:
             num_steps = np.cumsum(metrics['num_stps'][ind_f])
             stps_to_perf.append(num_steps[max(0, tt_prf-1)]/1000)
-            stps_to_ph.append(num_steps[max(0, tt_prf-1)]/1000)
+            stps_to_ph.append(num_steps[min(max(0, tt_ph-1),
+                                            len(num_steps)-1)]/1000)
         else:
             stps_to_perf.append(np.nan)
             stps_to_ph.append(np.nan)
@@ -661,16 +662,17 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
         handles, labels = ax1[0].get_legend_handles_labels()
         by_label = dict(zip(labels, handles))
         ax1[0].legend(by_label.values(), by_label.keys())
+        ax1[1].set_yscale('log')
 
         # steps to reach phase 4
-        ax_props['ylabel'] = 'Number of steps to reach phase 4'
+        ax_props['ylabel'] = 'Number of steps to reach phase 4 (x1000)'
         plt_perf_indicators(values=stps_to_ph,
                             f_props=f_final_prop, ax_props=ax_props,
                             index_val=val_index, ax=ax2[0],
                             reached=reached_ph, discard=['full', '4'],
                             plot_individual_values=plt_ind_vals)
         # steps to reach final perf
-        ax_props['ylabel'] = 'Number of steps to reach final performance'
+        ax_props['ylabel'] = 'Number of steps to reach final performance (x1000)'
         plt_perf_indicators(values=stps_to_perf,
                             reached=reached_perf,
                             index_val=val_index, ax=ax2[1],
@@ -700,6 +702,7 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
                             index_val=val_index, ax=ax3[1, 0],
                             f_props=f_final_prop, ax_props=ax_props,
                             plot_individual_values=plt_ind_vals)
+        ax3[1, 0].set_yscale('log')
         # plot stability
         ax_props['ylabel'] = 'Stability'
         plt_perf_indicators(values=stability_mat, index_val=val_index,
@@ -822,10 +825,7 @@ def plt_perf_indicators(values, index_val, ax, f_props, ax_props, reached=None,
             if plot_individual_values:
                 xs = np.random.normal(0, std_noise, ((np.sum(indx),))) +\
                     ALL_INDX[val]
-                alpha_ori = f_props['alpha']
-                del f_props['alpha']
                 ax.plot(xs, values_temp, alpha=0.5, linestyle='None', **f_props)
-                f_props['alpha'] = alpha_ori
     ax.set_xlabel(ax_props['tag'])
     ax.set_ylabel(ax_props['ylabel'])
     ax.set_xticks(ax_props['ticks'])
