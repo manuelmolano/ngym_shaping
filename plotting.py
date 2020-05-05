@@ -504,7 +504,7 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
     assert ('performance' in keys) and ('curr_ph' in keys),\
         'performance and curr_ph need to be included in the metrics (keys)'
     # PROCESS RAW DATA
-    if not os.path.exists(folder+'/data_'+algorithm+'_'+setup_nm+'_'+setup +
+    if not os.path.exists(folder+'/metrics'+algorithm+'_'+setup_nm+'_'+setup +
                           '.npz') or rerun:
         print('Pre-processing raw data')
         files = glob.glob(folder+'alg_'+algorithm+'*'+setup_nm+'_'+setup+'_*')
@@ -523,13 +523,13 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
             # store values
             val_index.append(val)
         metrics['val_index'] = np.array(val_index)
-        np.savez(folder+'/data_'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
+        np.savez(folder+'/metrics'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
                  **metrics)
 
     # LOAD AND (POST)PROCESS DATA
-    print('Loading data from: ', folder+'/data_'+algorithm+'_'+setup_nm +
+    print('Loading data from: ', folder+'/metrics'+algorithm+'_'+setup_nm +
           '_'+setup+'.npz')
-    tmp = np.load(folder+'/data_'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
+    tmp = np.load(folder+'/metrics'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
                   allow_pickle=True)
     # the loaded file does not allow to modifying it
     metrics = {}
@@ -539,66 +539,7 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
         min_dur = np.min([len(x) for x in metrics['curr_ph']])
     else:
         min_dur = np.max([len(x) for x in metrics['curr_ph']])
-    tr_to_perf = []  # stores trials to reach final performance
-    reached_ph = []  # stores whether the final phase is reached
-    reached_perf = []  # stores whether the pre-defined perf is reached
-    exp_durations = []
-    stability_mat = []
-    final_perf = []
-    tr_to_ph = []
-    stps_to_perf = []
-    stps_to_ph = []
-    for ind_f in range(len(metrics['curr_ph'])):
-        # store durations
-        exp_durations.append(len(metrics['curr_ph'][ind_f]))
-        for k in metrics.keys():
-            metrics[k][ind_f] = metrics[k][ind_f][:min_dur]
-            if len(metrics[k][ind_f]) == 0:
-                metrics[k][ind_f] = np.nan*np.ones((min_dur,))
-        # phase analysis
-        curr_ph = metrics['curr_ph'][ind_f]
-        # number of trials until final phase
-        tr_to_ph, reached = tr_to_final_ph(curr_ph, tr_to_ph, w_conv_perf,
-                                           final_ph)
-        reached_ph.append(reached)
-        # performance analysis
-        perf = np.array(metrics['performance'][ind_f])
-        # get final performance
-        final_perf.append(perf[-1])
-        # get trials to reach specified performance
-        tt_ph = tr_to_ph[-1]
-        tr_to_perf, reached = tr_to_reach_perf(perf=perf.copy(), tr_to_ph=tt_ph,
-                                               reach_perf=perf_th,
-                                               tr_to_perf=tr_to_perf,
-                                               final_ph=final_ph)
-        reached_perf.append(reached)
-        # performance stability
-        tt_prf = tr_to_perf[-1]
-        stability_mat.append(compute_stability(perf=perf.copy(),
-                                               tr_ab_th=tt_prf))
-        # # number of steps
-        if len(metrics['num_stps'][ind_f]) != 0:
-            num_steps = np.cumsum(metrics['num_stps'][ind_f])
-            stps_to_perf.append(num_steps[max(0, tt_prf-1)]/1000)
-            stps_to_ph.append(num_steps[min(max(0, tt_ph-1),
-                                            len(num_steps)-1)]/1000)
-        else:
-            stps_to_perf.append(np.nan)
-            stps_to_ph.append(np.nan)
-    # TODO: save data from post-processing with mean traces
-    print('Plotting results')
-    # define xticks
-    ax_props = {'tag': tag}
-    if tag == 'stages':
-        ALL_INDX['full'] = 5
-        ax_props['labels'] = list(PRTCLS_IND_MAP.keys())
-        ax_props['ticks'] = list(PRTCLS_IND_MAP.values())
-    elif tag == 'th_stage':
-        ax_props['labels'] = list(THS_IND_MAP.keys())
-        ax_props['ticks'] = list(THS_IND_MAP.values())
 
-    # plot results
-    # TODO: move to right after preprocessing
     names = ['values_across_training_', 'mean_values_across_training_']
     ylabels = ['Performance', 'Phase', 'Number of steps', 'Session performance']
     val_index = np.array(metrics['val_index'])
@@ -624,6 +565,86 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
                   str(limit_tr)+'.png', dpi=200)
         plt.close(f)
 
+    # SAVE DATA
+    if not os.path.exists(folder+'/data'+algorithm+'_'+setup_nm+'_'+setup +
+                          '.npz') or rerun:
+        tr_to_perf = []  # stores trials to reach final performance
+        reached_ph = []  # stores whether the final phase is reached
+        reached_perf = []  # stores whether the pre-defined perf is reached
+        exp_durations = []
+        stability_mat = []
+        final_perf = []
+        tr_to_ph = []
+        stps_to_perf = []
+        stps_to_ph = []
+
+        for ind_f in range(len(metrics['curr_ph'])):
+            # store durations
+            exp_durations.append(len(metrics['curr_ph'][ind_f]))
+            for k in metrics.keys():
+                metrics[k][ind_f] = metrics[k][ind_f][:min_dur]
+                if len(metrics[k][ind_f]) == 0:
+                    metrics[k][ind_f] = np.nan*np.ones((min_dur,))
+            # phase analysis
+            curr_ph = metrics['curr_ph'][ind_f]
+            # number of trials until final phase
+            tr_to_ph, reached = tr_to_final_ph(curr_ph, tr_to_ph, w_conv_perf,
+                                               final_ph)
+            reached_ph.append(reached)
+            # performance analysis
+            perf = np.array(metrics['performance'][ind_f])
+            # get final performance
+            final_perf.append(perf[-1])
+            # get trials to reach specified performance
+            tt_ph = tr_to_ph[-1]
+            tr_to_perf, reached = tr_to_reach_perf(perf=perf.copy(),
+                                                   tr_to_ph=tt_ph,
+                                                   reach_perf=perf_th,
+                                                   tr_to_perf=tr_to_perf,
+                                                   final_ph=final_ph)
+            reached_perf.append(reached)
+            # performance stability
+            tt_prf = tr_to_perf[-1]
+            stability_mat.append(compute_stability(perf=perf.copy(),
+                                                   tr_ab_th=tt_prf))
+            # # number of steps
+            if len(metrics['num_stps'][ind_f]) != 0:
+                num_steps = np.cumsum(metrics['num_stps'][ind_f])
+                stps_to_perf.append(num_steps[max(0, tt_prf-1)]/1000)
+                stps_to_ph.append(num_steps[min(max(0, tt_ph-1),
+                                                len(num_steps)-1)]/1000)
+            else:
+                stps_to_perf.append(np.nan)
+                stps_to_ph.append(np.nan)
+        data = {'tr_to_perf': tr_to_perf, 'reached_ph': reached_ph,
+                'reached_perf': reached_perf, 'exp_durations': exp_durations,
+                'stability_mat': stability_mat, 'final_perf': final_perf,
+                'tr_to_ph': tr_to_ph, 'stps_to_perf': stps_to_perf,
+                'stps_to_ph': stps_to_ph}
+        np.savez(folder+'/data'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
+                 **data)
+    # LOAD AND (POST)PROCESS DATA
+    print('Loading data from: ', folder+'/data'+algorithm+'_'+setup_nm +
+          '_'+setup+'.npz')
+    tmp = np.load(folder+'/data'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
+                  allow_pickle=True)
+    # the loaded file does not allow to modifying it
+    data = {}
+    for k in tmp.keys():
+        data[k] = list(tmp[k])
+    # TODO: save data from post-processing with mean traces
+    print('Plotting results')
+    # define xticks
+    ax_props = {'tag': tag}
+    if tag == 'stages':
+        ALL_INDX['full'] = 5
+        ax_props['labels'] = list(PRTCLS_IND_MAP.keys())
+        ax_props['ticks'] = list(PRTCLS_IND_MAP.values())
+    elif tag == 'th_stage':
+        ax_props['labels'] = list(THS_IND_MAP.keys())
+        ax_props['ticks'] = list(THS_IND_MAP.values())
+
+    # plot results
     # days under perf
     if 'curr_perf' in keys:
         f, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 12))
@@ -650,16 +671,16 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
         # final figures
         # prop of instances reaching phase 4
         ax_props['ylabel'] = 'Proportion of instances reaching phase 4'
-        plt_perf_indicators(values=reached_ph, index_val=val_index,
+        plt_perf_indicators(values=data['reached_ph'], index_val=val_index,
                             ax=ax1[0], f_props=f_final_prop,
                             ax_props=ax_props, discard=['full', '4'],
                             errorbars=False, plot_individual_values=False)
         # trials to reach phase 4
         ax_props['ylabel'] = 'Number of trials to reach phase 4'
-        plt_perf_indicators(values=tr_to_ph,
+        plt_perf_indicators(values=data['tr_to_ph'],
                             f_props=f_final_prop, ax_props=ax_props,
                             index_val=val_index, ax=ax1[1],
-                            reached=reached_ph, discard=['full', '4'],
+                            reached=data['reached_ph'], discard=['full', '4'],
                             plot_individual_values=plt_ind_vals)
         handles, labels = ax1[0].get_legend_handles_labels()
         by_label = dict(zip(labels, handles))
@@ -668,15 +689,15 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
 
         # steps to reach phase 4
         ax_props['ylabel'] = 'Number of steps to reach phase 4 (x1000)'
-        plt_perf_indicators(values=stps_to_ph,
+        plt_perf_indicators(values=data['stps_to_ph'],
                             f_props=f_final_prop, ax_props=ax_props,
                             index_val=val_index, ax=ax2[0],
-                            reached=reached_ph, discard=['full', '4'],
+                            reached=data['reached_ph'], discard=['full', '4'],
                             plot_individual_values=plt_ind_vals)
         # steps to reach final perf
         ax_props['ylabel'] = 'Number of steps to reach final performance (x1000)'
-        plt_perf_indicators(values=stps_to_perf,
-                            reached=reached_perf,
+        plt_perf_indicators(values=data['stps_to_perf'],
+                            reached=data['reached_perf'],
                             index_val=val_index, ax=ax2[1],
                             f_props=f_final_prop, ax_props=ax_props,
                             plot_individual_values=plt_ind_vals)
@@ -686,30 +707,30 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
 
         # plot final performance
         ax_props['ylabel'] = 'Average performance'
-        plt_perf_indicators(values=final_perf,
-                            reached=reached_ph,
+        plt_perf_indicators(values=data['final_perf'],
+                            reached=data['reached_ph'],
                             f_props=f_final_prop, index_val=val_index,
                             ax=ax3[0, 0], ax_props=ax_props,
                             plot_individual_values=plt_ind_vals)
         # prop of trials that reach final perf
         ax_props['ylabel'] = 'Proportion of instances reaching final perf'
-        plt_perf_indicators(values=reached_perf, index_val=val_index,
+        plt_perf_indicators(values=data['reached_perf'], index_val=val_index,
                             ax=ax3[0, 1], f_props=f_final_prop,
-                            reached=reached_ph, ax_props=ax_props,
+                            reached=data['reached_ph'], ax_props=ax_props,
                             errorbars=False, plot_individual_values=False)
         # trials to reach final perf
         ax_props['ylabel'] = 'Number of trials to reach final performance'
-        plt_perf_indicators(values=tr_to_perf,
-                            reached=reached_perf,
+        plt_perf_indicators(values=data['tr_to_perf'],
+                            reached=data['reached_perf'],
                             index_val=val_index, ax=ax3[1, 0],
                             f_props=f_final_prop, ax_props=ax_props,
                             plot_individual_values=plt_ind_vals)
         ax3[1, 0].set_yscale('log')
         # plot stability
         ax_props['ylabel'] = 'Stability'
-        plt_perf_indicators(values=stability_mat, index_val=val_index,
+        plt_perf_indicators(values=data['stability_mat'], index_val=val_index,
                             ax=ax3[1, 1], f_props=f_final_prop,
-                            ax_props=ax_props, reached=reached_perf,
+                            ax_props=ax_props, reached=data['reached_perf'],
                             plot_individual_values=plt_ind_vals)
         handles, labels = ax3[0, 0].get_legend_handles_labels()
         by_label = dict(zip(labels, handles))
