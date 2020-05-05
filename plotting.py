@@ -500,7 +500,7 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
                  limit_ax=True, final_ph=4, perf_th=0.7, ax_final=None,
                  tag='th_stage', limit_tr=False, rerun=False,
                  f_final_prop={'color': (0, 0, 0), 'label': ''},
-                 plt_ind_vals=True, plt_all_traces=True):
+                 plt_ind_vals=True, plt_all_traces=False):
     assert ('performance' in keys) and ('curr_ph' in keys),\
         'performance and curr_ph need to be included in the metrics (keys)'
     # PROCESS RAW DATA
@@ -585,6 +585,7 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
         else:
             stps_to_perf.append(np.nan)
             stps_to_ph.append(np.nan)
+    # TODO: save data from post-processing with mean traces
     print('Plotting results')
     # define xticks
     ax_props = {'tag': tag}
@@ -597,6 +598,7 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
         ax_props['ticks'] = list(THS_IND_MAP.values())
 
     # plot results
+    # TODO: move to right after preprocessing
     names = ['values_across_training_', 'mean_values_across_training_']
     ylabels = ['Performance', 'Phase', 'Number of steps', 'Session performance']
     val_index = np.array(metrics['val_index'])
