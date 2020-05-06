@@ -21,7 +21,7 @@ CLRS = sns.color_palette()
 STAGES = [0, 1, 2, 3, 4]
 
 PRTCLS_IND_MAP = {'01234': -1, '1234': 0, '0234': 1, '0134': 2, '0124': 3,
-                  '34': 4, 'full': 5, '4': 5}
+                  '034': 4, '34': 5, '4': 6}
 
 THS_IND_MAP = {'full': 0.5, '0.6': 0.6, '0.65': 0.65, '0.7': 0.7,
                '0.75': 0.75, '0.8': 0.8, '0.85': 0.85, '0.9': 0.9}
@@ -637,7 +637,6 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
     # define xticks
     ax_props = {'tag': tag}
     if tag == 'stages':
-        ALL_INDX['full'] = 5
         ax_props['labels'] = list(PRTCLS_IND_MAP.keys())
         ax_props['ticks'] = list(PRTCLS_IND_MAP.values())
     elif tag == 'th_stage':
