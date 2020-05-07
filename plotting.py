@@ -522,7 +522,8 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
                                             conv=[1, 0, 1, 0])
             # store values
             val_index.append(val)
-        metrics['val_index'] = np.array(val_index)
+        val_index = np.array(val_index)
+
         # np.savez(folder+'/metrics'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
         #          **metrics)
 
@@ -535,15 +536,10 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
         # metrics = {}
         # for k in tmp.keys():
         #     metrics[k] = list(tmp[k])
-        if limit_tr:
-            min_dur = np.min([len(x) for x in metrics['curr_ph']])
-        else:
-            min_dur = np.max([len(x) for x in metrics['curr_ph']])
 
         names = ['values_across_training_', 'mean_values_across_training_']
         ylabels = ['Performance', 'Phase', 'Number of steps',
                    'Session performance']
-        val_index = np.array(metrics['val_index'])
         for ind in range(2):
             f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
                                  figsize=(12, 12))
@@ -553,11 +549,8 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
                 if ind == 0 and plt_ind_traces:
                     plot_rew_across_training(metric=metric, index=val_index,
                                              ax=ax[ind_met])
-                    plt_means(metric=metric, index=val_index,
-                              ax=ax[ind_met], limit_ax=limit_ax)
-                elif ind == 1:
-                    plt_means(metric=metric, index=val_index,
-                              ax=ax[ind_met], limit_ax=limit_ax)
+                plt_means(metric=metric, index=val_index,
+                          ax=ax[ind_met], limit_ax=limit_ax)
                 ax[ind_met].set_ylabel(ylabels[ind_met])
             ax[0].set_title(algorithm + ' ('+setup_nm+': ' + setup + ')')
             ax[len(keys)-1].set_xlabel('Trials')
@@ -576,6 +569,10 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
         tr_to_ph = []
         stps_to_perf = []
         stps_to_ph = []
+        if limit_tr:
+            min_dur = np.min([len(x) for x in metrics['curr_ph']])
+        else:
+            min_dur = np.max([len(x) for x in metrics['curr_ph']])
 
         for ind_f in range(len(metrics['curr_ph'])):
             # store durations
