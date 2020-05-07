@@ -500,11 +500,11 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
                  limit_ax=True, final_ph=4, perf_th=0.7, ax_final=None,
                  tag='th_stage', limit_tr=False, rerun=False,
                  f_final_prop={'color': (0, 0, 0), 'label': ''},
-                 plt_ind_vals=True, plt_all_traces=False):
+                 plt_ind_vals=True, plt_ind_traces=True):
     assert ('performance' in keys) and ('curr_ph' in keys),\
         'performance and curr_ph need to be included in the metrics (keys)'
     # PROCESS RAW DATA
-    if not os.path.exists(folder+'/metrics'+algorithm+'_'+setup_nm+'_'+setup +
+    if not os.path.exists(folder+'/data'+algorithm+'_'+setup_nm+'_'+setup +
                           '.npz') or rerun:
         print('Pre-processing raw data')
         files = glob.glob(folder+'alg_'+algorithm+'*'+setup_nm+'_'+setup+'_*')
@@ -523,51 +523,50 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
             # store values
             val_index.append(val)
         metrics['val_index'] = np.array(val_index)
-        np.savez(folder+'/metrics'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
-                 **metrics)
+        # np.savez(folder+'/metrics'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
+        #          **metrics)
 
-    # LOAD AND (POST)PROCESS DATA
-    print('Loading data from: ', folder+'/metrics'+algorithm+'_'+setup_nm +
-          '_'+setup+'.npz')
-    tmp = np.load(folder+'/metrics'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
-                  allow_pickle=True)
-    # the loaded file does not allow to modifying it
-    metrics = {}
-    for k in tmp.keys():
-        metrics[k] = list(tmp[k])
-    if limit_tr:
-        min_dur = np.min([len(x) for x in metrics['curr_ph']])
-    else:
-        min_dur = np.max([len(x) for x in metrics['curr_ph']])
+        # LOAD AND (POST)PROCESS DATA
+        # print('Loading data from: ', folder+'/metrics'+algorithm+'_'+setup_nm +
+        #       '_'+setup+'.npz')
+        # tmp = np.load(folder+'/metrics'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
+        #               allow_pickle=True)
+        # the loaded file does not allow to modifying it
+        # metrics = {}
+        # for k in tmp.keys():
+        #     metrics[k] = list(tmp[k])
+        if limit_tr:
+            min_dur = np.min([len(x) for x in metrics['curr_ph']])
+        else:
+            min_dur = np.max([len(x) for x in metrics['curr_ph']])
 
-    names = ['values_across_training_', 'mean_values_across_training_']
-    ylabels = ['Performance', 'Phase', 'Number of steps', 'Session performance']
-    val_index = np.array(metrics['val_index'])
-    for ind in range(2):
-        f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
-                             figsize=(12, 12))
-        # plot means
-        for ind_met, met in enumerate(keys):
-            metric = metrics[met]
-            if ind == 0 and plt_all_traces:
-                plot_rew_across_training(metric=metric, index=val_index,
-                                         ax=ax[ind_met])
-                plt_means(metric=metric, index=val_index,
-                          ax=ax[ind_met], limit_ax=limit_ax)
-            elif ind == 1:
-                plt_means(metric=metric, index=val_index,
-                          ax=ax[ind_met], limit_ax=limit_ax)
-            ax[ind_met].set_ylabel(ylabels[ind_met])
-        ax[0].set_title(algorithm + ' ('+setup_nm+': ' + setup + ')')
-        ax[len(keys)-1].set_xlabel('Trials')
-        ax[len(keys)-1].legend()
-        f.savefig(folder+'/'+names[ind]+algorithm+'_'+setup_nm+'_'+setup+'_' +
-                  str(limit_tr)+'.png', dpi=200)
-        plt.close(f)
+        names = ['values_across_training_', 'mean_values_across_training_']
+        ylabels = ['Performance', 'Phase', 'Number of steps',
+                   'Session performance']
+        val_index = np.array(metrics['val_index'])
+        for ind in range(2):
+            f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
+                                 figsize=(12, 12))
+            # plot means
+            for ind_met, met in enumerate(keys):
+                metric = metrics[met]
+                if ind == 0 and plt_ind_traces:
+                    plot_rew_across_training(metric=metric, index=val_index,
+                                             ax=ax[ind_met])
+                    plt_means(metric=metric, index=val_index,
+                              ax=ax[ind_met], limit_ax=limit_ax)
+                elif ind == 1:
+                    plt_means(metric=metric, index=val_index,
+                              ax=ax[ind_met], limit_ax=limit_ax)
+                ax[ind_met].set_ylabel(ylabels[ind_met])
+            ax[0].set_title(algorithm + ' ('+setup_nm+': ' + setup + ')')
+            ax[len(keys)-1].set_xlabel('Trials')
+            ax[len(keys)-1].legend()
+            f.savefig(folder+'/'+names[ind]+algorithm+'_'+setup_nm+'_'+setup+'_' +
+                      str(limit_tr)+'.png', dpi=200)
+            plt.close(f)
 
-    # SAVE DATA
-    if not os.path.exists(folder+'/data'+algorithm+'_'+setup_nm+'_'+setup +
-                          '.npz') or rerun:
+        # PROCESS TRACES
         tr_to_perf = []  # stores trials to reach final performance
         reached_ph = []  # stores whether the final phase is reached
         reached_perf = []  # stores whether the pre-defined perf is reached
@@ -632,7 +631,6 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
     data = {}
     for k in tmp.keys():
         data[k] = list(tmp[k])
-    # TODO: save data from post-processing with mean traces
     print('Plotting results')
     # define xticks
     ax_props = {'tag': tag}
@@ -775,13 +773,13 @@ def compute_stability(perf, tr_ab_th):
     return stability
 
 
-def plot_rew_across_training(metric, index, ax):
+def plot_rew_across_training(metric, index, ax, n_traces=5):
     metric = np.array(metric)
     index = np.array(index)
     unq_vals = np.unique(index)
     for ind_val, val in enumerate(unq_vals):
         indx = index == val
-        traces_temp = metric[indx]
+        traces_temp = metric[indx][:n_traces]
         for trace in traces_temp:
             ax.plot(trace, color=CLRS[ind_val], alpha=0.5, lw=0.5)
 
