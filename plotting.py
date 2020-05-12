@@ -384,8 +384,7 @@ def load_data(path):
     return data
 
 
-def data_extraction(folder, w_conv_perf=500, metrics={'reward': []},
-                    conv=[1]):
+def data_extraction(folder, metrics, w_conv_perf=500, conv=[1]):
     data = put_together_files(folder)
     data_flag = True
     if data:
@@ -515,13 +514,15 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
         metrics = {k: [] for k in keys}
         keys = np.array(keys)
         for ind_f, file in enumerate(files):
+            print(file)
             val = get_tag(tag, file)
             # get metrics
             metrics, flag = data_extraction(folder=file, metrics=metrics,
                                             w_conv_perf=w_conv_perf,
                                             conv=[1, 0, 1, 0])
             # store values
-            val_index.append(val)
+            if flag:
+                val_index.append(val)
         val_index = np.array(val_index)
 
         # np.savez(folder+'/metrics'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
@@ -893,7 +894,7 @@ if __name__ == '__main__':
     elif len(sys.argv) == 2:
         main_folder = sys.argv[1]
     print(sys.argv)
-    rerun = False
+    rerun = True
     algs = ['A2C']
     n_ch = ['2', '10', '20']
     markers = ['+', 'x', '1']
