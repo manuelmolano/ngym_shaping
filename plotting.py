@@ -560,6 +560,26 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
                       str(limit_tr)+'.png', dpi=200)
             plt.close(f)
 
+        # days under perf
+        if 'curr_perf' in keys:
+            f, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 12))
+            metric = metrics['curr_perf']
+            perf_hist(metric, ax=ax, index=val_index, trials_day=300)
+            ax.set_title('Performance histogram ('+algorithm+')')
+            f.savefig(folder+'/perf_hist_'+algorithm+'_'+setup_nm+'_'+setup+'.png',
+                      dpi=200)
+            plt.close(f)
+
+        # trials per stage
+        if 'curr_ph' in keys:
+            f, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 8))
+            metric = metrics['curr_ph']
+            trials_per_stage(metric, ax=ax, index=val_index)
+            ax.set_title('Average number of trials per stage ('+algorithm+')')
+            f.savefig(folder+'/trials_stage_'+algorithm+'_'+setup_nm+'_'+setup +
+                      '.png', dpi=200)
+            plt.close(f)
+
         # PROCESS TRACES
         tr_to_perf = []  # stores trials to reach final performance
         reached_ph = []  # stores whether the final phase is reached
@@ -629,6 +649,7 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
     data = {}
     for k in tmp.keys():
         data[k] = list(tmp[k])
+    val_index = data['val_index']
     print('Plotting results')
     # define xticks
     ax_props = {'tag': tag}
@@ -640,26 +661,7 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
         ax_props['ticks'] = list(THS_IND_MAP.values())
 
     # plot results
-    # days under perf
-    if 'curr_perf' in keys:
-        f, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 12))
-        metric = metrics['curr_perf']
-        perf_hist(metric, ax=ax, index=val_index, trials_day=300)
-        ax.set_title('Performance histogram ('+algorithm+')')
-        f.savefig(folder+'/perf_hist_'+algorithm+'_'+setup_nm+'_'+setup+'.png',
-                  dpi=200)
-        plt.close(f)
-
-    # trials per stage
     if 'curr_ph' in keys:
-        f, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 8))
-        metric = metrics['curr_ph']
-        trials_per_stage(metric, ax=ax, index=val_index)
-        ax.set_title('Average number of trials per stage ('+algorithm+')')
-        f.savefig(folder+'/trials_stage_'+algorithm+'_'+setup_nm+'_'+setup +
-                  '.png', dpi=200)
-        plt.close(f)
-
         ax1 = ax_final[0]
         ax2 = ax_final[1]
         ax3 = ax_final[2]
@@ -889,12 +891,12 @@ def batch_results(algs, setup_vals, markers, tag, setup_nm, folder,
 if __name__ == '__main__':
     plt.close('all')
     if len(sys.argv) == 1:
-        # main_folder = '/Users/martafradera/Desktop/data/'
-        main_folder = '/home/molano/CV-Learning/results_280420/'
+        main_folder = '/Users/martafradera/Desktop/data/'
+        # main_folder = '/home/molano/CV-Learning/results_280420/'
     elif len(sys.argv) == 2:
         main_folder = sys.argv[1]
     print(sys.argv)
-    rerun = True
+    rerun = False
     algs = ['A2C']
     n_ch = ['2', '10', '20']
     markers = ['+', 'x', '1']
