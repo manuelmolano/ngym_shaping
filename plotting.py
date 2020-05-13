@@ -617,7 +617,7 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
                 'reached_perf': reached_perf, 'exp_durations': exp_durations,
                 'stability_mat': stability_mat, 'final_perf': final_perf,
                 'tr_to_ph': tr_to_ph, 'stps_to_perf': stps_to_perf,
-                'stps_to_ph': stps_to_ph}
+                'stps_to_ph': stps_to_ph, 'val_index': val_index}
         np.savez(folder+'/data'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
                  **data)
     # LOAD AND (POST)PROCESS DATA
