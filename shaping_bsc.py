@@ -80,6 +80,8 @@ def arg_parser():
     # n-alternative task params
     parser.add_argument('--stim_scale', help='stimulus evidence',
                         type=float, default=None)
+    parser.add_argument('--ob_nch', help='Whether to provide num. channels',
+                        type=bool, default=None)
 
     # CV-learning task
     parser.add_argument('--th_stage',
@@ -98,6 +100,11 @@ def arg_parser():
                         default=None)
     parser.add_argument('--block_dur',
                         help='dur. of block in the trial-hist wrappr (trials)',
+                        type=int, default=None)
+
+    # variable-nch wrapper parameters
+    parser.add_argument('--block_nch',
+                        help='dur. of block in the variable-nch wrapper (trials)',
                         type=int, default=None)
 
     # monitor wrapper parameters
@@ -129,7 +136,6 @@ def make_env(env_id, rank, seed=0, wrapps={}, n_args={}, **kwargs):
                 params_temp = wrapps[wrap]
                 update_dict(params_temp, n_args)
                 env = apply_wrapper(env, wrap, params_temp)
-
         return env
     set_global_seeds(seed)
     return _init
@@ -140,7 +146,10 @@ def run(alg, alg_kwargs, task, task_kwargs, wrappers_kwargs, n_args,
     env = test_env(task, kwargs=task_kwargs, num_steps=1000)
     num_timesteps = int(1000 * num_trials / (env.num_tr))
     if not os.path.exists(folder + 'bhvr_data_all.npz'):
-        vars_ = vars()
+        vars_ = {'alg': alg, 'alg_kwargs': alg_kwargs, 'task': task,
+                 'task_kwargs': task_kwargs, 'wrappers_kwargs': wrappers_kwargs,
+                 'n_args': n_args, 'rollout': rollout, 'num_trials': num_trials,
+                 'folder': folder, 'n_cpu': n_cpu, 'n_lstm': n_lstm}
         np.savez(folder + '/params.npz', **vars_)
         if alg == "A2C":
             from stable_baselines import A2C as algo
@@ -150,7 +159,6 @@ def run(alg, alg_kwargs, task, task_kwargs, wrappers_kwargs, n_args,
             from stable_baselines import ACKTR as algo
         elif alg == "PPO2":
             from stable_baselines import PPO2 as algo
-
         env = SubprocVecEnv([make_env(env_id=task, rank=i, seed=seed,
                                       wrapps=wrappers_kwargs, n_args=n_args,
                                       **task_kwargs)
@@ -163,15 +171,9 @@ def run(alg, alg_kwargs, task, task_kwargs, wrappers_kwargs, n_args,
         model.learn(total_timesteps=num_timesteps)
         model.save(f"{folder}model")
         plotting.plot_rew_across_training(folder=folder)
-        # TODO: save parameters in instance_folder
 
 
 if __name__ == "__main__":
-    # main_folder = '/gpfs/projects/hcli64/molano/neurogym/20200417/'
-    main_folder = '/gpfs/projects/hcli64/shaping/'
-    # main_folder = '/home/molano/priors/codes/experiments_parameters/'
-    # main_folder = '/home/manuel/ngym_usage/'
-    # main_folder = '/home/manuel/CV-Learning/results/'
     # get params from call
     n_arg_parser = arg_parser()
     n_args, unknown_args = n_arg_parser.parse_known_args(sys.argv)
@@ -180,7 +182,7 @@ if __name__ == "__main__":
         print('Unkown parameters: ', unkown_params)
     n_args = vars(n_args)
     n_args = {k: n_args[k] for k in n_args.keys() if n_args[k] is not None}
-    main_folder = main_folder + n_args['folder'] + '/'
+    main_folder = n_args['folder'] + '/'
     name, _ = gncfd(n_args)
     instance_folder = main_folder + name + '/'
     # this is done wo the monitor wrapper's parameter folder is updated

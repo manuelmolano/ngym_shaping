@@ -661,77 +661,76 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
         ax_props['ticks'] = list(THS_IND_MAP.values())
 
     # plot results
-    if 'curr_ph' in keys:
-        ax1 = ax_final[0]
-        ax2 = ax_final[1]
-        ax3 = ax_final[2]
-        # final figures
-        # prop of instances reaching phase 4
-        ax_props['ylabel'] = 'Proportion of instances reaching phase 4'
-        plt_perf_indicators(values=data['reached_ph'], index_val=val_index,
-                            ax=ax1[0], f_props=f_final_prop,
-                            ax_props=ax_props, discard=['full', '4'],
-                            errorbars=False, plot_individual_values=False)
-        # trials to reach phase 4
-        ax_props['ylabel'] = 'Number of trials to reach phase 4'
-        plt_perf_indicators(values=data['tr_to_ph'],
-                            f_props=f_final_prop, ax_props=ax_props,
-                            index_val=val_index, ax=ax1[1],
-                            reached=data['reached_ph'], discard=['full', '4'],
-                            plot_individual_values=plt_ind_vals)
-        handles, labels = ax1[0].get_legend_handles_labels()
-        by_label = dict(zip(labels, handles))
-        ax1[0].legend(by_label.values(), by_label.keys())
-        ax1[1].set_yscale('log')
+    ax1 = ax_final[0]
+    ax2 = ax_final[1]
+    ax3 = ax_final[2]
+    # final figures
+    # prop of instances reaching phase 4
+    ax_props['ylabel'] = 'Proportion of instances reaching phase 4'
+    plt_perf_indicators(values=data['reached_ph'], index_val=val_index,
+                        ax=ax1[0], f_props=f_final_prop,
+                        ax_props=ax_props, discard=['full', '4'],
+                        errorbars=False, plot_individual_values=False)
+    # trials to reach phase 4
+    ax_props['ylabel'] = 'Number of trials to reach phase 4'
+    plt_perf_indicators(values=data['tr_to_ph'],
+                        f_props=f_final_prop, ax_props=ax_props,
+                        index_val=val_index, ax=ax1[1],
+                        reached=data['reached_ph'], discard=['full', '4'],
+                        plot_individual_values=plt_ind_vals)
+    handles, labels = ax1[0].get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    ax1[0].legend(by_label.values(), by_label.keys())
+    ax1[1].set_yscale('log')
 
-        # steps to reach phase 4
-        ax_props['ylabel'] = 'Number of steps to reach phase 4 (x1000)'
-        plt_perf_indicators(values=data['stps_to_ph'],
-                            f_props=f_final_prop, ax_props=ax_props,
-                            index_val=val_index, ax=ax2[0],
-                            reached=data['reached_ph'], discard=['full', '4'],
-                            plot_individual_values=plt_ind_vals)
-        # steps to reach final perf
-        ax_props['ylabel'] = 'Number of steps to reach final performance (x1000)'
-        plt_perf_indicators(values=data['stps_to_perf'],
-                            reached=data['reached_perf'],
-                            index_val=val_index, ax=ax2[1],
-                            f_props=f_final_prop, ax_props=ax_props,
-                            plot_individual_values=plt_ind_vals)
-        handles, labels = ax2[0].get_legend_handles_labels()
-        by_label = dict(zip(labels, handles))
-        ax2[0].legend(by_label.values(), by_label.keys())
+    # steps to reach phase 4
+    ax_props['ylabel'] = 'Number of steps to reach phase 4 (x1000)'
+    plt_perf_indicators(values=data['stps_to_ph'],
+                        f_props=f_final_prop, ax_props=ax_props,
+                        index_val=val_index, ax=ax2[0],
+                        reached=data['reached_ph'], discard=['full', '4'],
+                        plot_individual_values=plt_ind_vals)
+    # steps to reach final perf
+    ax_props['ylabel'] = 'Number of steps to reach final performance (x1000)'
+    plt_perf_indicators(values=data['stps_to_perf'],
+                        reached=data['reached_perf'],
+                        index_val=val_index, ax=ax2[1],
+                        f_props=f_final_prop, ax_props=ax_props,
+                        plot_individual_values=plt_ind_vals)
+    handles, labels = ax2[0].get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    ax2[0].legend(by_label.values(), by_label.keys())
 
-        # plot final performance
-        ax_props['ylabel'] = 'Average performance'
-        plt_perf_indicators(values=data['final_perf'],
-                            reached=data['reached_ph'],
-                            f_props=f_final_prop, index_val=val_index,
-                            ax=ax3[0, 0], ax_props=ax_props,
-                            plot_individual_values=plt_ind_vals)
-        # prop of trials that reach final perf
-        ax_props['ylabel'] = 'Proportion of instances reaching final perf'
-        plt_perf_indicators(values=data['reached_perf'], index_val=val_index,
-                            ax=ax3[0, 1], f_props=f_final_prop,
-                            reached=data['reached_ph'], ax_props=ax_props,
-                            errorbars=False, plot_individual_values=False)
-        # trials to reach final perf
-        ax_props['ylabel'] = 'Number of trials to reach final performance'
-        plt_perf_indicators(values=data['tr_to_perf'],
-                            reached=data['reached_perf'],
-                            index_val=val_index, ax=ax3[1, 0],
-                            f_props=f_final_prop, ax_props=ax_props,
-                            plot_individual_values=plt_ind_vals)
-        ax3[1, 0].set_yscale('log')
-        # plot stability
-        ax_props['ylabel'] = 'Stability'
-        plt_perf_indicators(values=data['stability_mat'], index_val=val_index,
-                            ax=ax3[1, 1], f_props=f_final_prop,
-                            ax_props=ax_props, reached=data['reached_perf'],
-                            plot_individual_values=plt_ind_vals)
-        handles, labels = ax3[0, 0].get_legend_handles_labels()
-        by_label = dict(zip(labels, handles))
-        ax3[0, 0].legend(by_label.values(), by_label.keys())
+    # plot final performance
+    ax_props['ylabel'] = 'Average performance'
+    plt_perf_indicators(values=data['final_perf'],
+                        reached=data['reached_ph'],
+                        f_props=f_final_prop, index_val=val_index,
+                        ax=ax3[0, 0], ax_props=ax_props,
+                        plot_individual_values=plt_ind_vals)
+    # prop of trials that reach final perf
+    ax_props['ylabel'] = 'Proportion of instances reaching final perf'
+    plt_perf_indicators(values=data['reached_perf'], index_val=val_index,
+                        ax=ax3[0, 1], f_props=f_final_prop,
+                        reached=data['reached_ph'], ax_props=ax_props,
+                        errorbars=False, plot_individual_values=False)
+    # trials to reach final perf
+    ax_props['ylabel'] = 'Number of trials to reach final performance'
+    plt_perf_indicators(values=data['tr_to_perf'],
+                        reached=data['reached_perf'],
+                        index_val=val_index, ax=ax3[1, 0],
+                        f_props=f_final_prop, ax_props=ax_props,
+                        plot_individual_values=plt_ind_vals)
+    ax3[1, 0].set_yscale('log')
+    # plot stability
+    ax_props['ylabel'] = 'Stability'
+    plt_perf_indicators(values=data['stability_mat'], index_val=val_index,
+                        ax=ax3[1, 1], f_props=f_final_prop,
+                        ax_props=ax_props, reached=data['reached_perf'],
+                        plot_individual_values=plt_ind_vals)
+    handles, labels = ax3[0, 0].get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    ax3[0, 0].legend(by_label.values(), by_label.keys())
 
 
 def tr_to_final_ph(curr_ph, tr_to_ph, wind_final_perf, final_ph):
