@@ -20,8 +20,8 @@ CLRS = sns.color_palette()
 
 STAGES = [0, 1, 2, 3, 4]
 
-PRTCLS_IND_MAP = {'01234': -1, '1234': 0, '0234': 1, '0134': 2, '0124': 3,
-                  '034': 4, '234': 5, '34': 6, '4': 7}
+PRTCLS_IND_MAP = {'01234': -1, '1234': 0, '0234': 1, '0134': 2, '0134X': 3, '0124': 4,
+                  '034': 5, '234': 6, '34': 7, '4': 8}
 
 THS_IND_MAP = {'full': 0.5, '0.6': 0.6, '0.65': 0.65, '0.7': 0.7,
                '0.75': 0.75, '0.8': 0.8, '0.85': 0.85, '0.9': 0.9}
@@ -858,7 +858,7 @@ def batch_results(algs, setup_vals, markers, tag, setup_nm, folder,
         print('xxxxxxxxxxxxxxxxxxxxxx')
         f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
         f2, ax2 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
-        f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(12, 12))
+        f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
         ax = [ax1, ax2, ax3]
         for ind_setup, setup in enumerate(setup_vals):
             plot_results(folder, alg, setup=setup, setup_nm=setup_nm,
