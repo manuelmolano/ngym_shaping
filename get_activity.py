@@ -36,9 +36,9 @@ def model_fig(file, folder, protocol, n_ch, data, states):
     fname = folder+protocol+'_n_ch_'+str(n_ch)+'_model_'+fname
     perf = np.array(data['perf'])
     perf = perf[np.where(perf != -1)]
-    name = 'protocol: '+protocol+' perf: '+str(round(np.mean(perf), 2))
+    name = 'protocol: '+protocol +' perf: '+str(round(np.mean(perf), 2))
     plotting.fig_(data['ob'], data['actions'], gt=data['gt'],
-                  rewards=data['rewards'], states=states,
+                  rewards=data['rewards'],  states=states,
                   fname=fname, name=name)
 
 
@@ -47,6 +47,40 @@ def act_fig(activity_mat, folder, protocol, n_ch, **fig_kwargs):
     axes.imshow(activity_mat, aspect='auto', origin='lower')
     f.savefig(folder+protocol+'_n_ch_'+str(n_ch)+'_activity.png')
     plt.close(f)
+
+
+def evaluate(env, model, num_steps):
+    obs = env.reset()
+    states = None
+    done = [False]
+    ob_mat = []
+    act_mat = []
+    rew_mat = []
+    states_mat = []
+    gt_mat = []
+    perf = []
+    for i in range(num_steps):
+        ob_mat.append(obs[0])
+        action, states = model.predict(obs, states, mask=done)
+        act_mat.append(action)
+        states_mat.append(states)
+        obs, rewards, done, info = env.step(action)
+        rew_mat.append(rewards)
+        if len(states) > 0:
+            states_mat.append(states)
+        info = info[0]
+        if 'gt' in info.keys():
+            gt_mat.append(info['gt'])
+        else:
+            gt_mat.append(0)
+        if info['new_trial']:
+            perf.append(info['performance'])
+        env.render()
+    states = np.array(states_mat)
+    states = states[:, 0, :]
+    data = {'ob': ob_mat, 'actions': act_mat, 'gt': gt_mat,
+            'rewards': rew_mat, 'states': states, 'perf': perf}
+    return data
 
 
 def get_activity(folder, alg, protocols, n_ch=2, seed=0, num_steps=1000,
@@ -58,7 +92,8 @@ def get_activity(folder, alg, protocols, n_ch=2, seed=0, num_steps=1000,
             print(file)
             model = alg.load(file)
             env = create_env('CVLearning-v0', n_ch, seed)
-            data = plotting.run_env(env, model=model, num_steps=num_steps)
+            # data = plotting.run_env(env, model=model, num_steps=num_steps)
+            data = evaluate(env, model, num_steps)
             # z-score
             states_ori = data['states']
             states = (states_ori - np.mean(states_ori))/np.std(states_ori)
@@ -77,9 +112,11 @@ def get_activity(folder, alg, protocols, n_ch=2, seed=0, num_steps=1000,
 
 
 if __name__ == "__main__":
-    folder = '/Users/martafradera/Desktop/models/20_ch/'
+    n_ch = [2, 10, 20]
     alg = A2C
     protocols = ['01234', '4']
+    for n in n_ch:
+        folder = '/Users/martafradera/Desktop/models/'+str(n)+'_ch/'
 
-    get_activity(folder, alg, protocols, n_ch=20, num_steps=1000, sv_model=True)
+        get_activity(folder, alg, protocols, n_ch=n, num_steps=1000, sv_model=True)
     # create_env('CVLearning-v0', 2)
