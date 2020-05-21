@@ -43,7 +43,8 @@ def model_fig(file, folder, protocol, n_ch, data, sv_model):
         name = 'protocol: ' + protocol + ' perf: ' + str(round(np.mean(perf),
                                                                2))
         plotting.fig_(data['ob'], data['actions'], gt=data['gt'],
-                      rewards=data['rewards'],  states=data['states_'],
+                      rewards=data['rewards'],
+                      states=data['cell_states_hidden'],
                       fname=fname, name=name)
     return tag
 
@@ -84,10 +85,10 @@ def evaluate(env, model, num_steps):
     states = states[:, 0, :]
     # zscore
     states = (states - np.mean(states))/np.std(states)
-    cell_states = states[:, int(states.shape[1]/2):].T
+    hidden_states = states[:, int(states.shape[1]/2):].T
     data = {'ob': ob_mat, 'actions': act_mat, 'gt': gt_mat,
-            'cell_states': cell_states, 'rewards': rew_mat, 'states_': states,
-            'perf': perf}
+            'hidden_states': hidden_states, 'rewards': rew_mat,
+            'cell_states_hidden': states, 'perf': perf}
     return data
 
 
@@ -107,7 +108,7 @@ def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
             params = model.get_parameter_list()
             env = create_env('CVLearning-v0', n_ch, seed)
             data = evaluate(env, model, num_steps)
-            states = data['cell_states']
+            states = data['hidden_states']
             # plotting model
             tag = model_fig(file, folder, protocol, n_ch, data, sv_model)
             # activity mat
@@ -183,7 +184,7 @@ def corr_plot(total_states):
 
 def plot_results(axs, protocol, mean_states, std_states, corrs):
     indp = PRTCLS_IND_MAP[protocol]
-    indps = np.random.uniform(indp-0.05,indp+0.05,[len(mean_states)])
+    indps = np.random.uniform(indp-0.05, indp+0.05, [len(mean_states)])
     axs[0].errorbar(indp, np.mean(mean_states), np.std(mean_states),
                     marker='x', color=clrs[indp-1])
     axs[0].plot(indps, mean_states, alpha=0.5, linestyle='None', marker='x',
