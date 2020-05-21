@@ -37,6 +37,9 @@ def create_env(task, n_ch, seed):
 def model_fig(file, folder, protocol, n_ch, data, sv_model):
     tag = file[file.find(protocol+'_')+len(protocol)+1:file.find('.zip')]
     if sv_model:
+        states = data['cell_states_hidden']
+        # zscore
+        states = (states - np.mean(states))/np.std(states)
         fname = folder+protocol+'_n_ch_'+str(n_ch)+'_model_'+tag
         perf = np.array(data['perf'])
         perf = perf[np.where(perf != -1)]
@@ -44,8 +47,7 @@ def model_fig(file, folder, protocol, n_ch, data, sv_model):
                                                                2))
         plotting.fig_(data['ob'], data['actions'], gt=data['gt'],
                       rewards=data['rewards'],
-                      states=data['cell_states_hidden'],
-                      fname=fname, name=name)
+                      states=states, fname=fname, name=name)
     return tag
 
 
@@ -84,7 +86,7 @@ def evaluate(env, model, num_steps):
     states = np.array(states_mat)
     states = states[:, 0, :]
     # zscore
-    states = (states - np.mean(states))/np.std(states)
+    # states = (states - np.mean(states))/np.std(states)
     hidden_states = states[:, int(states.shape[1]/2):].T
     data = {'ob': ob_mat, 'actions': act_mat, 'gt': gt_mat,
             'hidden_states': hidden_states, 'rewards': rew_mat,
@@ -105,7 +107,7 @@ def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
         for file in files:
             print(file)
             model = alg.load(file)
-            params = model.get_parameter_list()
+            # params = model.get_parameter_list()
             env = create_env('CVLearning-v0', n_ch, seed)
             data = evaluate(env, model, num_steps)
             states = data['hidden_states']
@@ -157,8 +159,11 @@ def analyze_activity(states, folder, protocol, n_ch, tag):
     fr_mean = []
     fr_std = []
     for neuron in states:
-        fr_mean.append(np.mean(neuron))
-        fr_std.append(np.std(neuron))
+        firing_rates = []
+        for rate in neuron:
+            firing_rates.append(rate-np.min(neuron))
+        fr_mean.append(np.mean(firing_rates))
+        fr_std.append(np.std(firing_rates))
     return fr_mean, fr_std
 
 
@@ -200,7 +205,7 @@ def plot_results(axs, protocol, mean_states, std_states, corrs):
 
 
 if __name__ == "__main__":
-    n_ch = [2]  # , 10, 20]
+    n_ch = [2, 10, 20]  # , 10, 20]
     alg = A2C
     protocols = ['01234', '4']
     for n in n_ch:
