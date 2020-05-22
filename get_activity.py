@@ -107,7 +107,6 @@ def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
         for file in files:
             print(file)
             model = alg.load(file)
-            # params = model.get_parameter_list()
             env = create_env('CVLearning-v0', n_ch, seed)
             data = evaluate(env, model, num_steps)
             states = data['hidden_states']
@@ -119,6 +118,7 @@ def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
             perf = round(np.mean(perf), 2)
             print('perf', perf)
             if perf > 0.7:
+                evaluate_connectivity(model)
                 total_states.append(states)
                 fr_mean, fr_std = analyze_activity(states, folder, protocol,
                                                    n_ch, tag)
@@ -153,6 +153,12 @@ def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
     axs0[2].set_xlim(0, 3)
     f0.savefig(folder + 'firing_rate_results.png')
     plt.close(f0)
+
+
+def evaluate_connectivity(model):
+    params = model.get_parameters()
+    wh = params['model/lstm1/wh:0']
+    return wh
 
 
 def analyze_activity(states, folder, protocol, n_ch, tag):
