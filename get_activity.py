@@ -5,7 +5,6 @@ Created on Mon Apr  6 09:33:28 2020
 
 @author: martafradera
 """
-
 import glob
 import gym
 import numpy as np
@@ -95,9 +94,9 @@ def evaluate(env, model, num_steps):
 
 
 def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
-                 sv_model=False, sv_act=False):
-    f0, axs0 = plt.subplots(nrows=1, ncols=3, figsize=(15, 4))
-    axs0.flatten()
+                 sv_model=False, sv_act=True):
+    f0, axs0 = plt.subplots(nrows=2, ncols=2, figsize=(5, 5))
+    axs0 = axs0.flatten()
     for protocol in protocols:
         files = glob.glob(folder+'model_n_ch_'+str(n_ch)+'_'+protocol+'_*')
         activity_mat = None
@@ -132,10 +131,11 @@ def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
                 activity_mat = np.concatenate((activity_mat,
                                                np.ones((25, num_steps))),
                                               axis=0)
-        f, corrs = corr_plot(total_states)
+        f, corrs_mean, corrs_std = corr_plot(total_states)
         f.savefig(folder + protocol + '_n_ch_'+str(n_ch) + '_correlation.png')
         plt.close(f)
-        plot_results(axs0, protocol, mean_states, std_states, corrs)
+        plot_results(axs0, protocol, mean_states, std_states, corrs_mean,
+                     corrs_std)
         if sv_act:
             print(np.shape(activity_mat))
             act_fig(activity_mat, folder, protocol, n_ch)
@@ -147,10 +147,14 @@ def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
     axs0[1].set_xticks([1, 2])
     axs0[1].set_xticklabels(['01234', '4'])
     axs0[1].set_xlim(0, 3)
-    axs0[2].set_title('Firing Rate Correlation')
+    axs0[2].set_title('Correlation Mean')
     axs0[2].set_xticks([1, 2])
     axs0[2].set_xticklabels(['01234', '4'])
     axs0[2].set_xlim(0, 3)
+    axs0[3].set_title('Correlation Std')
+    axs0[3].set_xticks([1, 2])
+    axs0[3].set_xticklabels(['01234', '4'])
+    axs0[3].set_xlim(0, 3)
     f0.savefig(folder + 'firing_rate_results.png')
     plt.close(f0)
 
@@ -180,20 +184,23 @@ def corr_plot(total_states):
     f, axs = plt.subplots(nrows=rows, ncols=3, figsize=(4*3, 4*rows))
     ax = axs.flatten()
     ind = 0
-    corrs = []
+    corrs_mean = []
+    corrs_std = []
     for states in total_states:
         corr = np.corrcoef(states)
         ax[ind].imshow(corr, aspect='auto')
         ind += 1
-        corrs.append(np.mean(corr))
+        corrs_mean.append(np.mean(corr))
+        corrs_std.append(np.std(corr))
     h = -1
     for n in range(nhide):
         ax[h].axis('off')
         h -= 1
-    return f, corrs
+    return f, corrs_mean, corrs_std
 
 
-def plot_results(axs, protocol, mean_states, std_states, corrs):
+def plot_results(axs, protocol, mean_states, std_states, corrs_mean,
+                 corrs_std):
     indp = PRTCLS_IND_MAP[protocol]
     indps = np.random.uniform(indp-0.05, indp+0.05, [len(mean_states)])
     axs[0].errorbar(indp, np.mean(mean_states), np.std(mean_states),
@@ -204,9 +211,13 @@ def plot_results(axs, protocol, mean_states, std_states, corrs):
                     color=clrs[indp-1])
     axs[1].plot(indps, std_states, alpha=0.5, linestyle='None', marker='x',
                 color=clrs[indp-1])
-    axs[2].errorbar(indp, np.mean(corrs), np.std(corrs), marker='x',
+    axs[2].errorbar(indp, np.mean(corrs_mean), np.std(corrs_mean), marker='x',
                     color=clrs[indp-1])
-    axs[2].plot(indps, corrs, alpha=0.5, linestyle='None', marker='x',
+    axs[2].plot(indps, corrs_mean, alpha=0.5, linestyle='None', marker='x',
+                color=clrs[indp-1])
+    axs[3].errorbar(indp, np.mean(corrs_std), np.std(corrs_std), marker='x',
+                    color=clrs[indp-1])
+    axs[3].plot(indps, corrs_std, alpha=0.5, linestyle='None', marker='x',
                 color=clrs[indp-1])
 
 
