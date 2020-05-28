@@ -9,6 +9,7 @@ import glob
 import gym
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.cluster import AgglomerativeClustering
 from stable_baselines import A2C  # , ACER, PPO2, ACKTR
 from stable_baselines.common.vec_env import DummyVecEnv
 from neurogym.utils import plotting
@@ -103,6 +104,9 @@ def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
         total_states = []
         mean_states = []
         std_states = []
+        clusters = []
+        whs = []
+        perf_th = False
         for file in files:
             print(file)
             model = alg.load(file)
@@ -116,8 +120,11 @@ def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
             perf = perf[np.where(perf != -1)]
             perf = round(np.mean(perf), 2)
             print('perf', perf)
-            if perf > 0.7:
-                evaluate_connectivity(model)
+            if perf >= 0.7:
+                perf_th = True
+                wh, clustering = evaluate_connectivity(model)
+                clusters.append(clustering)
+                whs.append(wh)
                 total_states.append(states)
                 fr_mean, fr_std = analyze_activity(states, folder, protocol,
                                                    n_ch, tag)
@@ -131,14 +138,19 @@ def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
                 activity_mat = np.concatenate((activity_mat,
                                                np.ones((25, num_steps))),
                                               axis=0)
-        f, corrs_mean, corrs_std = corr_plot(total_states)
-        f.savefig(folder + protocol + '_n_ch_'+str(n_ch) + '_correlation.png')
-        plt.close(f)
-        plot_results(axs0, protocol, mean_states, std_states, corrs_mean,
-                     corrs_std)
-        if sv_act:
-            print(np.shape(activity_mat))
-            act_fig(activity_mat, folder, protocol, n_ch)
+        if perf_th is True:
+            f, corrs_mean, corrs_std = corr_plot(total_states)
+            f.savefig(folder + protocol + '_n_ch_'+str(n_ch) +
+                      '_correlation.png')
+            plt.close(f)
+            plot_clusters(clusters, whs)
+            f.savefig(folder+protocol+'_n_ch_'+str(n_ch)+'_clusters.png')
+            plt.close(f)
+            plot_results(axs0, protocol, mean_states, std_states, corrs_mean,
+                         corrs_std)
+            if sv_act:
+                print(np.shape(activity_mat))
+                act_fig(activity_mat, folder, protocol, n_ch)
     axs0[0].set_title('Firing Rate Mean')
     axs0[0].set_xticks([1, 2])
     axs0[0].set_xticklabels(['01234', '4'])
@@ -162,7 +174,32 @@ def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
 def evaluate_connectivity(model):
     params = model.get_parameters()
     wh = params['model/lstm1/wh:0']
-    return wh
+    X = wh
+    print(np.shape(X))
+    clustering = AgglomerativeClustering(2).fit(X)
+    return wh, clustering
+
+
+def plot_clusters(clusters, whs):
+    plts = len(clusters)
+    rows = int(plts/3) + plts % 3
+    nhide = (3 - (plts % 3)) % 3
+    f, axs = plt.subplots(nrows=rows, ncols=3, figsize=(4*3, 4*rows))
+    ax = axs.flatten()
+    ind = 0
+    for wh, clustering in zip(whs, clusters):
+        n_clusters = 2
+        X = wh
+        labels = clustering.labels_
+        for class_value in range(n_clusters):
+            row_ix = np.where(labels == class_value)
+            ax[ind].scatter(X[row_ix, 0], X[row_ix, 1])
+        ind += 1
+    h = -1
+    for n in range(nhide):
+        ax[h].axis('off')
+        h -= 1
+    return f
 
 
 def analyze_activity(states, folder, protocol, n_ch, tag):
@@ -222,7 +259,7 @@ def plot_results(axs, protocol, mean_states, std_states, corrs_mean,
 
 
 if __name__ == "__main__":
-    n_ch = [2, 10, 20]  # , 10, 20]
+    n_ch = [2]  # , 10, 20]
     alg = A2C
     protocols = ['01234', '4']
     for n in n_ch:
