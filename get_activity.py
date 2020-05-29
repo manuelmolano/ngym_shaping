@@ -9,7 +9,7 @@ import glob
 import gym
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.cluster import AgglomerativeClustering
+from sklearn.cluster import AgglomerativeClustering, KMeans
 from stable_baselines import A2C  # , ACER, PPO2, ACKTR
 from stable_baselines.common.vec_env import DummyVecEnv
 from neurogym.utils import plotting
@@ -94,6 +94,56 @@ def evaluate(env, model, num_steps):
     return data
 
 
+def activity_variance(data):
+    act = data['hidden_states']
+    obs = data['ob']
+    # fixation [1., 0., 0.]
+    # stimulus [1., x., x.]
+    # delay [1., 0., 0.]
+    # decision [0., 0., 0.]
+
+    act_variance = []
+    for neuron in range(256):
+        nact = act[neuron, :]
+        fixation_ind = []
+        stimulus_ind = []
+        delay_ind = []
+        decision_ind = []
+        # mean for each period per trial
+        fix_means = []
+        stim_means = []
+        dly_means = []
+        dcsn_means = []
+        for ind, ob in enumerate(obs):
+            if np.array_equal(ob, [1., 0., 0.]):
+                if ind-1 in decision_ind:   # indicating new trial
+                    fix_means.append(np.mean(nact[fixation_ind]))
+                    fixation_ind.clear()
+                    stim_means.append(np.mean(nact[stimulus_ind]))
+                    stimulus_ind.clear()
+                    if len(delay_ind) > 0:
+                        dly_means.append(np.mean(nact[delay_ind]))
+                        delay_ind.clear()
+                    dcsn_means.append(np.mean(nact[decision_ind]))
+                    decision_ind.clear()
+                if ind-1 in stimulus_ind or ind-1 in delay_ind:
+                    delay_ind.append(ind)
+                else:
+                    fixation_ind.append(ind)
+            elif np.array_equal(ob, [0., 0., 0.]):
+                decision_ind.append(ind)
+            else:
+                stimulus_ind.append(ind)
+
+        std = [np.std(fix_means), np.std(stim_means), np.std(dly_means),
+               np.std(dcsn_means)]
+        if len(act_variance) == 0:
+            act_variance = std
+        else:
+            act_variance = np.vstack((act_variance, std))
+    return act_variance
+
+
 def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
                  sv_model=False, sv_act=True):
     f0, axs0 = plt.subplots(nrows=2, ncols=2, figsize=(5, 5))
@@ -104,8 +154,6 @@ def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
         total_states = []
         mean_states = []
         std_states = []
-        clusters = []
-        whs = []
         perf_th = False
         for file in files:
             print(file)
@@ -122,9 +170,7 @@ def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
             print('perf', perf)
             if perf >= 0.7:
                 perf_th = True
-                wh, clustering = evaluate_connectivity(model)
-                clusters.append(clustering)
-                whs.append(wh)
+                evaluate_connectivity(model, data, folder, protocol, tag)
                 total_states.append(states)
                 fr_mean, fr_std = analyze_activity(states, folder, protocol,
                                                    n_ch, tag)
@@ -142,9 +188,6 @@ def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
             f, corrs_mean, corrs_std = corr_plot(total_states)
             f.savefig(folder + protocol + '_n_ch_'+str(n_ch) +
                       '_correlation.png')
-            plt.close(f)
-            plot_clusters(clusters, whs)
-            f.savefig(folder+protocol+'_n_ch_'+str(n_ch)+'_clusters.png')
             plt.close(f)
             plot_results(axs0, protocol, mean_states, std_states, corrs_mean,
                          corrs_std)
@@ -171,35 +214,61 @@ def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
     plt.close(f0)
 
 
-def evaluate_connectivity(model):
+def evaluate_connectivity(model, data, folder, protocol, tag):
     params = model.get_parameters()
     wh = params['model/lstm1/wh:0']
-    X = wh
-    print(np.shape(X))
-    clustering = AgglomerativeClustering(2).fit(X)
-    return wh, clustering
+    in_gate, forget_gate, out_gate, cell_candidate = np.split(wh, 4, axis=1)
+    wh = in_gate + forget_gate + out_gate + cell_candidate
+    act_variance = activity_variance(data)
+    cluster_model = AgglomerativeClustering(connectivity=wh, n_clusters=4)
+    # cluster_model = KMeans(n_clusters=4)  # , algorithm='full', n_init=20,
+    # random_state=0)
+    clustering = cluster_model.fit_predict(act_variance)
+    # optimal_k(act_variance, folder, protocol, tag)
+    plot_clusters(clustering, act_variance, folder, protocol, tag)
 
 
-def plot_clusters(clusters, whs):
-    plts = len(clusters)
-    rows = int(plts/3) + plts % 3
-    nhide = (3 - (plts % 3)) % 3
-    f, axs = plt.subplots(nrows=rows, ncols=3, figsize=(4*3, 4*rows))
+def optimal_k(act_variance, folder, protocol, tag):
+    f, axs = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
+    X = act_variance
+    Nc = range(1, 20)
+    kmeans = [KMeans(n_clusters=i) for i in Nc]
+    score = [kmeans[i].fit(X).score(X) for i in range(len(kmeans))]
+    axs[0].plot(Nc, score)
+    axs[0].set_xlabel('Number of Clusters')
+    axs[0].set_ylabel('Score')
+    f.savefig(f.savefig(folder+protocol+'_model_'+tag+'_k'))
+    plt.close(f)
+
+
+def plot_clusters(clustering, act_variance, folder, protocol, tag):
+    f, axs = plt.subplots(nrows=2, ncols=3, figsize=(13, 8))
     ax = axs.flatten()
-    ind = 0
-    for wh, clustering in zip(whs, clusters):
-        n_clusters = 2
-        X = wh
-        labels = clustering.labels_
-        for class_value in range(n_clusters):
-            row_ix = np.where(labels == class_value)
-            ax[ind].scatter(X[row_ix, 0], X[row_ix, 1])
-        ind += 1
-    h = -1
-    for n in range(nhide):
-        ax[h].axis('off')
-        h -= 1
-    return f
+    n_clusters = np.unique(clustering)
+    X = act_variance
+    for cluster in n_clusters:
+        row_ix = np.where(clustering == cluster)
+        ax[0].scatter(X[row_ix, 0], X[row_ix, 1])
+        ax[1].scatter(X[row_ix, 0], X[row_ix, 2])
+        ax[2].scatter(X[row_ix, 0], X[row_ix, 3])
+        ax[3].scatter(X[row_ix, 1], X[row_ix, 2])
+        ax[4].scatter(X[row_ix, 1], X[row_ix, 3])
+        ax[5].scatter(X[row_ix, 2], X[row_ix, 3])
+    ax[0].set_xlabel('Fixation Std')
+    ax[0].set_ylabel('Stimulus Std')
+    ax[1].set_xlabel('Fixation Std')
+    ax[1].set_ylabel('Delay Std')
+    ax[2].set_xlabel('Fixation Std')
+    ax[2].set_ylabel('Decision Std')
+    ax[3].set_xlabel('Stimulus Std')
+    ax[3].set_ylabel('Delay Std')
+    ax[4].set_xlabel('Stimulus Std')
+    ax[4].set_ylabel('Decision Std')
+    ax[5].set_xlabel('Delay Std')
+    ax[5].set_ylabel('Decision Std')
+
+    f.savefig(folder+protocol+'_model_'+tag+'_clusters')
+    plt.close(f)
 
 
 def analyze_activity(states, folder, protocol, n_ch, tag):
