@@ -557,7 +557,7 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
             ax[len(keys)-1].set_xlabel('Trials')
             ax[len(keys)-1].legend()
             f.savefig(folder+'/'+names[ind]+algorithm+'_'+setup_nm+'_'+setup+'_' +
-                      str(limit_tr)+'.png', dpi=200)
+                      str(limit_tr)+'.svg', dpi=200)
             plt.close(f)
 
         # days under perf
@@ -566,7 +566,7 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
             metric = metrics['curr_perf']
             perf_hist(metric, ax=ax, index=val_index, trials_day=300)
             ax.set_title('Performance histogram ('+algorithm+')')
-            f.savefig(folder+'/perf_hist_'+algorithm+'_'+setup_nm+'_'+setup+'.png',
+            f.savefig(folder+'/perf_hist_'+algorithm+'_'+setup_nm+'_'+setup+'.svg',
                       dpi=200)
             plt.close(f)
 
@@ -577,7 +577,7 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
             trials_per_stage(metric, ax=ax, index=val_index)
             ax.set_title('Average number of trials per stage ('+algorithm+')')
             f.savefig(folder+'/trials_stage_'+algorithm+'_'+setup_nm+'_'+setup +
-                      '.png', dpi=200)
+                      '.svg', dpi=200)
             plt.close(f)
 
         # PROCESS TRACES
@@ -870,18 +870,18 @@ def batch_results(algs, setup_vals, markers, tag, setup_nm, folder,
                          rerun=rerun)
             if ind_setup == 0:
                 f1.savefig(folder + '/final_results_phase_' +
-                           alg+'_'+str(limit_tr)+setup+'.png', dpi=200)
+                           alg+'_'+str(limit_tr)+setup+'.svg', dpi=200)
                 f2.savefig(folder + '/final_results_steps_' +
-                           alg+'_'+str(limit_tr)+setup+'.png', dpi=200)
+                           alg+'_'+str(limit_tr)+setup+'.svg', dpi=200)
                 f3.savefig(folder + '/final_results_performance_' +
-                           alg+'_'+str(limit_tr)+setup+'.png', dpi=200)
+                           alg+'_'+str(limit_tr)+setup+'.svg', dpi=200)
 
         f1.savefig(folder + '/final_results_phase_' +
-                   alg+'_'+str(limit_tr)+'.png', dpi=200)
+                   alg+'_'+str(limit_tr)+'.svg', dpi=200)
         f2.savefig(folder + '/final_results_steps_' +
-                   alg+'_'+str(limit_tr)+'.png', dpi=200)
+                   alg+'_'+str(limit_tr)+'.svg', dpi=200)
         f3.savefig(folder + '/final_results_performance_' +
-                   alg+'_'+str(limit_tr)+'.png', dpi=200)
+                   alg+'_'+str(limit_tr)+'.svg', dpi=200)
         plt.close(f1)
         plt.close(f2)
         plt.close(f3)
