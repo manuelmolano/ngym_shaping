@@ -6,8 +6,6 @@ Created on Thu Jun  4 18:40:01 2020
 @author: martafradera
 """
 
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """Plotting functions."""
 import os
 import sys
@@ -19,6 +17,8 @@ import seaborn as sns
 import ntpath
 import itertools
 from matplotlib import rcParams
+
+
 rcParams['font.family'] = 'sans-serif'
 rcParams['font.sans-serif'] = ['Arial']
 rcParams['font.size'] = 12
@@ -31,6 +31,8 @@ THS_IND_MAP = {'full': 0.5, '0.6': 0.6, '0.65': 0.65, '0.7': 0.7,
 ALL_INDX = {}
 ALL_INDX.update(PRTCLS_IND_MAP)
 ALL_INDX.update(THS_IND_MAP)
+
+
 def plot_env(env, num_steps_env=200, def_act=None, model=None, show_fig=True,
              name=None, legend=True, obs_traces=[], fig_kwargs={}):
     """
@@ -69,6 +71,8 @@ def plot_env(env, num_steps_env=200, def_act=None, model=None, show_fig=True,
             'actions_end_of_trial': actions_end_of_trial, 'gt': gt,
             'states': states}
     return data
+
+
 def run_env(env, num_steps_env=200, def_act=None, model=None):
     observations = []
     obs_cum = []
@@ -125,6 +129,8 @@ def run_env(env, num_steps_env=200, def_act=None, model=None):
         states = None
     return observations, obs_cum, rewards, actions, perf,\
         actions_end_of_trial, gt, states
+
+
 def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
          performance=None, legend=True, obs_traces=None, name='', folder='',
          fig_kwargs={}, path=None, env=None, sv_data=False, start=None,
@@ -346,12 +352,16 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
             f.savefig(folder + name + 'env_struct.png')
         plt.close(f)
     return f
+
+
 def load_data(path):
     data = {}
     file_data = np.load(path, allow_pickle=True)
     for key in file_data.keys():
         data[key] = file_data[key]
     return data
+
+
 def data_extraction(folder, w_conv_perf=500, metrics={'reward': []},
                     conv=[1]):
     data = put_together_files(folder)
@@ -373,6 +383,8 @@ def data_extraction(folder, w_conv_perf=500, metrics={'reward': []},
         print('No data in: ', folder)
         data_flag = False
     return metrics, data_flag
+
+
 def perf_hist(metric, ax, index, trials_day=300):
     metric = np.array(metric)
     index = np.array(index)
@@ -389,6 +401,8 @@ def perf_hist(metric, ax, index, trials_day=300):
     ax.legend()
     ax.set_xlabel('Performance')
     ax.set_ylabel('Days')
+
+
 def trials_per_stage(metric, ax, index):
     bins = np.linspace(STAGES[0]-0.5, STAGES[-1]+.5, len(STAGES)+1)
     metric = np.array(metric)
@@ -421,6 +435,8 @@ def trials_per_stage(metric, ax, index):
     ax.legend(by_label.values(), by_label.keys())
     ax.set_xlabel('Stage')
     ax.set_ylabel('Trials')
+
+
 def put_together_files(folder):
     files = glob.glob(folder + '/*_bhvr_data*npz')
     data = {}
@@ -435,10 +451,14 @@ def put_together_files(folder):
                 data[key] = np.concatenate((data[key], file_data[key]))
         np.savez(folder + '/bhvr_data_all.npz', **data)
     return data
+
+
 def order_by_sufix(file_list):
     sfx = [int(x[x.rfind('_')+1:x.rfind('.')]) for x in file_list]
     sorted_list = [x for _, x in sorted(zip(sfx, file_list))]
     return sorted_list
+
+
 def get_tag(tag, file):
     # process name
     f_name = ntpath.basename(file)
@@ -448,6 +468,8 @@ def get_tag(tag, file):
     if val.find('-1') != -1:
         val = 'full'
     return val
+
+
 def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
                  keys=['performance', 'curr_ph', 'curr_perf'],
                  limit_ax=True, final_ph=4, perf_th=0.7, ax_final=None,
@@ -460,9 +482,9 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
     if not os.path.exists(folder+'/data_'+algorithm+'_'+setup_nm+'_'+setup +
                           '.npz') or rerun:
         print('Pre-processing raw data')
-        files = glob.glob(folder+'alg_'+algorithm+'*'+setup_nm+'_'+setup+'_*')
+        files = glob.glob(folder+'alg_'+algorithm+'*'+setup_nm+'_'+setup+'*')
         assert len(files) > 0, 'No files of the form: '+folder+'*'+algorithm +\
-            '*'+setup_nm+'_'+setup+'_*'
+            '*'+setup_nm+'_'+setup+'*'
         files = sorted(files)
         val_index = []  # stores values for each instance
         metrics = {k: [] for k in keys}
@@ -487,6 +509,7 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
     metrics = {}
     for k in tmp.keys():
         metrics[k] = list(tmp[k])
+        print('m', metrics[k])
     if limit_tr:
         min_dur = np.min([len(x) for x in metrics['curr_ph']])
     else:
@@ -529,11 +552,12 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
         stability_mat.append(compute_stability(perf=perf.copy(),
                                                tr_ab_th=tt_prf))
         # # number of steps
-        if len(metrics['num_stps'][ind_f]) != 0:
-            num_steps = np.cumsum(metrics['num_stps'][ind_f])
-            stps_to_perf.append(num_steps[max(0, tt_prf-1)]/1000)
-            stps_to_ph.append(num_steps[min(max(0, tt_ph-1),
-                                            len(num_steps)-1)]/1000)
+        if 'num_steps' in metrics:
+            if len(metrics['num_stps'][ind_f]) != 0:
+                num_steps = np.cumsum(metrics['num_stps'][ind_f])
+                stps_to_perf.append(num_steps[max(0, tt_prf-1)]/1000)
+                stps_to_ph.append(num_steps[min(max(0, tt_ph-1),
+                                                len(num_steps)-1)]/1000)
         else:
             stps_to_perf.append(np.nan)
             stps_to_ph.append(np.nan)
@@ -661,6 +685,8 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
         handles, labels = ax3[0, 0].get_legend_handles_labels()
         by_label = dict(zip(labels, handles))
         ax3[0, 0].legend(by_label.values(), by_label.keys())
+
+
 def tr_to_final_ph(curr_ph, tr_to_ph, wind_final_perf, final_ph):
     time = np.where(curr_ph == final_ph)[0]  # find those trials in phase 4
     reached = False
@@ -675,6 +701,8 @@ def tr_to_final_ph(curr_ph, tr_to_ph, wind_final_perf, final_ph):
     else:
         tr_to_ph.append(len(curr_ph))
     return tr_to_ph, reached
+
+
 def tr_to_reach_perf(perf, tr_to_ph, reach_perf, tr_to_perf, final_ph):
     reached = False
     perf_in_final_ph = perf[tr_to_ph:]
@@ -686,6 +714,8 @@ def tr_to_reach_perf(perf, tr_to_ph, reach_perf, tr_to_perf, final_ph):
         tr_to_perf.append(np.min(time_above_th) +
                           np.min(tr_to_ph))
     return tr_to_perf, reached
+
+
 def compute_stability(perf, tr_ab_th):
     perf = np.array(perf)[tr_ab_th:]
     if perf.shape[0] != 0:
@@ -694,6 +724,8 @@ def compute_stability(perf, tr_ab_th):
     else:
         stability = np.nan
     return stability
+
+
 def plot_rew_across_training(metric, index, ax):
     metric = np.array(metric)
     index = np.array(index)
@@ -703,6 +735,8 @@ def plot_rew_across_training(metric, index, ax):
         traces_temp = metric[indx]
         for trace in traces_temp:
             ax.plot(trace, color=CLRS[ind_val], alpha=0.5, lw=0.5)
+
+
 def plt_means(metric, index, ax, limit_mean=True, limit_ax=True):
     if limit_mean:
         min_dur = np.min([len(x) for x in metric])
@@ -724,11 +758,15 @@ def plt_means(metric, index, ax, limit_mean=True, limit_ax=True):
     if limit_ax:
         assert limit_mean, 'limiting ax only works when mean is also limited'
         ax.set_xlim([0, min_dur])
+
+
 def get_noise(unq_vals):
     max_ = np.max([ALL_INDX[x] for x in unq_vals])
     min_ = np.min([ALL_INDX[x] for x in unq_vals])
     noise = (max_ - min_)/80
     return noise
+
+
 def plt_perf_indicators(values, index_val, ax, f_props, ax_props, reached=None,
                         discard=[], plot_individual_values=True,
                         errorbars=True):
@@ -764,6 +802,8 @@ def plt_perf_indicators(values, index_val, ax, f_props, ax_props, reached=None,
     ax.set_ylabel(ax_props['ylabel'])
     ax.set_xticks(ax_props['ticks'])
     ax.set_xticklabels(ax_props['labels'])
+
+
 def batch_results(algs, setup_vals, markers, tag, setup_nm, folder,
                   limit_tr=True, rerun=False):
     for alg in algs:
@@ -797,21 +837,23 @@ def batch_results(algs, setup_vals, markers, tag, setup_nm, folder,
         plt.close(f1)
         plt.close(f2)
         plt.close(f3)
+
+
 if __name__ == '__main__':
     plt.close('all')
     if len(sys.argv) == 1:
-        main_folder = '/Users/martafradera/Desktop/data/hyperparameters/first/'
+        main_folder = '/Users/martafradera/Desktop/data/hyperparameters/prova/'
         # main_folder = '/home/molano/CV-Learning/results_280420/'
     elif len(sys.argv) == 2:
         main_folder = sys.argv[1]
     print(sys.argv)
     rerun = False
-    algs = ['A2C']
+    algs = ['A2C', 'ACER', 'ACKTR', 'PPO2']
     winds = ['0', '1', '2', '3', '4']  # , '500', '1000']
     markers = ['+', 'x' , '1', 'o', '>']
-    setup_nm = 'w'
+    setup_nm = 'keep_days'
     tag = 'th_stage'
-    folder = main_folder + '/one_agent_control/'
+    folder = main_folder  # + '/one_agent_control/'
     batch_results(algs=algs, setup_vals=winds, markers=markers, tag=tag,
                   setup_nm=setup_nm, folder=folder, limit_tr=True)
     # algs = ['PPO2', 'ACKTR', 'A2C', 'ACER']
