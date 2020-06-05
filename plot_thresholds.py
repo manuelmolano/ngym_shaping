@@ -509,7 +509,6 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
     metrics = {}
     for k in tmp.keys():
         metrics[k] = list(tmp[k])
-        print('m', metrics[k])
     if limit_tr:
         min_dur = np.min([len(x) for x in metrics['curr_ph']])
     else:
