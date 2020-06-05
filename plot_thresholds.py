@@ -846,13 +846,13 @@ if __name__ == '__main__':
     elif len(sys.argv) == 2:
         main_folder = sys.argv[1]
     print(sys.argv)
-    rerun = False
+    rerun = True
     algs = ['A2C', 'ACER', 'ACKTR', 'PPO2']
     winds = ['0', '1', '2', '3', '4']  # , '500', '1000']
-    markers = ['+', 'x' , '1', 'o', '>']
+    markers = ['+', 'x', '1', 'o', '>']
     setup_nm = 'keep_days'
     tag = 'th_stage'
-    folder = main_folder  # + '/one_agent_control/'
+    folder = main_folder + '/one_agent_control/'
     batch_results(algs=algs, setup_vals=winds, markers=markers, tag=tag,
                   setup_nm=setup_nm, folder=folder, limit_tr=True)
     # algs = ['PPO2', 'ACKTR', 'A2C', 'ACER']

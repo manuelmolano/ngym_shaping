@@ -772,22 +772,21 @@ def compute_stability(perf, tr_ab_th):
     return stability
 
 
-def plot_rew_across_training(metric, index, ax, n_traces=10,
+def plot_rew_across_training(metric, index, ax, n_traces=20,
                              selected_protocols=['01234', '4']):
     metric = np.array(metric)
     index = np.array(index)
-    if selected_protocols is None:
-        unq_vals = np.unique(index)
-    else:
-        unq_vals = selected_protocols
+    unq_vals = np.unique(index)
     for ind_val, val in enumerate(unq_vals):
-        indx = index == val
-        traces_temp = metric[indx][:n_traces]
-        for trace in traces_temp:
-            ax.plot(trace, color=CLRS[ind_val], alpha=0.5, lw=0.5)
+        if val in selected_protocols:
+            indx = index == val
+            traces_temp = metric[indx][:n_traces]
+            for trace in traces_temp:
+                ax.plot(trace, color=CLRS[ind_val], alpha=0.5, lw=0.5)
 
 
-def plt_means(metric, index, ax, limit_mean=True, limit_ax=True):
+def plt_means(metric, index, ax, limit_mean=True, limit_ax=True,
+              selected_protocols=['01234', '4']):
     if limit_mean:
         min_dur = np.min([len(x) for x in metric])
         metric = [x[:min_dur] for x in metric]
@@ -801,11 +800,12 @@ def plt_means(metric, index, ax, limit_mean=True, limit_ax=True):
     index = np.array(index)
     unq_vals = np.unique(index)
     for ind_val, val in enumerate(unq_vals):
-        indx = index == val
-        traces_temp = metric[indx, :]
-        if not (np.isnan(traces_temp)).all():
-            ax.plot(np.nanmean(traces_temp, axis=0), color=CLRS[ind_val],
-                    lw=1, label=val+' ('+str(np.sum(indx))+')')
+        if val in selected_protocols:
+            indx = index == val
+            traces_temp = metric[indx, :]
+            if not (np.isnan(traces_temp)).all():
+                ax.plot(np.nanmean(traces_temp, axis=0), color=CLRS[ind_val],
+                        lw=1, label=val+' ('+str(np.sum(indx))+')')
     if limit_ax:
         assert limit_mean, 'limiting ax only works when mean is also limited'
         ax.set_xlim([0, min_dur])
