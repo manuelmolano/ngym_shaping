@@ -772,10 +772,14 @@ def compute_stability(perf, tr_ab_th):
     return stability
 
 
-def plot_rew_across_training(metric, index, ax, n_traces=5):
+def plot_rew_across_training(metric, index, ax, n_traces=10,
+                             selected_protocols=['01234', '4']):
     metric = np.array(metric)
     index = np.array(index)
-    unq_vals = np.unique(index)
+    if selected_protocols is None:
+        unq_vals = np.unique(index)
+    else:
+        unq_vals = selected_protocols
     for ind_val, val in enumerate(unq_vals):
         indx = index == val
         traces_temp = metric[indx][:n_traces]

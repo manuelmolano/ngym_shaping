@@ -811,7 +811,7 @@ if __name__ == '__main__':
     markers = ['+', 'x' , '1', 'o', '>']
     setup_nm = 'w'
     tag = 'th_stage'
-    folder = main_folder  # +'/one_agent_control/'
+    folder = main_folder + '/one_agent_control/'
     batch_results(algs=algs, setup_vals=winds, markers=markers, tag=tag,
                   setup_nm=setup_nm, folder=folder, limit_tr=True)
     # algs = ['PPO2', 'ACKTR', 'A2C', 'ACER']
