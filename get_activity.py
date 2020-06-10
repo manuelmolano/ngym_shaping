@@ -9,6 +9,7 @@ import glob
 import gym
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from sklearn.cluster import AgglomerativeClustering, KMeans
 from stable_baselines import A2C  # , ACER, PPO2, ACKTR
 from stable_baselines.common.vec_env import DummyVecEnv
@@ -37,8 +38,16 @@ def create_env(task, n_ch, seed):
 def model_fig(file, folder, protocol, n_ch, data, sv_model):
     tag = file[file.find(protocol+'_')+len(protocol)+1:file.find('.zip')]
     if sv_model:
-        states = data['cell_states_hidden']
+        states_ = data['cell_states_hidden']
         # zscore
+        states = np.empty(0)
+        for neuron in states_:
+            nact = (neuron - np.mean(neuron))/np.std(neuron)
+            if len(states) == 0:
+                states = nact
+            else:
+                states = np.vstack((states, nact[:, ]))
+
         states = (states - np.mean(states))/np.std(states)
         fname = folder+protocol+'_n_ch_'+str(n_ch)+'_model_'+tag
         perf = np.array(data['perf'])
@@ -85,8 +94,6 @@ def evaluate(env, model, num_steps):
         env.render()
     states = np.array(states_mat)
     states = states[:, 0, :]
-    # zscore
-    # states = (states - np.mean(states))/np.std(states)
     hidden_states = states[:, int(states.shape[1]/2):].T
     data = {'ob': ob_mat, 'actions': act_mat, 'gt': gt_mat,
             'hidden_states': hidden_states, 'rewards': rew_mat,
@@ -95,7 +102,15 @@ def evaluate(env, model, num_steps):
 
 
 def activity_variance(data):
-    act = data['hidden_states']
+    act_ = data['hidden_states']
+    # zscore
+    act = np.empty(0)
+    for neuron in act_:
+        nact = (neuron - np.mean(neuron))/np.std(neuron)
+        if len(act) == 0:
+            act = nact
+        else:
+            act = np.vstack((act, nact[:, ]))
     obs = data['ob']
     # fixation [1., 0., 0.]
     # stimulus [1., x., x.]
@@ -145,7 +160,7 @@ def activity_variance(data):
 
 
 def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
-                 sv_model=False, sv_act=True):
+                 sv_model=False, sv_act=False):
     f0, axs0 = plt.subplots(nrows=2, ncols=2, figsize=(5, 5))
     axs0 = axs0.flatten()
     for protocol in protocols:
@@ -220,24 +235,25 @@ def evaluate_connectivity(model, data, folder, protocol, tag):
     in_gate, forget_gate, out_gate, cell_candidate = np.split(wh, 4, axis=1)
     wh = in_gate + forget_gate + out_gate + cell_candidate
     act_variance = activity_variance(data)
-    cluster_model = AgglomerativeClustering(connectivity=wh, n_clusters=4)
-    # cluster_model = KMeans(n_clusters=4)  # , algorithm='full', n_init=20,
+    # cluster_model = AgglomerativeClustering(connectivity=wh, n_clusters=4)
+    cluster_model = KMeans(n_clusters=4)  # , algorithm='full', n_init=20,
     # random_state=0)
     clustering = cluster_model.fit_predict(act_variance)
-    # optimal_k(act_variance, folder, protocol, tag)
-    plot_clusters(clustering, act_variance, folder, protocol, tag)
+    optimal_k(act_variance, folder, protocol, tag)
+    # plot_clusters(clustering, act_variance, folder, protocol, tag)
+    plot_clusters2(clustering, act_variance, folder, protocol, tag)
 
 
 def optimal_k(act_variance, folder, protocol, tag):
-    f, axs = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
+    f, axs = plt.subplots(nrows=1, ncols=1, figsize=(5, 3))
     X = act_variance
     Nc = range(1, 20)
     kmeans = [KMeans(n_clusters=i) for i in Nc]
-    score = [kmeans[i].fit(X).score(X) for i in range(len(kmeans))]
-    axs[0].plot(Nc, score)
-    axs[0].set_xlabel('Number of Clusters')
-    axs[0].set_ylabel('Score')
-    f.savefig(f.savefig(folder+protocol+'_model_'+tag+'_k'))
+    ssd = [kmeans[i].fit(X).inertia_ for i in range(len(kmeans))]
+    axs.plot(Nc, ssd)
+    axs.set_xlabel('Number of Clusters')
+    axs.set_ylabel('Sum of squared distance')
+    f.savefig(folder+protocol+'_model_'+tag+'_k')
     plt.close(f)
 
 
@@ -268,6 +284,47 @@ def plot_clusters(clustering, act_variance, folder, protocol, tag):
     ax[5].set_ylabel('Decision Std')
 
     f.savefig(folder+protocol+'_model_'+tag+'_clusters')
+    plt.close(f)
+
+
+def plot_clusters2(clustering, act_variance, folder, protocol, tag):
+    n_clusters = np.unique(clustering)
+
+    figsize = (4, 3)
+    f = plt.figure(figsize=figsize)
+    rect = [0.1, 0.1, 0.7, 0.85]
+    rect_color = [0.75, 0.1, 0.08, 0.85]
+
+    ax2 = f.add_axes(rect_color)
+    # cmap = ['r', 'c', 'm', 'y']
+    cmap = mpl.colors.ListedColormap(['r', 'c', 'm', 'y'])
+    bounds = [0]
+
+    ax1 = f.add_axes(rect)
+    X = act_variance
+    clusters_mat = np.empty(0)
+    neurons = 0
+    for cluster in n_clusters:
+        row_ix = np.where(clustering == cluster)
+        neurons += len(row_ix[0])
+        bounds.append(neurons)
+        if len(clusters_mat) == 0:
+            clusters_mat = X[row_ix, :][0]
+        else:
+            clusters_mat = np.vstack((clusters_mat, X[row_ix, :][0]))
+    ax1.imshow(clusters_mat, aspect='auto', origin='lower')
+    labels = ['Fixation', 'Stimulus', 'Delay', 'Decision']
+    ax1.set_xticks([0, 1, 2, 3])
+    ax1.set_xticklabels(labels)
+    ax1.set_ylabel('Neurons')
+
+    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+    cb2 = mpl.colorbar.ColorbarBase(ax2, cmap=cmap,
+                                    norm=norm,
+                                    spacing='proportional',
+                                    orientation='vertical')
+    cb2.set_label('Clusters')
+    f.savefig(folder+protocol+'_model_'+tag+'_clusters_std')
     plt.close(f)
 
 
@@ -335,5 +392,5 @@ if __name__ == "__main__":
         folder = '/Users/martafradera/Desktop/models/'+str(n)+'_ch/'
 
         get_activity(folder, alg, protocols, n_ch=n, num_steps=200,
-                     sv_model=False)
+                     sv_model=True)
     # create_env('CVLearning-v0', 2)
