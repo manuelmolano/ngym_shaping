@@ -21,7 +21,10 @@ clrs = ['c', 'm']
 
 
 def create_env(task, n_ch, seed):
-    # task
+    """From the implemented task, this function implements a proper environment
+    for the model testing
+    """
+    # task kwargs
     task_kwargs = {'dt': 100, 'th_stage': 0.75, 'keep_days': 0, 'stages': [4],
                    'n_ch': n_ch, 'timing': {'fixation': ('constant', 300),
                                             'stimulus': ('constant', 500),
@@ -31,29 +34,33 @@ def create_env(task, n_ch, seed):
     env_id = task
     env = gym.make(env_id, **task_kwargs)
     env.seed(seed)
-    env = DummyVecEnv([lambda: env])
+    env = DummyVecEnv([lambda: env])  # vectorize the environment
     return env
 
 
 def model_fig(file, folder, protocol, n_ch, data, sv_model):
+    """Plots environment observations, model activity, rewards, and neurons
+    activity during testing.
+    """
+    # tag that identifies each model
     tag = file[file.find(protocol+'_')+len(protocol)+1:file.find('.zip')]
     if sv_model:
-        states_ = data['cell_states_hidden']
+        states_ = data['cell_states_hidden']  # cell states and hidden states
         # zscore
         states = np.empty(0)
         for neuron in states_:
-            nact = (neuron - np.mean(neuron))/np.std(neuron)
+            nact = (neuron - np.mean(neuron))/np.std(neuron)  # zscore
             if len(states) == 0:
                 states = nact
             else:
                 states = np.vstack((states, nact[:, ]))
 
-        states = (states - np.mean(states))/np.std(states)
         fname = folder+protocol+'_n_ch_'+str(n_ch)+'_model_'+tag
         perf = np.array(data['perf'])
         perf = perf[np.where(perf != -1)]
         name = 'protocol: ' + protocol + ' perf: ' + str(round(np.mean(perf),
                                                                2))
+        # plotting
         plotting.fig_(data['ob'], data['actions'], gt=data['gt'],
                       rewards=data['rewards'],
                       states=states, fname=fname, name=name)
@@ -68,6 +75,8 @@ def act_fig(activity_mat, folder, protocol, n_ch, **fig_kwargs):
 
 
 def evaluate(env, model, num_steps):
+    """Model testing for n steps.
+    """
     obs = env.reset()
     states = None
     done = [False]
@@ -79,9 +88,11 @@ def evaluate(env, model, num_steps):
     perf = []
     for i in range(num_steps):
         ob_mat.append(obs[0])
+        # provide observations and get choosen actions and internal states
         action, states = model.predict(obs, states, mask=done)
         act_mat.append(action)
         states_mat.append(states)
+        # from the chosen action, env provides other obs, rew, and info
         obs, rewards, done, info = env.step(action)
         rew_mat.append(rewards)
         info = info[0]
@@ -92,9 +103,10 @@ def evaluate(env, model, num_steps):
         if info['new_trial']:
             perf.append(info['performance'])
         env.render()
-    states = np.array(states_mat)
+    states = np.array(states_mat)  # cell states and hidden states
     states = states[:, 0, :]
-    hidden_states = states[:, int(states.shape[1]/2):].T
+    hidden_states = states[:, int(states.shape[1]/2):].T   # hidden states
+    # data generated during testing
     data = {'ob': ob_mat, 'actions': act_mat, 'gt': gt_mat,
             'hidden_states': hidden_states, 'rewards': rew_mat,
             'cell_states_hidden': states, 'perf': perf}
@@ -102,11 +114,14 @@ def evaluate(env, model, num_steps):
 
 
 def activity_variance(data):
-    act_ = data['hidden_states']
+    """Compute the mean activity std of each neuron at each period (fixation,
+    stimulus, delay, and decision)
+    """
+    act_ = data['hidden_states']  # matrix of the activity of each neuron
     # zscore
     act = np.empty(0)
     for neuron in act_:
-        nact = (neuron - np.mean(neuron))/np.std(neuron)
+        nact = (neuron - np.mean(neuron))/np.std(neuron)  # zscore
         if len(act) == 0:
             act = nact
         else:
@@ -118,6 +133,7 @@ def activity_variance(data):
     # decision [0., 0., 0.]
 
     act_variance = []
+    # compute the std at each period for each neuron present in the model
     for neuron in range(256):
         nact = act[neuron, :]
         fixation_ind = []
@@ -129,8 +145,10 @@ def activity_variance(data):
         stim_means = []
         dly_means = []
         dcsn_means = []
+        # classify activities to the corresponding period
         for ind, ob in enumerate(obs):
             if np.array_equal(ob, [1., 0., 0.]):
+                # at the end of each trial, compute the mean act per period
                 if ind-1 in decision_ind:   # indicating new trial
                     fix_means.append(np.mean(nact[fixation_ind]))
                     fixation_ind.clear()
@@ -150,6 +168,7 @@ def activity_variance(data):
             else:
                 stimulus_ind.append(ind)
 
+        # compute the std at each period
         std = [np.std(fix_means), np.std(stim_means), np.std(dly_means),
                np.std(dcsn_means)]
         if len(act_variance) == 0:
@@ -161,9 +180,14 @@ def activity_variance(data):
 
 def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
                  sv_model=False, sv_act=False):
+    """
+    Main function. It analyzes each model present in a folder.
+    """
     f0, axs0 = plt.subplots(nrows=2, ncols=2, figsize=(5, 5))
     axs0 = axs0.flatten()
+    # models for the same protocol are analyzed together
     for protocol in protocols:
+        # getting all models of the same protocol
         files = glob.glob(folder+'model_n_ch_'+str(n_ch)+'_'+protocol+'_*')
         activity_mat = None
         total_states = []
@@ -172,21 +196,25 @@ def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
         perf_th = False
         for file in files:
             print(file)
+            # loading model
             model = alg.load(file)
+            # defining environment
             env = create_env('CVLearning-v0', n_ch, seed)
+            # testing model
             data = evaluate(env, model, num_steps)
-            states = data['hidden_states']
+            states = data['hidden_states']   # neurons activity
             # plotting model
             tag = model_fig(file, folder, protocol, n_ch, data, sv_model)
-            # activity mat
             perf = np.array(data['perf'])
             perf = perf[np.where(perf != -1)]
             perf = round(np.mean(perf), 2)
             print('perf', perf)
-            if perf >= 0.7:
+            if perf >= 0.7:  # screening the models that have learnt the task
                 perf_th = True
+                # clustering and clusters plotting
                 evaluate_connectivity(model, data, folder, protocol, tag)
                 total_states.append(states)
+                # analyzing neurons activity
                 fr_mean, fr_std = analyze_activity(states, folder, protocol,
                                                    n_ch, tag)
                 mean_states.append(np.mean(fr_mean))
@@ -200,10 +228,12 @@ def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
                                                np.ones((25, num_steps))),
                                               axis=0)
         if perf_th is True:
+            # correlation activity
             f, corrs_mean, corrs_std = corr_plot(total_states)
             f.savefig(folder + protocol + '_n_ch_'+str(n_ch) +
                       '_correlation.png')
             plt.close(f)
+            # plotting activity results for all models
             plot_results(axs0, protocol, mean_states, std_states, corrs_mean,
                          corrs_std)
             if sv_act:
@@ -230,8 +260,10 @@ def get_activity(folder, alg, protocols, n_ch=2, seed=1, num_steps=1000,
 
 
 def evaluate_connectivity(model, data, folder, protocol, tag):
+    """Clustering
+    """
     params = model.get_parameters()
-    wh = params['model/lstm1/wh:0']
+    wh = params['model/lstm1/wh:0']   # recurrent weights matrix
     in_gate, forget_gate, out_gate, cell_candidate = np.split(wh, 4, axis=1)
     wh = in_gate + forget_gate + out_gate + cell_candidate
     act_variance = activity_variance(data)
@@ -245,10 +277,13 @@ def evaluate_connectivity(model, data, folder, protocol, tag):
 
 
 def optimal_k(act_variance, folder, protocol, tag):
+    """Find optimal value of clusters.
+    """
     f, axs = plt.subplots(nrows=1, ncols=1, figsize=(5, 3))
     X = act_variance
     Nc = range(1, 20)
     kmeans = [KMeans(n_clusters=i) for i in Nc]
+    # Sum of squared dinstances for each k
     ssd = [kmeans[i].fit(X).inertia_ for i in range(len(kmeans))]
     axs.plot(Nc, ssd)
     axs.set_xlabel('Number of Clusters')
@@ -258,6 +293,9 @@ def optimal_k(act_variance, folder, protocol, tag):
 
 
 def plot_clusters(clustering, act_variance, folder, protocol, tag):
+    """Plotting clusters in function of the 4 variables (fixation std,
+    stimulus std, delay std, decision std).
+    """
     f, axs = plt.subplots(nrows=2, ncols=3, figsize=(13, 8))
     ax = axs.flatten()
     n_clusters = np.unique(clustering)
@@ -289,6 +327,8 @@ def plot_clusters(clustering, act_variance, folder, protocol, tag):
 
 def plot_clusters2(clustering, act_variance, folder, protocol, tag):
     n_clusters = np.unique(clustering)
+    """Plotting neurons std activity grouped by clusters.
+    """
 
     figsize = (4, 3)
     f = plt.figure(figsize=figsize)
@@ -333,6 +373,7 @@ def analyze_activity(states, folder, protocol, n_ch, tag):
     fr_std = []
     for neuron in states:
         firing_rates = []
+        # positive firing rates
         for rate in neuron:
             firing_rates.append(rate-np.min(neuron))
         fr_mean.append(np.mean(firing_rates))
@@ -341,6 +382,8 @@ def analyze_activity(states, folder, protocol, n_ch, tag):
 
 
 def corr_plot(total_states):
+    """Plotting neurons activity correlation.
+    """
     plts = len(total_states)
     rows = int(plts/3) + plts % 3
     nhide = (3 - (plts % 3)) % 3
@@ -350,7 +393,7 @@ def corr_plot(total_states):
     corrs_mean = []
     corrs_std = []
     for states in total_states:
-        corr = np.corrcoef(states)
+        corr = np.corrcoef(states)  # correlation matrix
         ax[ind].imshow(corr, aspect='auto')
         ind += 1
         corrs_mean.append(np.mean(corr))
@@ -364,6 +407,9 @@ def corr_plot(total_states):
 
 def plot_results(axs, protocol, mean_states, std_states, corrs_mean,
                  corrs_std):
+    """Plotting activity results, including firing rates mean, firing rates
+    std, mean correlation coef, and mean correlation std.
+    """
     indp = PRTCLS_IND_MAP[protocol]
     indps = np.random.uniform(indp-0.05, indp+0.05, [len(mean_states)])
     axs[0].errorbar(indp, np.mean(mean_states), np.std(mean_states),
