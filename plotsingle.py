@@ -222,9 +222,9 @@ def plot_stage2(folder, window=10, ax=None, ytitle='', xlbl='',
     for i, stage in enumerate(data['curr_ph']):
         if 0 < stage < 3:
             ind.append(i)
-        elif stage == 3 and a < 500:
-            a += 1
-            ind.append(i)
+   #     elif stage == 3 and a < 500:
+   #         a += 1
+   #         ind.append(i)
 
     if data:
         sv_fig = False
