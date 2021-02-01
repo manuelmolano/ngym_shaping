@@ -20,8 +20,8 @@ CLRS = sns.color_palette()
 
 STAGES = [0, 1, 2, 3, 4]
 
-PRTCLS_IND_MAP = {'01234': -1, '1234': 0, '0234': 1, '0134': 2, '0134X': 3, '0124': 4,
-                  '034': 5, '234': 6, '34': 7, '4': 8}
+PRTCLS_IND_MAP = {'01234': -1, '1234': 0, '0234': 1, '0134': 2, '0134X': 3,
+                  '0124': 4, '034': 5, '234': 6, '34': 7, '4': 8}
 
 THS_IND_MAP = {'full': 0.5, '0.6': 0.6, '0.65': 0.65, '0.7': 0.7,
                '0.75': 0.75, '0.8': 0.8, '0.85': 0.85, '0.9': 0.9}
@@ -33,7 +33,7 @@ ALL_INDX.update(THS_IND_MAP)
 
 def plot_env(env, num_steps_env=200, def_act=None, model=None, show_fig=True,
              name=None, legend=True, obs_traces=[], fig_kwargs={}):
-    """
+    """Plot environment with agent.
     env: already built neurogym task or name of it
     num_steps_env: number of steps to run the task
     def_act: if not None (and model=None), the task will be run with the
@@ -55,6 +55,7 @@ def plot_env(env, num_steps_env=200, def_act=None, model=None, show_fig=True,
         env = gym.make(env)
     if name is None:
         name = type(env).__name__
+    # obtain the parameters by running the environment
     observations, obs_cum, rewards, actions, perf, actions_end_of_trial,\
         gt, states = run_env(env=env, num_steps_env=num_steps_env,
                              def_act=def_act, model=model)
@@ -72,6 +73,11 @@ def plot_env(env, num_steps_env=200, def_act=None, model=None, show_fig=True,
 
 
 def run_env(env, num_steps_env=200, def_act=None, model=None):
+    """Runs the environment for a given number of time-steps.
+    If a model is provided, it uses this model to perdict the actions.
+    Otherwise, the actions taken at each time-step ar random or indicated
+    by def_act arg.
+    """
     observations = []
     obs_cum = []
     state_mat = []
@@ -83,6 +89,7 @@ def run_env(env, num_steps_env=200, def_act=None, model=None):
     obs = env.reset()
     obs_cum_temp = obs
     for stp in range(int(num_steps_env)):
+        # choosen actions at each time step
         if model is not None:
             action, _states = model.predict(obs)
             if isinstance(action, float) or isinstance(action, int):
@@ -93,6 +100,8 @@ def run_env(env, num_steps_env=200, def_act=None, model=None):
             action = def_act
         else:
             action = env.action_space.sample()
+        # observations, reward, and other task relatied information obtained
+        # from the chosen action
         obs, rew, done, info = env.step(action)
         obs_cum_temp += obs
         obs_cum.append(obs_cum_temp.copy())
@@ -108,6 +117,7 @@ def run_env(env, num_steps_env=200, def_act=None, model=None):
         if done:
             env.reset()
         observations.append(obs_aux)
+        # information saved at the end of each trial
         if info['new_trial']:
             actions_end_of_trial.append(action)
             perf.append(info['performance'])
@@ -121,6 +131,7 @@ def run_env(env, num_steps_env=200, def_act=None, model=None):
             gt.append(info['gt'])
         else:
             gt.append(0)
+    # cell states and hidden states values of the model at each time-step
     if model is not None and len(state_mat) > 0:
         states = np.array(state_mat)
         states = states[:, 0, :]
@@ -135,7 +146,8 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
          fig_kwargs={}, path=None, env=None, sv_data=False, start=None,
          end=None, show_delays=False, dash=None, show_perf=True,
          show_gt=True):
-    """
+    """Plot env observations, actions, and other env-related information at
+    each time step.
     obs, actions: data to plot
     gt, rewards, states: if not None, data to plot
     mean_perf: mean performance to show in the rewards panel
@@ -148,6 +160,7 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
     fig_kwargs: figure properties admited by matplotlib.pyplot.subplots() fun.
     """
 
+    # load data from path
     if path is not None:
         if start is None:
             start = 0
@@ -183,6 +196,7 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
     d_start = []
     d_end = []
 
+    # plot observations
     if obs_traces:
         assert len(obs_traces) == obs.shape[1],\
             'Please provide label for each trace in the observations'
@@ -377,6 +391,7 @@ def fig_(obs=None, actions=None, gt=None, rewards=None, states=None,
 
 
 def load_data(path):
+    """Load data from path."""
     data = {}
     file_data = np.load(path, allow_pickle=True)
     for key in file_data.keys():
@@ -385,9 +400,14 @@ def load_data(path):
 
 
 def data_extraction(folder, metrics, w_conv_perf=500, conv=[1]):
+    """ Extract data saved during training.
+    metrics: dict containing the keys of the data to loaextractd.
+    conv: list of the indexes of the metrics to convolve."""
+    # load all data from the same folder
     data = put_together_files(folder)
     data_flag = True
     if data:
+        # extract each of the metrics
         for ind_k, k in enumerate(metrics.keys()):
             if k in data.keys():
                 metric = data[k]
@@ -408,6 +428,9 @@ def data_extraction(folder, metrics, w_conv_perf=500, conv=[1]):
 
 
 def perf_hist(metric, ax, index, trials_day=300):
+    """Plot a normalized histogram of the number of days/sessions spent with
+    the same metric vale (e.g. performance).
+    trials_day: number of trials to include on a session/day."""
     metric = np.array(metric)
     index = np.array(index)
     unq_vals = np.unique(index)
@@ -426,16 +449,19 @@ def perf_hist(metric, ax, index, trials_day=300):
 
 
 def trials_per_stage(metric, ax, index):
+    """Plot the mean number of trials spent on each of the stages."""
     bins = np.linspace(STAGES[0]-0.5, STAGES[-1]+.5, len(STAGES)+1)
     metric = np.array(metric)
     index = np.array(index)
     unq_vals = np.unique(index)
+    # find all the trials spent on each stage
     for ind_val, val in enumerate(unq_vals):
         indx = index == val
         traces_temp = metric[indx]
         counts_mat = []
         n_traces = len(traces_temp)
         for ind_tr in range(n_traces):
+            # plot the individual values
             counts = np.histogram(traces_temp[ind_tr], bins=bins)[0]
             indx = counts != 0
             noise = np.random.normal(0, 0.01, np.sum(indx))
@@ -449,6 +475,7 @@ def trials_per_stage(metric, ax, index):
         #             color=CLRS[ind_val], label=val)
         # std_counts = np.std(counts_mat, axis=0)/np.sqrt(n_traces)
         indx = mean_counts != 0
+        # plot the mean values
         ax.plot(np.array(STAGES)[indx], mean_counts[indx], marker='+',
                 linestyle='--', color=CLRS[ind_val], label=val)
 
@@ -461,6 +488,7 @@ def trials_per_stage(metric, ax, index):
 
 
 def put_together_files(folder):
+    """Load all training data."""
     files = glob.glob(folder + '/*_bhvr_data*npz')
     data = {}
     if len(files) > 0:
@@ -500,6 +528,32 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
                  tag='th_stage', limit_tr=False, rerun=False,
                  f_final_prop={'color': (0, 0, 0), 'label': ''},
                  plt_ind_vals=True, plt_ind_traces=True):
+    """This function uses the data generated during training to analyze it
+    and generate figures showing the results in function of the different
+    values used for the third level variable (i.e. differen threshold values
+    or different shaping protocols).
+    folder: folder where we store/load the data.
+    algorithm: used algorithm for training.
+    setup: value indicating the second level variable value, i.e. the used
+    number of window or the used n_ch (number of channels) for training.
+    setup_nm: indicates which second level exploration has been done
+    (window/n_ch).
+    w_conv_perf: dimension of the convolution window.
+    keys: list of the names of the metrics to explore.
+    limit_ax: limit axis when plottingg.
+    final_ph: stage number that corresponds to the last stage of training.
+    perf_th: threshold performance to separate the traces that have or have not
+    learnt the task.
+    ax_final: axes for plotting the final results.
+    tag: name of the performed exploration ('th_stage' for different threshold
+    values, and 'stages' for different shaping protocols').
+    limit_tr: limit trace when plotting.
+    rerun: regenerating the data obtained from the metrics during training.
+    f_final_prop: plotting kwargs.
+    plt_ind_vals: include the individual values (results for each trace) in the
+    final plot.
+    plt_ind_traces: plot traces across training.
+    """
     assert ('performance' in keys) and ('curr_ph' in keys),\
         'performance and curr_ph need to be included in the metrics (keys)'
     # PROCESS RAW DATA
@@ -529,10 +583,10 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
         #          **metrics)
 
         # LOAD AND (POST)PROCESS DATA
-        # print('Loading data from: ', folder+'/metrics'+algorithm+'_'+setup_nm +
-        #       '_'+setup+'.npz')
-        # tmp = np.load(folder+'/metrics'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
-        #               allow_pickle=True)
+        # print('Loading data from: ', folder+'/metrics'+algorithm+'_'+setup_nm
+        #       +'_'+setup+'.npz')
+        # tmp = np.load(folder+'/metrics'+algorithm+'_'+setup_nm+'_'+setup
+        #               +'.npz', allow_pickle=True)
         # the loaded file does not allow to modifying it
         # metrics = {}
         # for k in tmp.keys():
@@ -556,40 +610,40 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
             ax[0].set_title(algorithm + ' ('+setup_nm+': ' + setup + ')')
             ax[len(keys)-1].set_xlabel('Trials')
             ax[len(keys)-1].legend()
-            f.savefig(folder+'/'+names[ind]+algorithm+'_'+setup_nm+'_'+setup+'_' +
-                      str(limit_tr)+'.svg', dpi=200)
+            f.savefig(folder+'/'+names[ind]+algorithm+'_'+setup_nm+'_'+setup +
+                      '_'+str(limit_tr)+'.svg', dpi=200)
             plt.close(f)
 
-        # days under perf
+        # plot days under perf
         if 'curr_perf' in keys:
             f, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 12))
             metric = metrics['curr_perf']
             perf_hist(metric, ax=ax, index=val_index, trials_day=300)
             ax.set_title('Performance histogram ('+algorithm+')')
-            f.savefig(folder+'/perf_hist_'+algorithm+'_'+setup_nm+'_'+setup+'.svg',
-                      dpi=200)
+            f.savefig(folder+'/perf_hist_'+algorithm+'_'+setup_nm+'_'+setup +
+                      '.svg', dpi=200)
             plt.close(f)
 
-        # trials per stage
+        # plot trials per stage
         if 'curr_ph' in keys:
             f, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 8))
             metric = metrics['curr_ph']
             trials_per_stage(metric, ax=ax, index=val_index)
             ax.set_title('Average number of trials per stage ('+algorithm+')')
-            f.savefig(folder+'/trials_stage_'+algorithm+'_'+setup_nm+'_'+setup +
-                      '.svg', dpi=200)
+            f.savefig(folder+'/trials_stage_'+algorithm+'_'+setup_nm+'_' +
+                      setup+'.svg', dpi=200)
             plt.close(f)
 
-        # PROCESS TRACES
+        # PROCESS TRACES AND SAVE DATA
         tr_to_perf = []  # stores trials to reach final performance
         reached_ph = []  # stores whether the final phase is reached
         reached_perf = []  # stores whether the pre-defined perf is reached
-        exp_durations = []
-        stability_mat = []
-        final_perf = []
-        tr_to_ph = []
-        stps_to_perf = []
-        stps_to_ph = []
+        exp_durations = []  # stores the total number of explored trials
+        stability_mat = []  # stores the performance stability
+        final_perf = []  # stores the average final performance
+        tr_to_ph = []  # stores trials to reach final phase
+        stps_to_perf = []  # stores steps to final performance
+        stps_to_ph = []  # stores steps to final performance
         if limit_tr:
             min_dur = np.min([len(x) for x in metrics['curr_ph']])
         else:
@@ -734,6 +788,8 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
 
 
 def tr_to_final_ph(curr_ph, tr_to_ph, wind_final_perf, final_ph):
+    """ Computes the number of trials required to reach the final phase.
+    """
     time = np.where(curr_ph == final_ph)[0]  # find those trials in phase 4
     reached = False
     if len(time) != 0:
@@ -750,8 +806,11 @@ def tr_to_final_ph(curr_ph, tr_to_ph, wind_final_perf, final_ph):
 
 
 def tr_to_reach_perf(perf, tr_to_ph, reach_perf, tr_to_perf, final_ph):
+    """Computes the number of trials required to reach the final performance
+    from those traces that do reach the final phase.
+    """
     reached = False
-    perf_in_final_ph = perf[tr_to_ph:]
+    perf_in_final_ph = perf[tr_to_ph:]  # perf in the last phase
     time_above_th = np.where(perf_in_final_ph > reach_perf)[0]
     if len(time_above_th) == 0:
         tr_to_perf.append(len(perf))
@@ -763,6 +822,10 @@ def tr_to_reach_perf(perf, tr_to_ph, reach_perf, tr_to_perf, final_ph):
 
 
 def compute_stability(perf, tr_ab_th):
+    """Computes the performance stability after reaching the threshold
+    performance, i.e. the proportion of instances with a performance greater
+    than the chance level.
+    """
     perf = np.array(perf)[tr_ab_th:]
     if perf.shape[0] != 0:
         forgetting_times = perf < 0.5
@@ -774,6 +837,8 @@ def compute_stability(perf, tr_ab_th):
 
 def plot_rew_across_training(metric, index, ax, n_traces=20,
                              selected_protocols=['01234', '4']):
+    """Plot traces across training, i.e. metric value per trial.
+    """
     metric = np.array(metric)
     index = np.array(index)
     unq_vals = np.unique(index)
@@ -787,6 +852,8 @@ def plot_rew_across_training(metric, index, ax, n_traces=20,
 
 def plt_means(metric, index, ax, limit_mean=True, limit_ax=True,
               selected_protocols=['01234', '4']):
+    """Plot mean traces across training.
+    """
     if limit_mean:
         min_dur = np.min([len(x) for x in metric])
         metric = [x[:min_dur] for x in metric]
@@ -821,7 +888,9 @@ def get_noise(unq_vals):
 def plt_perf_indicators(values, index_val, ax, f_props, ax_props, reached=None,
                         discard=[], plot_individual_values=True,
                         errorbars=True):
-    values = np.array(values)  # tr until final phase
+    """Plot final results
+    """
+    values = np.array(values)
     index_val = np.array(index_val)
     unq_vals = np.unique(index_val)
     if plot_individual_values:
@@ -848,7 +917,8 @@ def plt_perf_indicators(values, index_val, ax, f_props, ax_props, reached=None,
             if plot_individual_values:
                 xs = np.random.normal(0, std_noise, ((np.sum(indx),))) +\
                     ALL_INDX[val]
-                ax.plot(xs, values_temp, alpha=0.5, linestyle='None', **f_props)
+                ax.plot(xs, values_temp, alpha=0.5, linestyle='None',
+                        **f_props)
     ax.set_xlabel(ax_props['tag'])
     ax.set_ylabel(ax_props['ylabel'])
     ax.set_xticks(ax_props['ticks'])
@@ -857,6 +927,9 @@ def plt_perf_indicators(values, index_val, ax, f_props, ax_props, reached=None,
 
 def batch_results(algs, setup_vals, markers, tag, setup_nm, folder,
                   limit_tr=True, rerun=False):
+    """Runs plot_results function for each of the used variables.
+    """
+    # Create figures for each of the used algorithms
     for alg in algs:
         print(alg)
         print('xxxxxxxxxxxxxxxxxxxxxx')
@@ -864,6 +937,8 @@ def batch_results(algs, setup_vals, markers, tag, setup_nm, folder,
         f2, ax2 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
         f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
         ax = [ax1, ax2, ax3]
+        # plot results obtained when training with different second level
+        # values (different window/n_ch)
         for ind_setup, setup in enumerate(setup_vals):
             plot_results(folder, alg, setup=setup, setup_nm=setup_nm,
                          limit_ax=False, ax_final=ax, tag=tag,
@@ -907,7 +982,8 @@ if __name__ == '__main__':
     tag = 'stages'
     folder = main_folder+'/large_actObs_space/'
     batch_results(algs=algs, setup_vals=n_ch, markers=markers, tag=tag,
-                  setup_nm=setup_nm, folder=folder, limit_tr=False, rerun=rerun)
+                  setup_nm=setup_nm, folder=folder, limit_tr=False,
+                  rerun=rerun)
     # algs = ['PPO2', 'ACKTR', 'A2C', 'ACER']
     # winds = ['0', '1', '2', '3', '4']  # , '500', '1000']
     # markers = ['+', 'x', '1', 'o', '>']

@@ -48,15 +48,19 @@ for ind_inst in range(num_instances):
                     KWARGS['th_stage'] = th
                     # KWARGS['perf_w_stage'] = w
                     KWARGS['trials_day'] = d
+                    # define the environment
                     env = gym.make(task, **KWARGS)
                     env = monitor.Monitor(env, folder=save_folder,
                                           sv_per=1000, sv_fig=False,
                                           verbose=True, fig_type='svg')
                     # training
                     env = DummyVecEnv([lambda: env])
+                    # define the model
                     model = alg(LstmPolicy, env, verbose=0,
                                 policy_kwargs={'feature_extraction': "mlp"})
+                    # train
                     model.learn(total_timesteps=100000)
+                    # plot results across training
                     pl.plot_rew_across_training(folder=save_folder,
                                                 conv=[1, 1, 0],
                                                 metrics={'reward': [],
