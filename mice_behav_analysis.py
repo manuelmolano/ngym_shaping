@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+from collections import defaultdict
 
 path = '/Users/leyre/Dropbox/mice_data'
 path = '/home/manuel/mice_data'
@@ -59,8 +60,10 @@ def get_sec(time_str):
 
 def num_sessions_per_stage(df, subj):
     # find all the trials done in session1
-    X_df = df.loc[(df.subject_name == subj), ['stage_number'].values
-    
+    # X_df = df.loc[(df.subject_name == subj), ['stage_number'].values
+    X_df = df.loc[df['subject_name'] == subj, 'stage_number']
+    return X_df
+
     # ind = df[df_params.session == num_session]
     # # Obtain the time of the trials done in session 1
     # time = ind.iloc[:, [39]]
@@ -73,7 +76,7 @@ def num_sessions_per_stage(df, subj):
     # plt.ylabel('Duration (s)')
     # plt.title('Duration per session' + ' ' + str(num_session))
     # plt.plot(sumtimes)
-    return time, sumtimes
+    # return time, sumtimes
 
 
 if __name__ == '__main__':
@@ -82,11 +85,37 @@ if __name__ == '__main__':
 
     # plot accuracy VS session
     #  TODO: filter for each animal 'subject_name'
-    plot_xvar_VS_yvar(df=df_params, x_var='session', y_var='accuracy',
-                      xlabel='Session', ylabel='Accuracy', col='purple')
-   # df_trials = pd.read_csv(path + '/global_trials.csv', sep=';')
-   # df_raw = pd.merge(df_params, df_trials, on=['session', 'subject_name'])
- 
+X_df = df_params.loc[df_params['subject_name'] == 'C28', 'stage_number']
+print(X_df)
+# worse way to list the subjects
+subjects = ['C30', 'C23', 'C28', 'C32', 'C31', 'C29', 'C25',
+            'C26', 'C24', 'C27']
+
+# best way to do it
+subjects = df_params.subject_name
+
+# I get the subjects and all the indexes in which they appear
+# However, the presentation is not clear
+repetition = defaultdict(list)
+for index in range(len(subjects)):
+    repetition[subjects[index]].append(index)
+print(repetition)
+
+# for loops way, but I don't know how to use i+1
+stages_subjects = []
+for i in subjects:
+    if i == i+1:
+        continue
+    else:
+        x = num_sessions_per_stage(df_params, i)
+        stages_subjects.append(x)
+print(stages_subjects)
+
+
+plot_xvar_VS_yvar(df=df_params, x_var='session', y_var='accuracy',
+                  xlabel='Session', ylabel='Accuracy', col='purple')
+# df_trials = pd.read_csv(path + '/global_trials.csv', sep=';')
+# df_raw = pd.merge(df_params, df_trials, on=['session', 'subject_name'])
 # # RANDOM PLOTS
 # new = df_params[['session', 'accuracy']]
 # sns.set(style='ticks', color_codes=True)
@@ -123,8 +152,6 @@ if __name__ == '__main__':
 # # Accuracy in each session
 
 
-
-
 # # GRAPHIC 3
 # # Duration for each phase
 # # Duration is the column time
@@ -141,8 +168,6 @@ if __name__ == '__main__':
 # print(get_sec('1:23:45'))
 
 
-
-
 # time_session(1)
 
 # # trying to fix it
@@ -151,9 +176,7 @@ if __name__ == '__main__':
 # print(time)
 # time = time.to_numpy()
 # print(time)
-# time = np.array_split(time, 10)
-
-    
+# time = np.array_split(time, 10)   
 
 
 
