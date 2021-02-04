@@ -60,9 +60,13 @@ def get_sec(time_str):
 
 def num_sessions_per_stage(df, subj):
     # find all the trials done in session1
-    # X_df = df.loc[(df.subject_name == subj), ['stage_number'].values
-    X_df = df.loc[df['subject_name'] == subj, 'stage_number']
-    return X_df
+    stg = df.loc[df['subject_name'] == subj, 'stage_number'].values
+    perf = df.loc[df['subject_name'] == subj, 'performance'].values
+    both = df.loc[df['subject_name'] == subj, ['performance', 'stage_number',
+                                               'substage']].values
+
+    print(both)
+    return stg, perf
 
     # ind = df[df_params.session == num_session]
     # # Obtain the time of the trials done in session 1
@@ -81,39 +85,40 @@ def num_sessions_per_stage(df, subj):
 
 if __name__ == '__main__':
     df_params = pd.read_csv(path + '/global_params.csv', sep=';')
-    num_sessions_per_stage(df=df_params, subj='C28')
+    # num_sessions_per_stage(df=df_params, subj='C28')
 
     # plot accuracy VS session
     #  TODO: filter for each animal 'subject_name'
-X_df = df_params.loc[df_params['subject_name'] == 'C28', 'stage_number']
-print(X_df)
-# worse way to list the subjects
-subjects = ['C30', 'C23', 'C28', 'C32', 'C31', 'C29', 'C25',
-            'C26', 'C24', 'C27']
+    X_df = df_params.loc[df_params['subject_name'] == 'C28', 'stage_number']
+    print(X_df)
 
-# best way to do it
-subjects = df_params.subject_name
+    # worse way to list the subjects
+    # subjects = ['C30', 'C23', 'C28', 'C32', 'C31', 'C29', 'C25',
+    #             'C26', 'C24', 'C27']
 
-# I get the subjects and all the indexes in which they appear
-# However, the presentation is not clear
-repetition = defaultdict(list)
-for index in range(len(subjects)):
-    repetition[subjects[index]].append(index)
-print(repetition)
+    # best way to do it
+    subject_mat = df_params.subject_name
+    subj_unq = np.unique(subject_mat)
+    # I get the subjects and all the indexes in which they appear
+    # However, the presentation is not clear
+    num_ses_per_stg = defaultdict(list)
+    for sbj in subj_unq:
+        print('------')
+        print(sbj)
+        num_sessions_per_stage(df_params, sbj)
 
-# for loops way, but I don't know how to use i+1
-stages_subjects = []
-for i in subjects:
-    if i == i+1:
-        continue
-    else:
-        x = num_sessions_per_stage(df_params, i)
-        stages_subjects.append(x)
-print(stages_subjects)
+    # # for loops way, but I don't know how to use i+1
+    # stages_subjects = []
+    # for i in subjects:
+    #     if i == i+1:
+    #         continue
+    #     else:
+    #         x = num_sessions_per_stage(df_params, i)
+    #         stages_subjects.append(x)
+    # print(stages_subjects)
 
-
-plot_xvar_VS_yvar(df=df_params, x_var='session', y_var='accuracy',
-                  xlabel='Session', ylabel='Accuracy', col='purple')
+    # plot_xvar_VS_yvar(df=df_params, x_var='session', y_var='accuracy',
+    #                   xlabel='Session', ylabel='Accuracy', col='purple')
 # df_trials = pd.read_csv(path + '/global_trials.csv', sep=';')
 # df_raw = pd.merge(df_params, df_trials, on=['session', 'subject_name'])
 # # RANDOM PLOTS
