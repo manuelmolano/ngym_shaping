@@ -3,7 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
-from collections import defaultdict
 
 path = '/Users/leyre/Dropbox/mice_data'
 path = '/home/manuel/mice_data'
@@ -85,40 +84,116 @@ def num_sessions_per_stage(df, subj):
 
 if __name__ == '__main__':
     df_params = pd.read_csv(path + '/global_params.csv', sep=';')
-    # num_sessions_per_stage(df=df_params, subj='C28')
 
-    # plot accuracy VS session
-    #  TODO: filter for each animal 'subject_name'
+    # filter for each animal 'subject_name'
     X_df = df_params.loc[df_params['subject_name'] == 'C28', 'stage_number']
     print(X_df)
 
-    # worse way to list the subjects
-    # subjects = ['C30', 'C23', 'C28', 'C32', 'C31', 'C29', 'C25',
-    #             'C26', 'C24', 'C27']
-
-    # best way to do it
+    # obtain the list of subjects
     subject_mat = df_params.subject_name
     subj_unq = np.unique(subject_mat)
-    # I get the subjects and all the indexes in which they appear
-    # However, the presentation is not clear
-    num_ses_per_stg = defaultdict(list)
+    print(subj_unq)
+
+    # list of all accuracy values
+    accuracy_mat = df_params.accuracy
+    accu_unq = np.unique(accuracy_mat)
+    print(accu_unq)
+
+    # list of all the sessions
+    session_mat = df_params.session
+    session_unq = np.unique(session_mat)
+    print(session_unq)
+
+    # list of all the stages
+    stages_mat = df_params.stage_number
+    stages_unq = np.unique(stages_mat)
+    print(stages_unq)
+
+    # performance, stage and substage for each subject
     for sbj in subj_unq:
         print('------')
         print(sbj)
         num_sessions_per_stage(df_params, sbj)
 
-    # # for loops way, but I don't know how to use i+1
-    # stages_subjects = []
-    # for i in subjects:
-    #     if i == i+1:
-    #         continue
-    #     else:
-    #         x = num_sessions_per_stage(df_params, i)
-    #         stages_subjects.append(x)
-    # print(stages_subjects)
+    def color_assigned_to_stage(stage):
+        """By entering the number of the stage the subject is, we can
+        obtain the color associated with this stage"""
+        color_palette = []
+        col_list = ['#fdd49e', '#fdbb84', '#fc8d59',
+                    '#ef6548', '#d7301f', '#990000']
+        for i, j in zip(stages_unq, col_list):
+            t = (str(i), str(j))
+            color_palette.append(t)
+        if stage == 1:
+            color = color_palette[0][1]
+        elif stage == 2:
+            color = color_palette[1][1]
+        elif stage == 3:
+            color = color_palette[2][1]
+        elif stage == 4:
+            color = color_palette[3][1]
+        elif stage == 5:
+            color = color_palette[4][1]
+        elif stage == 5:
+            color = color_palette[5][1]
+        return color
 
-    # plot_xvar_VS_yvar(df=df_params, x_var='session', y_var='accuracy',
-    #                   xlabel='Session', ylabel='Accuracy', col='purple')
+    # find the stages for only one session
+    stages_28 = []
+    for i in num_sessions_per_stage(df_params, 'C28')[0]:
+        stages_28.append(i)
+    print(stages_28)
+
+    # plot accuracy VS session for each subject
+
+    def accuracy_sessions_subj(df, subj, list_of_stages):
+        acc = num_sessions_per_stage(df, subj)[1]
+        for i, j in zip(acc, list_of_stages):
+            plt.plot(acc,
+                     color=color_assigned_to_stage(j))
+            plt.xlabel('Session')
+            plt.ylabel('Accuracy')
+            plt.title('Accuracy across sessions of subject'+' '+subj)
+            plt.show
+
+    accuracy_sessions_subj(df_params, 'C28', stages_28)
+
+    def accuracy_sessions_subj(df, subj, list_of_stages):
+        acc = num_sessions_per_stage(df, subj)[1]
+        color_palette = []
+        col_list = ['#fdd49e', '#fdbb84', '#fc8d59',
+                    '#ef6548', '#d7301f', '#990000']
+        for i, j in zip(stages_unq, col_list):
+            t = (str(i), str(j))
+            color_palette.append(t)
+        for i, j in zip(acc, list_of_stages):
+            if j == 1:
+                col = color_palette[0][1]
+                plt.plot(acc, color=col)
+            elif j == 2:
+                col = color_palette[1][1]
+                plt.plot(acc, color=col)
+            elif j == 3:
+                col = color_palette[2][1]
+                plt.plot(acc, color=col)
+            elif j == 4:
+                col = color_palette[3][1]
+                plt.plot(acc, color=col)
+            elif j == 5:
+                col = color_palette[4][1]
+                plt.plot(acc, color=col)
+            elif j == 6:
+                col = color_palette[5][1]
+                plt.plot(acc, color=col)
+        plt.xlabel('Session')
+        plt.ylabel('Accuracy')
+        plt.title('Accuracy across sessions of subject'+' '+subj)
+        plt.show()
+
+    accuracy_sessions_subj(df_params, 'C28', stages_28)
+
+# plot_xvar_VS_yvar(df=df_params, x_var='session', y_var='accuracy',
+#                   xlabel='Session', ylabel='Accuracy', col='purple')
 # df_trials = pd.read_csv(path + '/global_trials.csv', sep=';')
 # df_raw = pd.merge(df_params, df_trials, on=['session', 'subject_name'])
 # # RANDOM PLOTS
@@ -181,13 +256,7 @@ if __name__ == '__main__':
 # print(time)
 # time = time.to_numpy()
 # print(time)
-# time = np.array_split(time, 10)   
-
-
-
-
-
-
+# time = np.array_split(time, 10)
 
 
 
