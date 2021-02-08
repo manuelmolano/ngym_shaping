@@ -66,34 +66,83 @@ def num_sessions_per_stage(df, subj):
     print(both)
     return stg, both
 
-    # ind = df[df_params.session == num_session]
-    # # Obtain the time of the trials done in session 1
-    # time = ind.iloc[:, [39]]
-    # time = time.to_numpy()
-    # sumtimes = 0
-    # for i in time:
-    #     t = get_sec(i)
-    #     sumtimes += t
-    # plt.xlabel('Session' + ' ' + str(num_session))
-    # plt.ylabel('Duration (s)')
-    # plt.title('Duration per session' + ' ' + str(num_session))
-    # plt.plot(sumtimes)
-    # return time, sumtimes
-
 
 def accuracy_sessions_subj(df, subj):
-    plt.figure()
-    col_list = ['#fdd49e', '#fdbb84', '#fc8d59', '#ef6548', '#d7301f', '#990000']
+#    plt.figure()
+#    col_list = ['#fdd49e', '#fdbb84', '#fc8d59', '#ef6548', '#d7301f',
+#                '#990000']
     acc = df.loc[df['subject_name'] == subj, 'accuracy'].values
     stg = df.loc[df['subject_name'] == subj, 'stage_number'].values
+
+
+# create the extremes (a 0 at the beggining and a 1 at the ending)
+    stg = np.insert(stg, 0, 0)
+    stg = np.append(stg, 1)
+    diff = np.diff(stg)
+
     # TODO: plot chunks: do diff, find changes,
     # plot chunks from change_t-1 to change_t
+
+    # First trial to do it:
+    col_list = ['#fdd49e', '#fdbb84', '#fc8d59', '#ef6548', '#d7301f',
+                '#990000']
     for i, (a, s) in enumerate(zip(acc, stg)):
-        plt.plot(i+1, a, color=col_list[s], marker='.-')
+        plt.plot(i+1, a, color=col_list[s])
         plt.xlabel('Session')
         plt.ylabel('Accuracy')
         plt.title('Accuracy across sessions of subject'+' '+subj)
         plt.show
+
+    # 2 trial to do it
+    # all the accuracy parameters of all the subjects
+    df_params['color'] = 'no color'
+    df_params.loc[df_params['stage_number'] == 0, 'color'] = '#fdd49e'
+    df_params.loc[df_params['stage_number'] == 1, 'color'] = '#fdbb84'
+    df_params.loc[df_params['stage_number'] == 2, 'color'] = '#fc8d59'
+    df_params.loc[df_params['stage_number'] == 3, 'color'] = '#ef6548'
+    df_params.loc[df_params['stage_number'] == 4, 'color'] = '#d7301f'
+    df_params.loc[df_params['stage_number'] == 5, 'color'] = '#990000'
+    fig, ax = plt.subplots()
+
+    def gen_repeating(s):
+        """Generator of groups with repeated elements in an iterable,
+        for example 'abbccc' would be [('a', 0, 0), ('b', 1, 2), ('c', 3, 5)]
+        """
+        i = 0
+        while i < len(s):
+            j = i
+            while j < len(s) and s[j] == s[i]:
+                j += 1
+            yield (s[i], i, j-1)
+            i = j
+
+    # Add last lines
+    for color, start, end in gen_repeating(df_params['color']):
+        if start > 0:  # be sure lines are connected
+            start -= 1
+        idx = df_params.index[start:end+1]
+        df_params.loc[idx, 'accuracy'].plot(ax=ax, color=color, label='')
+    plt.show()
+
+    # 3 trial to do it:
+    # Apply labels
+    df_params_28 = df_params.loc[df_params['subject_name'] == 'C28']
+    df_params_28['color'] = 'no color'
+    df_params_28.loc[df_params_28['stage_number'] == 0, 'color'] = '#fdd49e'
+    df_params_28.loc[df_params_28['stage_number'] == 1, 'color'] = '#fdbb84'
+    df_params_28.loc[df_params_28['stage_number'] == 2, 'color'] = '#fc8d59'
+    df_params_28.loc[df_params_28['stage_number'] == 3, 'color'] = '#ef6548'
+    df_params_28.loc[df_params_28['stage_number'] == 4, 'color'] = '#d7301f'
+    df_params_28.loc[df_params_28['stage_number'] == 5, 'color'] = '#990000'
+    fig, ax = plt.subplots()
+
+    # Add last lines
+    for color, start, end in gen_repeating(df_params_28['color']):
+        if start > 0:  # be sure lines are connected
+            start -= 1
+        idx = df_params_28.index[start:end+1]
+        df_params_28.loc[idx, 'accuracy'].plot(ax=ax, color=color, label='')
+    plt.show()
 
 
 if __name__ == '__main__':
@@ -116,9 +165,9 @@ if __name__ == '__main__':
     # print(accu_unq)
 
     # # list of all the sessions
-    # session_mat = df_params.session
-    # session_unq = np.unique(session_mat)
-    # print(session_unq)
+#     session_mat = df_params.session
+#     session_unq = np.unique(session_mat)
+#     print(session_unq)
 
     # # list of all the stages
     # stages_mat = df_params.stage_number
@@ -137,7 +186,6 @@ if __name__ == '__main__':
     #     stages_28.append(i)
 
     # plot accuracy VS session for each subject
-
 
 
 # plot_xvar_VS_yvar(df=df_params, x_var='session', y_var='accuracy',
