@@ -80,40 +80,44 @@ def gen_repeating(s):
         i = j
 
 
-def accuracy_sessions_subj(df, subj):
+def accuracy_sessions_subj(df, subj, ax):
     col_list = ['#fdd49e', '#fdbb84', '#fc8d59', '#ef6548', '#d7301f',
                 '#990000']
     acc = df.loc[df['subject_name'] == subj, 'accuracy'].values
     stg = df.loc[df['subject_name'] == subj, 'stage_number'].values
-    print(acc)
-    print(stg)
 
     # create the extremes (a 0 at the beggining and a 1 at the ending)
-    stg_exp = np.insert(stg, 0, 0)
+    stg_exp = np.insert(stg, 0, 0)  # extended stages
     stg_exp = np.append(stg_exp, stg_exp[-1]+1)
-    stg_diff = np.diff(stg_exp)
-    stg_chng = np.where(stg_diff != 0)[0]
-    print(stg_chng)
-    # TODO: plot chunks: do diff, find changes,
-    # plot chunks from change_t-1 to change_t
+    stg_diff = np.diff(stg_exp)  # change of stage
+    stg_chng = np.where(stg_diff != 0)[0]  # index where stages change
+    # _, ax_temp = plt.subplots(nrows=1, ncols=1)
+    # ax_temp.plot(stg_exp, label='stage')
+    # ax_temp.plot(stg_diff, label='stage diff')
+    # We go over indexes where stage changes and plot chunks from ind_t-1 to ind_t
     for i_stg in range(1, len(stg_chng)):
-        color = stg_exp[stg_chng[i_stg-1]+1]
-        plt.plot(range(stg_chng[i_stg-1], min(stg_chng[i_stg]+1, len(acc))),
-                 acc[stg_chng[i_stg-1]:min(stg_chng[i_stg]+1, len(acc))],
-                 color=col_list[color-1])
+        # ax_temp.plot([stg_chng[i_stg-1], stg_chng[i_stg-1]], [0, 5], '--k')
+        color = stg_exp[stg_chng[i_stg-1]+1]-1
+        xs = range(stg_chng[i_stg-1], min(stg_chng[i_stg]+1, len(acc)))
+        accs = acc[stg_chng[i_stg-1]:min(stg_chng[i_stg]+1, len(acc))]
+        ax.plot(xs, accs, color=col_list[color])
 
 
 if __name__ == '__main__':
+    import sys
     plt.close('all')
     df_params = pd.read_csv(path + '/global_params.csv', sep=';')
-    accuracy_sessions_subj(df_params, 'C28')
-
+    _, ax = plt.subplots(nrows=3, ncols=4)
+    ax = ax.flatten()
+    subj_unq = np.unique(df_params.subject_name)
+    for i_s, sbj in enumerate(subj_unq):
+        accuracy_sessions_subj(df=df_params, subj=sbj, ax=ax[i_s])
     # filter for each animal 'subject_name'
     # X_df = df_params.loc[df_params['subject_name'] == 'C28', 'stage_number']
     # print(X_df)
 
     # obtain the list of subjects
-    # subject_mat = df_params.subject_name
+    # 
     # subj_unq = np.unique(subject_mat)
     # print(subj_unq)
 
