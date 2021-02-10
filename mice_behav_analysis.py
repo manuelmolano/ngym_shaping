@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
-path = '/Users/leyre/Dropbox/mice_data'
+path = '/Users/leyre/Dropbox/mice_data/New data'
 path = '/home/manuel/mice_data'
 
 # GRAPHIC 1
@@ -81,8 +81,7 @@ def gen_repeating(s):
 
 
 def accuracy_sessions_subj(df, subj, ax):
-    col_list = ['#fdd49e', '#fdbb84', '#fc8d59', '#ef6548', '#d7301f',
-                '#990000']
+    col_list = ['#fdd49e', '#fdbb84', '#fc8d59']
     acc = df.loc[df['subject_name'] == subj, 'accuracy'].values
     stg = df.loc[df['subject_name'] == subj, 'stage_number'].values
 
@@ -94,20 +93,22 @@ def accuracy_sessions_subj(df, subj, ax):
     # _, ax_temp = plt.subplots(nrows=1, ncols=1)
     # ax_temp.plot(stg_exp, label='stage')
     # ax_temp.plot(stg_diff, label='stage diff')
-    # We go over indexes where stage changes and plot chunks from ind_t-1 to ind_t
+    # We go over indexes where stage changes and plot chunks from ind_t-1
+    # to ind_t
     for i_stg in range(1, len(stg_chng)):
         # ax_temp.plot([stg_chng[i_stg-1], stg_chng[i_stg-1]], [0, 5], '--k')
         color = stg_exp[stg_chng[i_stg-1]+1]-1
         xs = range(stg_chng[i_stg-1], min(stg_chng[i_stg]+1, len(acc)))
         accs = acc[stg_chng[i_stg-1]:min(stg_chng[i_stg]+1, len(acc))]
         ax.plot(xs, accs, color=col_list[color])
+        ax.set_title(subj)
+        ax.set_ylim(0.4, 1)
 
 
 if __name__ == '__main__':
-    import sys
     plt.close('all')
     df_params = pd.read_csv(path + '/global_params.csv', sep=';')
-    _, ax = plt.subplots(nrows=3, ncols=4)
+    _, ax = plt.subplots(nrows=3, ncols=6)
     ax = ax.flatten()
     subj_unq = np.unique(df_params.subject_name)
     for i_s, sbj in enumerate(subj_unq):
@@ -115,11 +116,25 @@ if __name__ == '__main__':
     # filter for each animal 'subject_name'
     # X_df = df_params.loc[df_params['subject_name'] == 'C28', 'stage_number']
     # print(X_df)
+    col_list = ['#fdd49e', '#fdbb84', '#fc8d59']
+    fig = plt.figure()
+    fig.suptitle("Accuracy VS sessions", fontsize="x-large")
+    fig.legend([col_list[0], col_list[1], col_list[2]],
+               labels=['Stage 1', 'Stage 2', 'Stage 3'],
+               loc="center right",   # Position of legend
+               borderaxespad=0.1,  # Small spacing around legend box
+               title='Color legend')
+    ax = fig.subplots(nrows=3, ncols=6)
+    ax = ax.flatten()
+    subj_unq = np.unique(df_params.subject_name)
+    for i_s, sbj in enumerate(subj_unq):
+        accuracy_sessions_subj(df=df_params, subj=sbj, ax=ax[i_s])
+#    fig.tight_layout() # in order to see it more clear but smaller
 
     # obtain the list of subjects
-    # 
-    # subj_unq = np.unique(subject_mat)
-    # print(subj_unq)
+#     subj_mat = df_params.subject_name
+#     subj_unq = np.unique(subj_mat)
+#     print(subj_unq)
 
     # # list of all accuracy values
     # accuracy_mat = df_params.accuracy
@@ -132,9 +147,9 @@ if __name__ == '__main__':
 #     print(session_unq)
 
     # # list of all the stages
-    # stages_mat = df_params.stage_number
-    # stages_unq = np.unique(stages_mat)
-    # print(stages_unq)
+#     stages_mat = df_params.stage_number
+#     stages_unq = np.unique(stages_mat)
+#     print(stages_unq)
 
     # # performance, stage and substage for each subject
     # for sbj in subj_unq:
