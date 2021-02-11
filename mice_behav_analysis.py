@@ -3,9 +3,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+import seaborn as sns
+COLORS = sns.color_palette("mako", n_colors=3)
 
 path = '/Users/leyre/Dropbox/mice_data/New data'
-path = '/home/manuel/mice_data'
+path = '/home/manuel/mice_data/standard_training_2020'
 
 # GRAPHIC 1
 # PERFORMANCE/ACCURACY VS ALL SESSIONS
@@ -81,7 +83,6 @@ def gen_repeating(s):
 
 
 def accuracy_sessions_subj(df, subj, ax):
-    col_list = ['#fdd49e', '#fdbb84', '#fc8d59']
     acc = df.loc[df['subject_name'] == subj, 'accuracy'].values
     stg = df.loc[df['subject_name'] == subj, 'stage_number'].values
 
@@ -100,7 +101,37 @@ def accuracy_sessions_subj(df, subj, ax):
         color = stg_exp[stg_chng[i_stg-1]+1]-1
         xs = range(stg_chng[i_stg-1], min(stg_chng[i_stg]+1, len(acc)))
         accs = acc[stg_chng[i_stg-1]:min(stg_chng[i_stg]+1, len(acc))]
-        ax.plot(xs, accs, color=col_list[color])
+        ax.plot(xs, accs, color=COLORS[color])
+        ax.set_title(subj)
+        ax.set_ylim(0.4, 1)
+
+
+def accuracy_at_stg_change(df, subj, ax):
+    acc = df.loc[df['subject_name'] == subj, 'accuracy'].values
+    stg = df.loc[df['subject_name'] == subj, 'stage_number'].values
+
+    # create the extremes (a 0 at the beggining and a 1 at the ending)
+    stg_diff = np.diff(stg)  # change of stage
+    stg_chng = np.where(stg_diff != 0)[0]  # index where stages change
+    # _, ax_temp = plt.subplots(nrows=1, ncols=1)
+    # ax_temp.plot(stg_exp, label='stage')
+    # ax_temp.plot(stg_diff, label='stage diff')
+    # We go over indexes where stage changes and plot chunks from ind_t-1
+    # to ind_t
+    prev_w = 5
+    nxt_w = 5
+    chunk_dur = prev_w+nxt_w+1
+    mat_perfs = np.zeros(NUM_STGS, NUM_STGS, 100, chunk_dur)
+    counter = np.zeros(NUM_STGS, NUM_STGS)
+    for i_stg in range(len(stg_chng)):
+        # ax_temp.plot([stg_chng[i_stg-1], stg_chng[i_stg-1]], [0, 5], '--k')
+        stg_prev = stg[stg_chng[i_stg]-1]-1  # get stage before the change
+        stg_nxt = stg[stg_chng[i_stg]+1]-1  # get stage after the change
+        mat_perfs[stg_prev, stg_nxt, counter[stg_prev, stg_nxt]+1, :]
+        counter[stg_prev, stg_nxt] += 1
+        xs = range(stg_chng[i_stg-1], min(stg_chng[i_stg]+1, len(acc)))
+        accs = acc[stg_chng[i_stg-1]:min(stg_chng[i_stg]+1, len(acc))]
+        ax.plot(xs, accs, color=COLORS[color])
         ax.set_title(subj)
         ax.set_ylim(0.4, 1)
 
@@ -108,7 +139,7 @@ def accuracy_sessions_subj(df, subj, ax):
 if __name__ == '__main__':
     plt.close('all')
     df_params = pd.read_csv(path + '/global_params.csv', sep=';')
-    _, ax = plt.subplots(nrows=3, ncols=6)
+    fig, ax = plt.subplots(nrows=3, ncols=6)
     ax = ax.flatten()
     subj_unq = np.unique(df_params.subject_name)
     for i_s, sbj in enumerate(subj_unq):
@@ -116,19 +147,12 @@ if __name__ == '__main__':
     # filter for each animal 'subject_name'
     # X_df = df_params.loc[df_params['subject_name'] == 'C28', 'stage_number']
     # print(X_df)
-    col_list = ['#fdd49e', '#fdbb84', '#fc8d59']
-    fig = plt.figure()
     fig.suptitle("Accuracy VS sessions", fontsize="x-large")
-    fig.legend([col_list[0], col_list[1], col_list[2]],
+    fig.legend([COLORS[0], COLORS[1], COLORS[2]],
                labels=['Stage 1', 'Stage 2', 'Stage 3'],
                loc="center right",   # Position of legend
                borderaxespad=0.1,  # Small spacing around legend box
                title='Color legend')
-    ax = fig.subplots(nrows=3, ncols=6)
-    ax = ax.flatten()
-    subj_unq = np.unique(df_params.subject_name)
-    for i_s, sbj in enumerate(subj_unq):
-        accuracy_sessions_subj(df=df_params, subj=sbj, ax=ax[i_s])
 #    fig.tight_layout() # in order to see it more clear but smaller
 
     # obtain the list of subjects
