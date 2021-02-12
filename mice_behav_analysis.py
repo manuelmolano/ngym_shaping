@@ -6,8 +6,8 @@ import numpy as np
 import seaborn as sns
 COLORS = sns.color_palette("mako", n_colors=3)
 
-path = '/Users/leyre/Dropbox/mice_data/New data'
-path = '/home/manuel/mice_data/standard_training_2020'
+path = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
+#path = '/home/manuel/mice_data/standard_training_2020'
 
 # GRAPHIC 1
 # PERFORMANCE/ACCURACY VS ALL SESSIONS
@@ -97,13 +97,18 @@ def accuracy_sessions_subj(df, subj, ax):
     # We go over indexes where stage changes and plot chunks from ind_t-1
     # to ind_t
     for i_stg in range(1, len(stg_chng)):
-        # ax_temp.plot([stg_chng[i_stg-1], stg_chng[i_stg-1]], [0, 5], '--k')
+        # ax_temp.plot([stg_chng[i_stg-1], stg_chng[i_stg-1]], [0, 5], '--k')            
         color = stg_exp[stg_chng[i_stg-1]+1]-1
         xs = range(stg_chng[i_stg-1], min(stg_chng[i_stg]+1, len(acc)))
         accs = acc[stg_chng[i_stg-1]:min(stg_chng[i_stg]+1, len(acc))]
         ax.plot(xs, accs, color=COLORS[color])
+        ax.axhline(0.5)
         ax.set_title(subj)
         ax.set_ylim(0.4, 1)
+    if subj == 'N01' or subj == 'N07' or subj == 'N13':
+        ax.set_ylabel('Accuracy')
+    if subj == 'N13' or subj == 'N14' or subj == 'N15' or subj == 'N16' or subj == 'N17' or subj == 'N18':
+        ax.set_xlabel('Session')
 
 
 def accuracy_at_stg_change(df, subj, ax):
@@ -121,13 +126,36 @@ def accuracy_at_stg_change(df, subj, ax):
     prev_w = 5
     nxt_w = 5
     chunk_dur = prev_w+nxt_w+1
-    mat_perfs = np.zeros(NUM_STGS, NUM_STGS, 100, chunk_dur)
+    NUM_STGS = max(stg)
+    mat_perfs = {}
     counter = np.zeros(NUM_STGS, NUM_STGS)
+    l=[]
+    s=[]
+    acclist=[]
+    for i_stg_chng in stg_chng:
+        if stg_prev == 1 and stg_nxt == 2:
+            i_previo=i_stg_chng-prev_w
+            i_next=i_stg_chng+nxt_w
+            acc_chunk=acc[i_previo], acc[i_next]
+            acclist.append(acc_chunk)
+
+    print(acc_chunk)
+
     for i_stg in range(len(stg_chng)):
-        # ax_temp.plot([stg_chng[i_stg-1], stg_chng[i_stg-1]], [0, 5], '--k')
+        color = stg_exp[stg_chng[i_stg-1]+1]-1
         stg_prev = stg[stg_chng[i_stg]-1]-1  # get stage before the change
+        print(stg_prev)
         stg_nxt = stg[stg_chng[i_stg]+1]-1  # get stage after the change
-        mat_perfs[stg_prev, stg_nxt, counter[stg_prev, stg_nxt]+1, :]
+        print(stg_nxt)
+        key = str(stg_prev)+'-'+str(stg_nxt)  # e.g. 1-2
+        if key not in mat_perfs.keys():
+            mat_perfs[key] = []
+        # get chunk
+        chunk = acc[stg[(stg_chng)-prev_w]:stg[(stg_chng+1)+nxt_w]]
+        mat_perfs[key].append(chunk)
+        # ahora hacer el average
+        
+        mat_perfs[stg_prev, stg_nxt, int(counter[stg_prev, stg_nxt]+1), :]
         counter[stg_prev, stg_nxt] += 1
         xs = range(stg_chng[i_stg-1], min(stg_chng[i_stg]+1, len(acc)))
         accs = acc[stg_chng[i_stg-1]:min(stg_chng[i_stg]+1, len(acc))]
@@ -153,6 +181,9 @@ if __name__ == '__main__':
                loc="center right",   # Position of legend
                borderaxespad=0.1,  # Small spacing around legend box
                title='Color legend')
+    for i_s, sbj in enumerate(subj_unq):
+        accuracy_at_stg_change(df=df_params, subj=sbj, ax=ax[i_s])
+    
 #    fig.tight_layout() # in order to see it more clear but smaller
 
     # obtain the list of subjects
