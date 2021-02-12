@@ -7,7 +7,7 @@ import seaborn as sns
 COLORS = sns.color_palette("mako", n_colors=3)
 
 path = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
-#path = '/home/manuel/mice_data/standard_training_2020'
+path = '/home/manuel/mice_data/standard_training_2020'
 
 # GRAPHIC 1
 # PERFORMANCE/ACCURACY VS ALL SESSIONS
@@ -96,8 +96,9 @@ def accuracy_sessions_subj(df, subj, ax):
     # ax_temp.plot(stg_diff, label='stage diff')
     # We go over indexes where stage changes and plot chunks from ind_t-1
     # to ind_t
+    # TODO: try to separate results production from results plotting
     for i_stg in range(1, len(stg_chng)):
-        # ax_temp.plot([stg_chng[i_stg-1], stg_chng[i_stg-1]], [0, 5], '--k')            
+        # ax_temp.plot([stg_chng[i_stg-1], stg_chng[i_stg-1]], [0, 5], '--k')
         color = stg_exp[stg_chng[i_stg-1]+1]-1
         xs = range(stg_chng[i_stg-1], min(stg_chng[i_stg]+1, len(acc)))
         accs = acc[stg_chng[i_stg-1]:min(stg_chng[i_stg]+1, len(acc))]
@@ -107,51 +108,48 @@ def accuracy_sessions_subj(df, subj, ax):
         ax.set_ylim(0.4, 1)
     if subj == 'N01' or subj == 'N07' or subj == 'N13':
         ax.set_ylabel('Accuracy')
-    if subj == 'N13' or subj == 'N14' or subj == 'N15' or subj == 'N16' or subj == 'N17' or subj == 'N18':
+    if subj == 'N13' or subj == 'N14' or subj == 'N15' or\
+       subj == 'N16' or subj == 'N17' or subj == 'N18':
         ax.set_xlabel('Session')
 
 
-def accuracy_at_stg_change(df, subj, ax):
-    acc = df.loc[df['subject_name'] == subj, 'accuracy'].values
-    stg = df.loc[df['subject_name'] == subj, 'stage_number'].values
-
-    # create the extremes (a 0 at the beggining and a 1 at the ending)
-    stg_diff = np.diff(stg)  # change of stage
-    stg_chng = np.where(stg_diff != 0)[0]  # index where stages change
-    # _, ax_temp = plt.subplots(nrows=1, ncols=1)
-    # ax_temp.plot(stg_exp, label='stage')
-    # ax_temp.plot(stg_diff, label='stage diff')
-    # We go over indexes where stage changes and plot chunks from ind_t-1
-    # to ind_t
-    prev_w = 5
-    nxt_w = 5
+def accuracy_at_stg_change(df, ax):
     mat_perfs = {}
-
-    for i_stg in range(len(stg_chng)):
-        color = stg_exp[stg_chng[i_stg-1]+1]-1
-        stg_prev = stg[stg_chng[i_stg]-1]  # get stage before the change
-        stg_nxt = stg[stg_chng[i_stg]+1]  # get stage after the change
-
-        if stg_prev == 1 and stg_nxt == 2:
-            for i_stg_chng in stg_chng:
-                print(i_stg_chng)
-                i_previo=i_stg_chng-prev_w
-                print(i_previo)
-                i_next=i_stg_chng+nxt_w
-                chunk=acc[i_previo], acc[i_next]
-                print(chunk)
-                key = str(stg_prev)+'-'+str(stg_nxt)  # e.g. 1-2
-                if key not in mat_perfs.keys():
-                    mat_perfs[key] = []
-                # add chunk to the dictionary
-                mat_perfs[key].append(chunk)
-
-                    
-        xs = range(stg_chng[i_stg-1], min(stg_chng[i_stg]+1, len(acc)))
-        accs = acc[stg_chng[i_stg-1]:min(stg_chng[i_stg]+1, len(acc))]
-        ax.plot(xs, accs, color=COLORS[color])
-        ax.set_title(subj)
-        ax.set_ylim(0.4, 1)
+    for i_s, sbj in enumerate(subj_unq):
+        acc = df.loc[df['subject_name'] == sbj, 'accuracy'].values
+        stg = df.loc[df['subject_name'] == sbj, 'stage_number'].values
+        # create the extremes (a 0 at the beggining and a 1 at the ending)
+        stg_diff = np.diff(stg)  # change of stage
+        stg_chng = np.where(stg_diff != 0)[0]  # index where stages change
+        # We go over indexes where stage changes and plot chunks from ind_t-1
+        # to ind_t
+        prev_w = 10
+        nxt_w = 10
+        for i_stg in range(len(stg_chng)):
+            # color = stg_exp[stg_chng[i_stg-1]+1]-1
+            stg_prev = stg[stg_chng[i_stg]-1]  # get stage before the change
+            stg_nxt = stg[stg_chng[i_stg]+1]  # get stage after the change
+            assert stg_prev != stg_nxt, 'stages are supposed to be different'
+            key = str(stg_prev)+'-'+str(stg_nxt)  # e.g. 1-2
+            if key not in mat_perfs.keys():
+                mat_perfs[key] = []
+            # build chunk
+            i_previo = max(0, stg_chng[i_stg]-prev_w)
+            i_next = stg_chng[i_stg]+nxt_w
+            chunk = -min(0, stg_chng[i_stg]-prev_w)*[np.nan] +\
+                acc[i_previo:i_next].tolist() +\
+                max(0, i_next-len(acc))*[np.nan]
+            # add chunk to the dictionary
+            mat_perfs[key].append(chunk)
+    mat_mean_perfs = {}
+    for key in mat_perfs.keys():
+        print(key)
+        assert np.std([len(p) for p in mat_perfs[key]]) == 0
+        print(mat_perfs[key])
+        mat_mean_perfs[key]['mean'] = np.nanmean(np.array(mat_perfs[key]))
+        # TODO: save also std
+    # TODO: create fn that plots means with sem=std/np.sqrt(n)
+    plot_means(mat_mean_perfs)
 
 
 if __name__ == '__main__':
@@ -171,9 +169,8 @@ if __name__ == '__main__':
                loc="center right",   # Position of legend
                borderaxespad=0.1,  # Small spacing around legend box
                title='Color legend')
-    for i_s, sbj in enumerate(subj_unq):
-        accuracy_at_stg_change(df=df_params, subj=sbj, ax=ax[i_s])
-    
+    accuracy_at_stg_change(df=df_params, ax=ax[i_s])
+
 #    fig.tight_layout() # in order to see it more clear but smaller
 
     # obtain the list of subjects
