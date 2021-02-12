@@ -125,38 +125,28 @@ def accuracy_at_stg_change(df, subj, ax):
     # to ind_t
     prev_w = 5
     nxt_w = 5
-    chunk_dur = prev_w+nxt_w+1
-    NUM_STGS = max(stg)
     mat_perfs = {}
-    counter = np.zeros(NUM_STGS, NUM_STGS)
-    l=[]
-    s=[]
-    acclist=[]
-    for i_stg_chng in stg_chng:
-        if stg_prev == 1 and stg_nxt == 2:
-            i_previo=i_stg_chng-prev_w
-            i_next=i_stg_chng+nxt_w
-            acc_chunk=acc[i_previo], acc[i_next]
-            acclist.append(acc_chunk)
-
-    print(acc_chunk)
 
     for i_stg in range(len(stg_chng)):
         color = stg_exp[stg_chng[i_stg-1]+1]-1
-        stg_prev = stg[stg_chng[i_stg]-1]-1  # get stage before the change
-        print(stg_prev)
-        stg_nxt = stg[stg_chng[i_stg]+1]-1  # get stage after the change
-        print(stg_nxt)
-        key = str(stg_prev)+'-'+str(stg_nxt)  # e.g. 1-2
-        if key not in mat_perfs.keys():
-            mat_perfs[key] = []
-        # get chunk
-        chunk = acc[stg[(stg_chng)-prev_w]:stg[(stg_chng+1)+nxt_w]]
-        mat_perfs[key].append(chunk)
-        # ahora hacer el average
-        
-        mat_perfs[stg_prev, stg_nxt, int(counter[stg_prev, stg_nxt]+1), :]
-        counter[stg_prev, stg_nxt] += 1
+        stg_prev = stg[stg_chng[i_stg]-1]  # get stage before the change
+        stg_nxt = stg[stg_chng[i_stg]+1]  # get stage after the change
+
+        if stg_prev == 1 and stg_nxt == 2:
+            for i_stg_chng in stg_chng:
+                print(i_stg_chng)
+                i_previo=i_stg_chng-prev_w
+                print(i_previo)
+                i_next=i_stg_chng+nxt_w
+                chunk=acc[i_previo], acc[i_next]
+                print(chunk)
+                key = str(stg_prev)+'-'+str(stg_nxt)  # e.g. 1-2
+                if key not in mat_perfs.keys():
+                    mat_perfs[key] = []
+                # add chunk to the dictionary
+                mat_perfs[key].append(chunk)
+
+                    
         xs = range(stg_chng[i_stg-1], min(stg_chng[i_stg]+1, len(acc)))
         accs = acc[stg_chng[i_stg-1]:min(stg_chng[i_stg]+1, len(acc))]
         ax.plot(xs, accs, color=COLORS[color])
