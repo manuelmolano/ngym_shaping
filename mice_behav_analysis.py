@@ -7,11 +7,7 @@ import seaborn as sns
 COLORS = sns.color_palette("mako", n_colors=3)
 
 path = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
-path = '/home/manuel/mice_data/standard_training_2020'
-
-# GRAPHIC 1
-# PERFORMANCE/ACCURACY VS ALL SESSIONS
-# function to plot bar chart of performance/accuracy over all the sessions
+#path = '/home/manuel/mice_data/standard_training_2020'
 
 
 def plot_xvar_VS_yvar(df, x_var, y_var, col, xlabel='x_var', ylabel='y_var'):
@@ -54,11 +50,6 @@ def acc_session(num_session):
     return acc
 
 
-def get_sec(time_str):
-    h, m, s = time_str.split(':')
-    return int(h) * 3600 + int(m) * 60 + int(s)
-
-
 def num_sessions_per_stage(df, subj):
     # find all the trials done in session1
     stg = df.loc[df['subject_name'] == subj, 'stage_number'].values
@@ -67,19 +58,6 @@ def num_sessions_per_stage(df, subj):
 
     print(both)
     return stg, both
-
-
-def gen_repeating(s):
-    """Generator of groups with repeated elements in an iterable,
-    for example 'abbccc' would be [('a', 0, 0), ('b', 1, 2), ('c', 3, 5)]
-    """
-    i = 0
-    while i < len(s):
-        j = i
-        while j < len(s) and s[j] == s[i]:
-            j += 1
-        yield (s[i], i, j-1)
-        i = j
 
 
 def accuracy_sessions_subj(df, subj, ax):
@@ -113,7 +91,9 @@ def accuracy_sessions_subj(df, subj, ax):
         ax.set_xlabel('Session')
 
 
-def accuracy_at_stg_change(df, ax):
+def accuracy_at_stg_change(df):
+    """The function returns the mean and standard deviation of the changes
+    from a stage to another"""
     mat_perfs = {}
     for i_s, sbj in enumerate(subj_unq):
         acc = df.loc[df['subject_name'] == sbj, 'accuracy'].values
@@ -141,15 +121,26 @@ def accuracy_at_stg_change(df, ax):
                 max(0, i_next-len(acc))*[np.nan]
             # add chunk to the dictionary
             mat_perfs[key].append(chunk)
-    mat_mean_perfs = {}
-    for key in mat_perfs.keys():
-        print(key)
-        assert np.std([len(p) for p in mat_perfs[key]]) == 0
-        print(mat_perfs[key])
-        mat_mean_perfs[key]['mean'] = np.nanmean(np.array(mat_perfs[key]))
-        # TODO: save also std
-    # TODO: create fn that plots means with sem=std/np.sqrt(n)
-    plot_means(mat_mean_perfs)
+        mat_mean_perfs = {}
+        mat_std_perfs = {}
+        for key in mat_perfs.keys():
+            assert np.std([len(p) for p in mat_perfs[key]]) == 0
+            mat_mean_perfs[key] = np.nanmean(np.array(mat_perfs[key]))
+            mat_std_perfs[key] = np.nanstd(np.array(mat_perfs[key]))
+    return mat_mean_perfs, mat_std_perfs
+
+
+def plot_means_sem(means, std):
+    plt.close('all')
+    m = sorted(means.items())  # sorted by key, return a list of tuples
+    x1, y1 = zip(*m)  # unpack a list of pairs into two tuples
+    s = sorted(std.items())
+    x2, y2 = zip(*s)
+    plt.errorbar(x1, y1, y2, fmt='--o')
+    plt.title('Mean and std over stage change')
+    plt.xlabel('Stage change')
+    plt.ylabel('Accuracy')
+    plt.show()
 
 
 if __name__ == '__main__':
@@ -169,9 +160,10 @@ if __name__ == '__main__':
                loc="center right",   # Position of legend
                borderaxespad=0.1,  # Small spacing around legend box
                title='Color legend')
-    accuracy_at_stg_change(df=df_params, ax=ax[i_s])
-
-#    fig.tight_layout() # in order to see it more clear but smaller
+    accuracy_at_stg_change(df=df_params)
+    mat_mean_perfs = accuracy_at_stg_change(df_params)[0]
+    mat_std_perfs = accuracy_at_stg_change(df_params)[1]
+    plot_means_sem(mat_mean_perfs, mat_std_perfs)
 
     # obtain the list of subjects
 #     subj_mat = df_params.subject_name
@@ -187,101 +179,3 @@ if __name__ == '__main__':
 #     session_mat = df_params.session
 #     session_unq = np.unique(session_mat)
 #     print(session_unq)
-
-    # # list of all the stages
-#     stages_mat = df_params.stage_number
-#     stages_unq = np.unique(stages_mat)
-#     print(stages_unq)
-
-    # # performance, stage and substage for each subject
-    # for sbj in subj_unq:
-    #     print('------')
-    #     print(sbj)
-    #     num_sessions_per_stage(df_params, sbj)
-
-    # # find the stages for only one session
-    # stages_28 = []
-    # for i in num_sessions_per_stage(df_params, 'C28')[0]:
-    #     stages_28.append(i)
-
-    # plot accuracy VS session for each subject
-
-
-# plot_xvar_VS_yvar(df=df_params, x_var='session', y_var='accuracy',
-#                   xlabel='Session', ylabel='Accuracy', col='purple')
-# df_trials = pd.read_csv(path + '/global_trials.csv', sep=';')
-# df_raw = pd.merge(df_params, df_trials, on=['session', 'subject_name'])
-# # RANDOM PLOTS
-# new = df_params[['session', 'accuracy']]
-# sns.set(style='ticks', color_codes=True)
-# g = sns.pairplot(new, hue='session', palette='Spectral')
-# # blue more sessions, red less sessions
-# # even for a lot or a few of sessions, the accuracy seems to be around 0.5
-
-# # RELATIONSHIP BETWEEN ACCURACY/PERFORMANCE AND SESSIONS
-# g = sns.lmplot(x='session', y='accuracy', data=df_params, palette='Set1')
-# # lineal relationship: as sessions increase, accuracy decreases
-# t = sns.lmplot(x='session', y='performance', data=df_params, palette='Set1')
-# # lineal relationship: as sessions increase, performance decreases
-
-
-# # GRAPHIC 2 questions
-# # Plot the accuracy for each single session
-# # Obtain one plot for session
-# graphic = []
-# counter = 0
-# for column in df_params.columns:
-#     if column == session:
-#         for i in column:
-#             if i == counter+1:
-#                 graphic.append(df_params.accuracy[i])
-#         counter += 1
-# print(graphic)
-
-# # i don't know where is the problem
-# # here we can see that one column is called session
-# for column in df_params.columns:
-#     print(column)
-
-# # GRAPHIC 2 done
-# # Accuracy in each session
-
-
-# # GRAPHIC 3
-# # Duration for each phase
-# # Duration is the column time
-# dur = df_params.loc[:, 'time']
-# print(dur)
-
-# # it cannot be executed due to times are objects
-# # and not integers, so they cannot sum
-
-
-# # function to get seconds from time
-
-
-# print(get_sec('1:23:45'))
-
-
-# time_session(1)
-
-# # trying to fix it
-# ind = df_params[df_params.session == 1]
-# time = ind.iloc[:, [39]]
-# print(time)
-# time = time.to_numpy()
-# print(time)
-# time = np.array_split(time, 10)
-
-
-
-
-
-
-
-
-
-
-
-
-
