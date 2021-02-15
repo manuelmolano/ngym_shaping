@@ -60,7 +60,37 @@ def num_sessions_per_stage(df, subj):
     return stg, both
 
 
-def accuracy_sessions_subj(df, subj, ax):
+#def accuracy_sessions_subj(df, subj, ax):
+#    acc = df.loc[df['subject_name'] == subj, 'accuracy'].values
+#    stg = df.loc[df['subject_name'] == subj, 'stage_number'].values
+#
+#    # create the extremes (a 0 at the beggining and a 1 at the ending)
+#    stg_exp = np.insert(stg, 0, 0)  # extended stages
+#    stg_exp = np.append(stg_exp, stg_exp[-1]+1)
+#    stg_diff = np.diff(stg_exp)  # change of stage
+#    stg_chng = np.where(stg_diff != 0)[0]  # index where stages change
+#    # _, ax_temp = plt.subplots(nrows=1, ncols=1)
+#    # ax_temp.plot(stg_exp, label='stage')
+#    # ax_temp.plot(stg_diff, label='stage diff')
+#    # We go over indexes where stage changes and plot chunks from ind_t-1
+#    # to ind_t
+#    # TODO: try to separate results production from results plotting
+#    for i_stg in range(1, len(stg_chng)):
+#        # ax_temp.plot([stg_chng[i_stg-1], stg_chng[i_stg-1]], [0, 5], '--k')
+#        color = stg_exp[stg_chng[i_stg-1]+1]-1
+#        xs = range(stg_chng[i_stg-1], min(stg_chng[i_stg]+1, len(acc)))
+#        accs = acc[stg_chng[i_stg-1]:min(stg_chng[i_stg]+1, len(acc))]
+#        ax.plot(xs, accs, color=COLORS[color])
+#        ax.axhline(0.5)
+#        ax.set_title(subj)
+#        ax.set_ylim(0.4, 1)
+#    if subj == 'N01' or subj == 'N07' or subj == 'N13':
+#        ax.set_ylabel('Accuracy')
+#    if subj == 'N13' or subj == 'N14' or subj == 'N15' or\
+#       subj == 'N16' or subj == 'N17' or subj == 'N18':
+#        ax.set_xlabel('Session')
+    
+def accuracy_sessions_subj(df, subj):
     acc = df.loc[df['subject_name'] == subj, 'accuracy'].values
     stg = df.loc[df['subject_name'] == subj, 'stage_number'].values
 
@@ -69,18 +99,28 @@ def accuracy_sessions_subj(df, subj, ax):
     stg_exp = np.append(stg_exp, stg_exp[-1]+1)
     stg_diff = np.diff(stg_exp)  # change of stage
     stg_chng = np.where(stg_diff != 0)[0]  # index where stages change
-    # _, ax_temp = plt.subplots(nrows=1, ncols=1)
-    # ax_temp.plot(stg_exp, label='stage')
-    # ax_temp.plot(stg_diff, label='stage diff')
     # We go over indexes where stage changes and plot chunks from ind_t-1
     # to ind_t
-    # TODO: try to separate results production from results plotting
+    acc_list = []
+    xs_list = []
+    for i_stg in range(1, len(stg_chng)):
+        xs = range(stg_chng[i_stg-1], min(stg_chng[i_stg]+1, len(acc)))
+        accs = acc[stg_chng[i_stg-1]:min(stg_chng[i_stg]+1, len(acc))]
+        acc_list.append(accs)
+        xs_list.append(xs)
+    return acc_list, xs_list
+
+
+def plot_accuracy_sessions_subj(df, subj, acc, xs, ax):
+    stg = df.loc[df['subject_name'] == subj, 'stage_number'].values
+    stg_exp = np.insert(stg, 0, 0)  # extended stages
+    stg_exp = np.append(stg_exp, stg_exp[-1]+1)
+    stg_diff = np.diff(stg_exp)  # change of stage
+    stg_chng = np.where(stg_diff != 0)[0]  # index where stages change
     for i_stg in range(1, len(stg_chng)):
         # ax_temp.plot([stg_chng[i_stg-1], stg_chng[i_stg-1]], [0, 5], '--k')
         color = stg_exp[stg_chng[i_stg-1]+1]-1
-        xs = range(stg_chng[i_stg-1], min(stg_chng[i_stg]+1, len(acc)))
-        accs = acc[stg_chng[i_stg-1]:min(stg_chng[i_stg]+1, len(acc))]
-        ax.plot(xs, accs, color=COLORS[color])
+        ax.plot(xs[i_stg], acc[i_stg], color=COLORS[color])
         ax.axhline(0.5)
         ax.set_title(subj)
         ax.set_ylim(0.4, 1)
@@ -148,18 +188,20 @@ if __name__ == '__main__':
     df_params = pd.read_csv(path + '/global_params.csv', sep=';')
     fig, ax = plt.subplots(nrows=3, ncols=6)
     ax = ax.flatten()
-    subj_unq = np.unique(df_params.subject_name)
+#    subj_unq = np.unique(df_params.subject_name)
+#    for i_s, sbj in enumerate(subj_unq):
+#        accuracy_sessions_subj(df=df_params, subj=sbj, ax=ax[i_s])
+#    fig.suptitle("Accuracy VS sessions", fontsize="x-large")
+#    fig.legend([COLORS[0], COLORS[1], COLORS[2]],
+#               labels=['Stage 1', 'Stage 2', 'Stage 3'],
+#               loc="center right",   # Position of legend
+#               borderaxespad=0.1,  # Small spacing around legend box
+#               title='Color legend')
     for i_s, sbj in enumerate(subj_unq):
-        accuracy_sessions_subj(df=df_params, subj=sbj, ax=ax[i_s])
-    # filter for each animal 'subject_name'
-    # X_df = df_params.loc[df_params['subject_name'] == 'C28', 'stage_number']
-    # print(X_df)
-    fig.suptitle("Accuracy VS sessions", fontsize="x-large")
-    fig.legend([COLORS[0], COLORS[1], COLORS[2]],
-               labels=['Stage 1', 'Stage 2', 'Stage 3'],
-               loc="center right",   # Position of legend
-               borderaxespad=0.1,  # Small spacing around legend box
-               title='Color legend')
+        acc_sbj = accuracy_sessions_subj(df=df_params, subj=sbj)[0]
+        xs_sbj = accuracy_sessions_subj(df=df_params, subj=sbj)[1]
+        plot_accuracy_sessions_subj(df=df_params, subj=sbj, acc=acc_sbj, 
+                                    xs=xs_sbj, ax=ax[i_s])
     accuracy_at_stg_change(df=df_params)
     mat_mean_perfs = accuracy_at_stg_change(df_params)[0]
     mat_std_perfs = accuracy_at_stg_change(df_params)[1]
