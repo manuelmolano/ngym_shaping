@@ -277,9 +277,9 @@ if __name__ == '__main__':
         plot_accuracy_sessions_subj(acc=acc_sbj, xs=xs_sbj, col=color_sbj,
                                     ax=ax[i_s], subj=sbj)
     fig.suptitle("Accuracy VS sessions", fontsize="x-large")
-    lines = [obj for obj in ax[0].properties()['children']
-             if isinstance(obj, matplotlib.lines.Line2D)
-             and obj.get_linestyle() != '--']
+    lines = [obj for obj in ax[0].properties()['children']  # all objects in ax[0]
+             if isinstance(obj, matplotlib.lines.Line2D)  # that are lines
+             and obj.get_linestyle() != '--']  # that are not dashed
     fig.legend(lines, ['Stage 1', 'Stage 2', 'Stage 3'],
                loc="center right",   # Position of legend
                borderaxespad=0.1,  # Small spacing around legend box
