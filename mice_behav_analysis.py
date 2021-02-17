@@ -11,11 +11,11 @@ matplotlib.rcParams['font.size'] = 8
 plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['font.sans-serif'] = 'Helvetica'
 
-# PATH = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
-# SV_FOLDER = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
+PATH = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
+SV_FOLDER = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
 
-PATH = '/home/manuel/mice_data/standard_training_2020'
-SV_FOLDER = '/home/manuel/mice_data/standard_training_2020'
+# PATH = '/home/manuel/mice_data/standard_training_2020'
+# SV_FOLDER = '/home/manuel/mice_data/standard_training_2020'
 
 
 def sv_fig(f, name):
@@ -225,9 +225,11 @@ def plot_means_std(means, std, list_samples, prev_w=10, nxt_w=10):
         ax[i_k].errorbar(xs, val, std[key], label=key)
         ax[i_k].set_ylim(0.5, 1)
         ax[i_k].set_title(key + ' (N='+str(list_samples[i_k])+')')
-        ax[i_k].set_ylabel('Mean accuracy')
-        ax[i_k].set_xlabel('Sessions after stage change')
         ax[i_k].axvline(0, color='black', linestyle='--')
+        if i_k in [0, 3]:
+            ax[i_k].set_ylabel('Mean accuracy')
+        if i_k in [3, 4]:
+            ax[i_k].set_xlabel('Sessions after stage change')
     sv_fig(fig, 'Mean Accuracy of changes')
 
 
