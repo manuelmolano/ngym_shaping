@@ -1,15 +1,21 @@
 # import libraries
 import pandas as pd
+import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 COLORS = sns.color_palette("mako", n_colors=3)
 COLORS_qlt = sns.color_palette("tab10")
+matplotlib.rcParams['font.size'] = 8
+# matplotlib.rcParams['font.family'] = 'Arial'
+plt.rcParams['font.family'] = 'sans-serif'
+plt.rcParams['font.sans-serif'] = 'Helvetica'
 
-PATH = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
-# PATH = '/home/manuel/mice_data/standard_training_2020'
-SV_FOLDER = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
-# SV_FOLDER = '/home/manuel/mice_data/standard_training_2020'
+# PATH = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
+# SV_FOLDER = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
+
+PATH = '/home/manuel/mice_data/standard_training_2020'
+SV_FOLDER = '/home/manuel/mice_data/standard_training_2020'
 
 
 def sv_fig(f, name):
@@ -128,8 +134,9 @@ def plot_accuracy_sessions_subj(acc, xs, col, ax, subj):
     """
     for i_chnk, chnk in enumerate(acc):
         ax.plot(xs[i_chnk], acc[i_chnk], color=COLORS[col[i_chnk]])
-        ax.set_title(subj)
-        ax.set_ylim(0.4, 1)
+    ax.set_title(subj)
+    ax.set_ylim(0.4, 1)
+    ax.axhline(y=0.5, linestyle='--', color='k', lw=0.5)
     if subj in ['N01', 'N07', 'N13']:
         ax.set_ylabel('Accuracy')
     if subj in ['N13', 'N14', 'N15', 'N16', 'N17', 'N18']:
@@ -210,7 +217,7 @@ def plot_means_std(means, std, list_samples, prev_w=10, nxt_w=10):
     Plot of the mean and standard deviation of each stage for all the subjects
 
     """
-    fig, ax = plt.subplots(nrows=2, ncols=3, figsize=(4, 3))
+    fig, ax = plt.subplots(nrows=2, ncols=3, figsize=(6, 4))
     ax = ax.flatten()
     fig.suptitle('Mean Accuracy of changes')
     xs = np.arange(-prev_w, nxt_w)
@@ -256,10 +263,13 @@ def concatenate_trials_sub(df, subj_unq):
 
 
 if __name__ == '__main__':
+    # TODO: make sure there is no overlap between panels
+    # TODO: remove redundant info. (e.g. ylabel, yticks in all columns
+    #                               but the first one)
     plt.close('all')
     df_params = pd.read_csv(PATH + '/global_params.csv', sep=';')
     subj_unq = np.unique(df_params.subject_name)
-    fig, ax = plt.subplots(nrows=3, ncols=6)
+    fig, ax = plt.subplots(nrows=3, ncols=6, figsize=(8, 6))
     ax = ax.flatten()
     for i_s, sbj in enumerate(subj_unq):
         acc_sbj, xs_sbj, color_sbj = accuracy_sessions_subj(df=df_params,
@@ -267,8 +277,10 @@ if __name__ == '__main__':
         plot_accuracy_sessions_subj(acc=acc_sbj, xs=xs_sbj, col=color_sbj,
                                     ax=ax[i_s], subj=sbj)
     fig.suptitle("Accuracy VS sessions", fontsize="x-large")
-    fig.legend([COLORS[0], COLORS[1], COLORS[2]],
-               labels=['Stage 1', 'Stage 2', 'Stage 3'],
+    lines = [obj for obj in ax[0].properties()['children']
+             if isinstance(obj, matplotlib.lines.Line2D)
+             and obj.get_linestyle() != '--']
+    fig.legend(lines, ['Stage 1', 'Stage 2', 'Stage 3'],
                loc="center right",   # Position of legend
                borderaxespad=0.1,  # Small spacing around legend box
                title='Color legend')
@@ -287,4 +299,3 @@ if __name__ == '__main__':
     hithistory_subj_vectors = concatenate_trials_sub(df_trials, subj_unq)
     hithistory_subj_vectors.keys()
     hithistory_subj_vectors['N11']
-
