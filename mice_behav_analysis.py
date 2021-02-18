@@ -137,10 +137,38 @@ def plot_accuracy_sessions_subj(acc, xs, col, ax, subj):
     ax.set_title(subj)
     ax.set_ylim(0.4, 1)
     ax.axhline(y=0.5, linestyle='--', color='k', lw=0.5)
+    # Hide the right and top spines
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    # Only show ticks on the left and bottom spines
+    ax.yaxis.set_ticks_position('left')
+    ax.xaxis.set_ticks_position('bottom')
     if subj in ['N01', 'N07', 'N13']:
         ax.set_ylabel('Accuracy')
     if subj in ['N13', 'N14', 'N15', 'N16', 'N17', 'N18']:
         ax.set_xlabel('Session')
+
+
+def plot_final_acc_session_subj(subj_unq):
+    fig, ax = plt.subplots(nrows=3, ncols=6, figsize=(8, 4),
+                           gridspec_kw={'wspace': 0.5, 'hspace': 0.5})
+    # leave some space between two figures, wspace is the horizontal gap and
+    # hspace is the vertical gap
+    ax = ax.flatten()
+    for i_s, sbj in enumerate(subj_unq):
+        acc_sbj, xs_sbj, color_sbj = accuracy_sessions_subj(df=df_params,
+                                                            subj=sbj)
+        plot_accuracy_sessions_subj(acc=acc_sbj, xs=xs_sbj, col=color_sbj,
+                                    ax=ax[i_s], subj=sbj)
+    fig.suptitle("Accuracy VS sessions", fontsize="x-large")
+    lines = [obj for obj in ax[0].properties()['children']  # all objs in ax[0]
+             if isinstance(obj, matplotlib.lines.Line2D)  # that are lines
+             and obj.get_linestyle() != '--']  # that are not dashed
+    fig.legend(lines, ['Stage 1', 'Stage 2', 'Stage 3'],
+               loc="center right",   # Position of legend
+               borderaxespad=0.1,  # Small spacing around legend box
+               title='Color legend')
+    sv_fig(fig, 'Accuracy VS sessions')
 
 
 def accuracy_at_stg_change(df, subj_unq, prev_w=10, nxt_w=10):
@@ -217,15 +245,22 @@ def plot_means_std(means, std, list_samples, prev_w=10, nxt_w=10):
     Plot of the mean and standard deviation of each stage for all the subjects
 
     """
-    fig, ax = plt.subplots(nrows=2, ncols=3, figsize=(6, 4))
+    fig, ax = plt.subplots(nrows=2, ncols=3, figsize=(6, 4),
+                           gridspec_kw={'wspace': 0.5, 'hspace': 0.5})
     ax = ax.flatten()
-    fig.suptitle('Mean Accuracy of changes')
+    fig.suptitle('Mean Accuracy of changes', fontsize='x-large')
     xs = np.arange(-prev_w, nxt_w)
     for i_k, (key, val) in enumerate(means.items()):
         ax[i_k].errorbar(xs, val, std[key], label=key)
         ax[i_k].set_ylim(0.5, 1)
         ax[i_k].set_title(key + ' (N='+str(list_samples[i_k])+')')
         ax[i_k].axvline(0, color='black', linestyle='--')
+        # Hide the right and top spines
+        ax[i_k].spines['right'].set_visible(False)
+        ax[i_k].spines['top'].set_visible(False)
+        # Only show ticks on the left and bottom spines
+        ax[i_k].yaxis.set_ticks_position('left')
+        ax[i_k].xaxis.set_ticks_position('bottom')
         if i_k in [0, 3]:
             ax[i_k].set_ylabel('Mean accuracy')
         if i_k in [3, 4]:
@@ -233,7 +268,7 @@ def plot_means_std(means, std, list_samples, prev_w=10, nxt_w=10):
     sv_fig(fig, 'Mean Accuracy of changes')
 
 
-def concatenate_trials_sub(df):
+def concatenate_trials(df):
     """
     Concatenates for each subject all hithistory variables (true/false),
     which describe the success of the trial.
@@ -243,59 +278,96 @@ def concatenate_trials_sub(df):
     df : dataframe
         dictionary containing all the stage changes (e.g. '1-2', '2-3'...) and
         the accuracies associated to each change.
-    subj_unq : numpy.ndarray
-        array of strings with the name of all the subjects
 
     Returns
     -------
-    A dictionary where the keys are the subjects and the values are the 445883
-    hithistories. For each trial, there is a hithistory associated to a subject
+    Plots a figure of the performance of the subject along trials
 
     """
     df_hh = df[['hithistory', 'subject_name']]
     df_grps = df_hh.groupby('subject_name')
     subj_unq = np.unique(df_hh.subject_name)
-    # TODO: save values, and plot them
-    # plt.plot(np.convolve(mat, np.ones((conv_w,))/conv_w))
     for i_s, sbj in enumerate(subj_unq):
         df_sbj_perf = df_grps.get_group(sbj)['hithistory'].values
-    return hithistory_subj_vectors
+        plt.plot(np.convolve(df_sbj_perf, np.ones((20,))/20))
+        plt.title("Trials of each subject")
+        plt.legend(['Subject N01', 'Subject N02'],
+                   loc="center right",   # Position of legend
+                   borderaxespad=0.1,  # Small spacing around legend box
+                   title='Color legend')
+        plt.xlabel('Trials')
+        plt.ylabel('Accuracy (Hit: True or False)')
+
+
+def plot_trials_subjects(df):
+    """
+    Plots the performance of all the subjects along trials
+
+    Parameters
+    ----------
+    df : dataframe
+        dictionary containing all the stage changes (e.g. '1-2', '2-3'...) and
+        the accuracies associated to each change.
+
+    Returns
+    -------
+    Plots a figure with subplots containing the performance of the subjects
+    along all trials
+
+    """
+    df_hh = df[['hithistory', 'subject_name']]
+    df_grps = df_hh.groupby('subject_name')
+    subj_unq = np.unique(df_hh.subject_name)
+    fig, ax = plt.subplots(nrows=3, ncols=6, figsize=(6, 4),
+                           gridspec_kw={'wspace': 0.5, 'hspace': 0.5})
+    ax = ax.flatten()
+    for i_s, sbj in enumerate(subj_unq):
+        df_sbj_perf = df_grps.get_group(sbj)['hithistory'].values
+        ax[i_s].plot(np.convolve(df_sbj_perf, np.ones((20,))/20))
+        ax[i_s].set_title(sbj)
+        ax[i_s].set_xlim(0, 30000)
+        ax[i_s].spines['right'].set_visible(False)
+        ax[i_s].spines['top'].set_visible(False)
+        ax[i_s].yaxis.set_ticks_position('left')
+        ax[i_s].xaxis.set_ticks_position('bottom')
+        if sbj in ['N01', 'N07', 'N13']:
+            ax[i_s].set_ylabel('Hit (T/F)')
+        if sbj in ['N13', 'N14', 'N15', 'N16', 'N17', 'N18']:
+            ax[i_s].set_xlabel('Trials')
+    fig.suptitle("Accuracy over trials")
 
 
 if __name__ == '__main__':
     plt.close('all')
-    # TODO: Tune figures: make figure smaller to have labels and other stuff larger
-    # remove top and right axis
+    # params data
     df_params = pd.read_csv(PATH + '/global_params.csv', sep=';')
     subj_unq = np.unique(df_params.subject_name)
-    plot_stuff = False
-    # TODO: put this in a function
-    if plot_stuff:
-        fig, ax = plt.subplots(nrows=3, ncols=6, figsize=(8, 6))
-        ax = ax.flatten()
-        for i_s, sbj in enumerate(subj_unq):
-            acc_sbj, xs_sbj, color_sbj = accuracy_sessions_subj(df=df_params,
-                                                                subj=sbj)
-            plot_accuracy_sessions_subj(acc=acc_sbj, xs=xs_sbj, col=color_sbj,
-                                        ax=ax[i_s], subj=sbj)
-        fig.suptitle("Accuracy VS sessions", fontsize="x-large")
-        lines = [obj for obj in ax[0].properties()['children']  # all objs in ax[0]
-                 if isinstance(obj, matplotlib.lines.Line2D)  # that are lines
-                 and obj.get_linestyle() != '--']  # that are not dashed
-        fig.legend(lines, ['Stage 1', 'Stage 2', 'Stage 3'],
-                   loc="center right",   # Position of legend
-                   borderaxespad=0.1,  # Small spacing around legend box
-                   title='Color legend')
-        sv_fig(fig, 'Accuracy VS sessions')
+    do = False
+    if do:
+        # accuracy per session
+        plot_final_acc_session_subj(subj_unq)
         # performance at stage change
         prev_w = 10
         nxt_w = 10
         mat_mean_perfs, mat_std_perfs, num_samples =\
-            accuracy_at_stg_change(df_params, subj_unq, prev_w=prev_w, nxt_w=nxt_w)
-        plot_means_std(mat_mean_perfs, mat_std_perfs, num_samples, prev_w=prev_w,
-                       nxt_w=nxt_w)
-    # concatenate all trials for each subject
+            accuracy_at_stg_change(df_params, subj_unq,
+                                   prev_w=prev_w, nxt_w=nxt_w)
+        plot_means_std(mat_mean_perfs, mat_std_perfs, num_samples,
+                       prev_w=prev_w, nxt_w=nxt_w)
+    # trials data
     df_trials = pd.read_csv(PATH + '/global_trials.csv', sep=';',
                             low_memory=False)  # to avoid NAN problems
-    hithistory_subj_vectors = concatenate_trials_sub(df_trials)
+    # creation of a miniset of data with subjects N01&N02 and sessions 1,2,3
+    minitrials_subj_01 = df_trials.loc[df_trials['subject_name'] == 'N01']
+    minitrials_subj_02 = df_trials.loc[df_trials['subject_name'] == 'N02']
+    minitrials = pd.concat([minitrials_subj_01, minitrials_subj_02])
+    minitrials_sess1 = minitrials.loc[df_trials['session'] == 1]
+    minitrials_sess2 = minitrials.loc[df_trials['session'] == 2]
+    minitrials_sess3 = minitrials.loc[df_trials['session'] == 3]
+    minitrials = pd.concat([minitrials_sess1, minitrials_sess2,
+                            minitrials_sess3])
+    # concatenate trials of minitrials (only two)
+    concatenate_trials(minitrials)
+    # trials performance of all the subjects
+    plot_trials_subjects(df_trials)
     # TODO: plot convolved perfs. colorcoded by session
