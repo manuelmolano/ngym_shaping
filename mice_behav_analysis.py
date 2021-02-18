@@ -14,8 +14,8 @@ plt.rcParams['font.sans-serif'] = 'Helvetica'
 PATH = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
 SV_FOLDER = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
 
-# PATH = '/home/manuel/mice_data/standard_training_2020'
-# SV_FOLDER = '/home/manuel/mice_data/standard_training_2020'
+PATH = '/home/manuel/mice_data/standard_training_2020'
+SV_FOLDER = '/home/manuel/mice_data/standard_training_2020'
 
 
 def sv_fig(f, name):
@@ -233,7 +233,7 @@ def plot_means_std(means, std, list_samples, prev_w=10, nxt_w=10):
     sv_fig(fig, 'Mean Accuracy of changes')
 
 
-def concatenate_trials_sub(df, subj_unq):
+def concatenate_trials_sub(df):
     """
     Concatenates for each subject all hithistory variables (true/false),
     which describe the success of the trial.
@@ -252,52 +252,50 @@ def concatenate_trials_sub(df, subj_unq):
     hithistories. For each trial, there is a hithistory associated to a subject
 
     """
-    hithistory_mat = df.hithistory
-    subject_name_mat = df.subject_name
-    hithistory_subj_vectors = {}
+    df_hh = df[['hithistory', 'subject_name']]
+    df_grps = df_hh.groupby('subject_name')
+    subj_unq = np.unique(df_hh.subject_name)
+    # TODO: save values, and plot them
+    # plt.plot(np.convolve(mat, np.ones((conv_w,))/conv_w))
     for i_s, sbj in enumerate(subj_unq):
-        key = str(sbj)
-        if key not in hithistory_subj_vectors.keys():
-            hithistory_subj_vectors[key] = []
-        for index, subjects in enumerate(subject_name_mat):
-            hithistory_subj_vectors[key].append(hithistory_mat[index])
+        df_sbj_perf = df_grps.get_group(sbj)['hithistory'].values
     return hithistory_subj_vectors
 
 
 if __name__ == '__main__':
-    # TODO: make sure there is no overlap between panels
-    # TODO: remove redundant info. (e.g. ylabel, yticks in all columns
-    #                               but the first one)
     plt.close('all')
+    # TODO: Tune figures: make figure smaller to have labels and other stuff larger
+    # remove top and right axis
     df_params = pd.read_csv(PATH + '/global_params.csv', sep=';')
     subj_unq = np.unique(df_params.subject_name)
-    fig, ax = plt.subplots(nrows=3, ncols=6, figsize=(8, 6))
-    ax = ax.flatten()
-    for i_s, sbj in enumerate(subj_unq):
-        acc_sbj, xs_sbj, color_sbj = accuracy_sessions_subj(df=df_params,
-                                                            subj=sbj)
-        plot_accuracy_sessions_subj(acc=acc_sbj, xs=xs_sbj, col=color_sbj,
-                                    ax=ax[i_s], subj=sbj)
-    fig.suptitle("Accuracy VS sessions", fontsize="x-large")
-    lines = [obj for obj in ax[0].properties()['children']  # all objects in ax[0]
-             if isinstance(obj, matplotlib.lines.Line2D)  # that are lines
-             and obj.get_linestyle() != '--']  # that are not dashed
-    fig.legend(lines, ['Stage 1', 'Stage 2', 'Stage 3'],
-               loc="center right",   # Position of legend
-               borderaxespad=0.1,  # Small spacing around legend box
-               title='Color legend')
-    sv_fig(fig, 'Accuracy VS sessions')
-    # performance at stage change
-    prev_w = 10
-    nxt_w = 10
-    mat_mean_perfs, mat_std_perfs, num_samples =\
-        accuracy_at_stg_change(df_params, subj_unq, prev_w=prev_w, nxt_w=nxt_w)
-    plot_means_std(mat_mean_perfs, mat_std_perfs, num_samples, prev_w=prev_w,
-                   nxt_w=nxt_w)
+    plot_stuff = False
+    # TODO: put this in a function
+    if plot_stuff:
+        fig, ax = plt.subplots(nrows=3, ncols=6, figsize=(8, 6))
+        ax = ax.flatten()
+        for i_s, sbj in enumerate(subj_unq):
+            acc_sbj, xs_sbj, color_sbj = accuracy_sessions_subj(df=df_params,
+                                                                subj=sbj)
+            plot_accuracy_sessions_subj(acc=acc_sbj, xs=xs_sbj, col=color_sbj,
+                                        ax=ax[i_s], subj=sbj)
+        fig.suptitle("Accuracy VS sessions", fontsize="x-large")
+        lines = [obj for obj in ax[0].properties()['children']  # all objs in ax[0]
+                 if isinstance(obj, matplotlib.lines.Line2D)  # that are lines
+                 and obj.get_linestyle() != '--']  # that are not dashed
+        fig.legend(lines, ['Stage 1', 'Stage 2', 'Stage 3'],
+                   loc="center right",   # Position of legend
+                   borderaxespad=0.1,  # Small spacing around legend box
+                   title='Color legend')
+        sv_fig(fig, 'Accuracy VS sessions')
+        # performance at stage change
+        prev_w = 10
+        nxt_w = 10
+        mat_mean_perfs, mat_std_perfs, num_samples =\
+            accuracy_at_stg_change(df_params, subj_unq, prev_w=prev_w, nxt_w=nxt_w)
+        plot_means_std(mat_mean_perfs, mat_std_perfs, num_samples, prev_w=prev_w,
+                       nxt_w=nxt_w)
     # concatenate all trials for each subject
-    plt.close('all')
     df_trials = pd.read_csv(PATH + '/global_trials.csv', sep=';',
                             low_memory=False)  # to avoid NAN problems
-    hithistory_subj_vectors = concatenate_trials_sub(df_trials, subj_unq)
-    hithistory_subj_vectors.keys()
-    hithistory_subj_vectors['N11']
+    hithistory_subj_vectors = concatenate_trials_sub(df_trials)
+    # TODO: plot convolved perfs. colorcoded by session
