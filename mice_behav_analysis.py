@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 COLORS = sns.color_palette("mako", n_colors=3)
-COLORS_qlt = sns.color_palette("tab10")
+COLORS_qlt = sns.color_palette("tab10", n_colors=80)
 matplotlib.rcParams['font.size'] = 8
 # matplotlib.rcParams['font.family'] = 'Arial'
 plt.rcParams['font.family'] = 'sans-serif'
@@ -268,7 +268,7 @@ def plot_means_std(means, std, list_samples, prev_w=10, nxt_w=10):
     sv_fig(fig, 'Mean Accuracy of changes')
 
 
-def concatenate_trials(df):
+def concatenate_trials(df, conv_w=200):
     """
     Concatenates for each subject all hithistory variables (true/false),
     which describe the success of the trial.
@@ -278,7 +278,8 @@ def concatenate_trials(df):
     df : dataframe
         dictionary containing all the stage changes (e.g. '1-2', '2-3'...) and
         the accuracies associated to each change.
-
+    conv_w: int
+        window used to smooth (convolving) the accuracy (20)
     Returns
     -------
     Plots a figure of the performance of the subject along trials
@@ -287,9 +288,11 @@ def concatenate_trials(df):
     df_hh = df[['hithistory', 'subject_name']]
     df_grps = df_hh.groupby('subject_name')
     subj_unq = np.unique(df_hh.subject_name)
+    # TODO: separate data extraction from plotting
+    # TODO: plot convolved perfs. colorcoded by session
     for i_s, sbj in enumerate(subj_unq):
         df_sbj_perf = df_grps.get_group(sbj)['hithistory'].values
-        plt.plot(np.convolve(df_sbj_perf, np.ones((20,))/20))
+        plt.plot(np.convolve(df_sbj_perf, np.ones((conv_w,))/conv_w, mode='valid'))
         plt.title("Trials of each subject")
         plt.legend(['Subject N01', 'Subject N02'],
                    loc="center right",   # Position of legend
@@ -337,12 +340,23 @@ def plot_trials_subjects(df):
     fig.suptitle("Accuracy over trials")
 
 
+def create_toy_dataset(df_trials):
+    # creation of a miniset of data with subjects N01&N02 and sessions 1,2,3
+    minitrials = df_trials.loc[((df_trials['subject_name'] == 'N01') |
+                               (df_trials['subject_name'] == 'N02')) &
+                               (df_trials['session'] < 4)]
+    minitrials.to_csv(PATH + '/minitrials.csv', sep=';')
+    return minitrials
+
+
 if __name__ == '__main__':
     plt.close('all')
+    do = False
+    dataset = 'minitrials'  # 'global_trials'
     # params data
     df_params = pd.read_csv(PATH + '/global_params.csv', sep=';')
     subj_unq = np.unique(df_params.subject_name)
-    do = False
+
     if do:
         # accuracy per session
         plot_final_acc_session_subj(subj_unq)
@@ -355,19 +369,7 @@ if __name__ == '__main__':
         plot_means_std(mat_mean_perfs, mat_std_perfs, num_samples,
                        prev_w=prev_w, nxt_w=nxt_w)
     # trials data
-    df_trials = pd.read_csv(PATH + '/global_trials.csv', sep=';',
-                            low_memory=False)  # to avoid NAN problems
-    # creation of a miniset of data with subjects N01&N02 and sessions 1,2,3
-    minitrials_subj_01 = df_trials.loc[df_trials['subject_name'] == 'N01']
-    minitrials_subj_02 = df_trials.loc[df_trials['subject_name'] == 'N02']
-    minitrials = pd.concat([minitrials_subj_01, minitrials_subj_02])
-    minitrials_sess1 = minitrials.loc[df_trials['session'] == 1]
-    minitrials_sess2 = minitrials.loc[df_trials['session'] == 2]
-    minitrials_sess3 = minitrials.loc[df_trials['session'] == 3]
-    minitrials = pd.concat([minitrials_sess1, minitrials_sess2,
-                            minitrials_sess3])
+    # low_memory=False to avoid NAN problems
+    df_trials = pd.read_csv(PATH + '/'+dataset+'.csv', sep=';', low_memory=False)
     # concatenate trials of minitrials (only two)
-    concatenate_trials(minitrials)
-    # trials performance of all the subjects
-    plot_trials_subjects(df_trials)
-    # TODO: plot convolved perfs. colorcoded by session
+    concatenate_trials(df_trials)
