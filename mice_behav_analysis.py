@@ -14,8 +14,8 @@ plt.rcParams['font.sans-serif'] = 'Helvetica'
 PATH = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
 SV_FOLDER = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
 
-PATH = '/home/manuel/mice_data/standard_training_2020'
-SV_FOLDER = '/home/manuel/mice_data/standard_training_2020'
+# PATH = '/home/manuel/mice_data/standard_training_2020'
+# SV_FOLDER = '/home/manuel/mice_data/standard_training_2020'
 
 
 def sv_fig(f, name):
@@ -150,6 +150,19 @@ def plot_accuracy_sessions_subj(acc, xs, col, ax, subj):
 
 
 def plot_final_acc_session_subj(subj_unq):
+    """
+    The function plots accuracy over session for all the subjects.
+
+    Parameters
+    ----------
+    subj_unq : numpy.ndarray
+        array of strings with the name of all the subjects
+
+    Returns
+    -------
+    Plot of accuracy by session for every subject.
+
+    """
     fig, ax = plt.subplots(nrows=3, ncols=6, figsize=(8, 4),
                            gridspec_kw={'wspace': 0.5, 'hspace': 0.5})
     # leave some space between two figures, wspace is the horizontal gap and
@@ -268,7 +281,7 @@ def plot_means_std(means, std, list_samples, prev_w=10, nxt_w=10):
     sv_fig(fig, 'Mean Accuracy of changes')
 
 
-def concatenate_trials(df, conv_w=200):
+def concatenate_trials(df, subject):
     """
     Concatenates for each subject all hithistory variables (true/false),
     which describe the success of the trial.
@@ -278,28 +291,55 @@ def concatenate_trials(df, conv_w=200):
     df : dataframe
         dictionary containing all the stage changes (e.g. '1-2', '2-3'...) and
         the accuracies associated to each change.
+    subject: str
+        subject chosen
+
+    Returns
+    -------
+    Performance of each subject by trials
+
+    """
+    df_hh = df[['hithistory', 'subject_name']]
+    df_grps = df_hh.groupby('subject_name')
+    # TODO: separate data extraction from plotting
+    # TODO: plot convolved perfs. colorcoded by session
+    df_sbj_perf = df_grps.get_group(subject)['hithistory'].values
+    return df_sbj_perf
+
+
+def plot_trials_subj(df, subject, df_sbj_perf, conv_w=200):
+    """
+    Plots for each subject all hithistory variables (true/false),
+    which describe the success of the trial.
+
+    Parameters
+    ----------
+    df : dataframe
+        dictionary containing all the stage changes (e.g. '1-2', '2-3'...) and
+        the accuracies associated to each change.
+    subject: str
+        subject chosen
+    df_sbj_perf: dataframe
+        performance of each subject
     conv_w: int
-        window used to smooth (convolving) the accuracy (20)
+        window used to smooth (convolving) the accuracy (default 200)
+
     Returns
     -------
     Plots a figure of the performance of the subject along trials
 
     """
-    df_hh = df[['hithistory', 'subject_name']]
-    df_grps = df_hh.groupby('subject_name')
-    subj_unq = np.unique(df_hh.subject_name)
-    # TODO: separate data extraction from plotting
-    # TODO: plot convolved perfs. colorcoded by session
-    for i_s, sbj in enumerate(subj_unq):
-        df_sbj_perf = df_grps.get_group(sbj)['hithistory'].values
-        plt.plot(np.convolve(df_sbj_perf, np.ones((conv_w,))/conv_w, mode='valid'))
-        plt.title("Trials of each subject")
-        plt.legend(['Subject N01', 'Subject N02'],
-                   loc="center right",   # Position of legend
-                   borderaxespad=0.1,  # Small spacing around legend box
-                   title='Color legend')
-        plt.xlabel('Trials')
-        plt.ylabel('Accuracy (Hit: True or False)')
+    plt.figure()
+    plt.plot(np.convolve(df_sbj_perf, np.ones((conv_w,))/conv_w, mode='valid'))
+    plt.title("Accuracy by trials of subject" + subject)
+    plt.xlabel('Trials')
+    plt.ylabel('Accuracy (Hit: True or False)')
+    session = df.loc[df['subject_name'] == sbj, 'session'].values
+    # create the extremes (a 0 at the beggining and a 1 at the ending)
+    ses_diff = np.diff(session)  # change of stage
+    ses_chng = np.where(ses_diff != 0)[0]
+    for i in ses_chng:
+        plt.axvline(i, color='black')
 
 
 def plot_trials_subjects(df):
@@ -341,6 +381,19 @@ def plot_trials_subjects(df):
 
 
 def create_toy_dataset(df_trials):
+    """
+    Creates a set of data with subjects 01 and 02 and sessions 1,2 and 3.
+
+    Parameters
+    ----------
+    df_trials : dataframe
+        data.
+
+    Returns
+    -------
+    Set of the original dataset
+
+    """
     # creation of a miniset of data with subjects N01&N02 and sessions 1,2,3
     minitrials = df_trials.loc[((df_trials['subject_name'] == 'N01') |
                                (df_trials['subject_name'] == 'N02')) &
@@ -352,11 +405,10 @@ def create_toy_dataset(df_trials):
 if __name__ == '__main__':
     plt.close('all')
     do = False
-    dataset = 'minitrials'  # 'global_trials'
+    dataset = 'global_trials'  # 'global_trials'minitrials
     # params data
     df_params = pd.read_csv(PATH + '/global_params.csv', sep=';')
     subj_unq = np.unique(df_params.subject_name)
-
     if do:
         # accuracy per session
         plot_final_acc_session_subj(subj_unq)
@@ -370,6 +422,10 @@ if __name__ == '__main__':
                        prev_w=prev_w, nxt_w=nxt_w)
     # trials data
     # low_memory=False to avoid NAN problems
-    df_trials = pd.read_csv(PATH + '/'+dataset+'.csv', sep=';', low_memory=False)
-    # concatenate trials of minitrials (only two)
-    concatenate_trials(df_trials)
+    df_trials = pd.read_csv(PATH + '/'+dataset+'.csv', sep=';',
+                            low_memory=False)
+    subj_unq = np.unique(df_trials.subject_name)
+    # plot trials accuracy of all the subjects
+    for i_s, sbj in enumerate(subj_unq):
+        df_sbj_perf = concatenate_trials(df_trials, sbj)
+        plot_trials_subj(df_trials, sbj, df_sbj_perf, conv_w=200)
