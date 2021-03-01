@@ -496,8 +496,21 @@ def create_toy_dataset(df_trials):
     return minitrials
 
 
-def remove_misses(df):  # TODO: add docstring
-    d1 = np.where((df['hithistory']==False) & (df['misshistory']==True))
+def remove_misses(df):
+    """
+    Revomes misses of the accuracy.
+
+    Parameters
+    ----------
+    df_trials : dataframe
+        data.
+
+    Returns
+    -------
+    Dataset without misses
+
+    """
+    d1 = np.where((df['hithistory'] is False) & (df['misshistory'] is True))
     for index in d1:
         df['hithistory'][index] = 0.5
     return df
@@ -505,32 +518,50 @@ def remove_misses(df):  # TODO: add docstring
 
 def create_stage_column(df, df_prms, subject):
     """
-    Concatenates for each subject all hithistory variables (true/false),
-    which describe the success of the trial.
+    Creation of an extra column for the stages in df_trials
 
     Parameters
     ----------
     df : dataframe
-        dictionary containing all the stage changes (e.g. '1-2', '2-3'...) and
-        the accuracies associated to each change.
+        data of trials
+    df : dataframe
+        data of sessions
     subject: str
         subject chosen
 
     Returns
     -------
-    Performance of each subject by trials
+    Dataframe with an extra column
 
     """
-    df_ss = df.loc[df.subject_name == subject, ['session']]
-    _, indx, stages = accuracy_sessions_subj(df=df_prms, subj=subject)
-    sess_unq = np.unique(df_ss)
-    trial_sess = np.zeros_like(df_ss).flatten()
-    for ss in sess_unq:
-        print(ss)
-        aux = [ss in x for x in indx]
-        indx = np.where(df_ss == ss)[0]
-        trial_sess[indx]
-    print(1)
+#    df_ss = df.loc[df.subject_name == subject, ['session']] # ses in df_trials
+#    _, indx, stages = accuracy_sessions_subj(df=df_prms, subj=subject)
+#    sess_unq = np.unique(df_ss)
+#    trial_sess = np.zeros_like(df_ss).flatten()
+#    df_by_session = df_ss.groupby('session') # group by session
+#    for session, data in df_by_session:
+#        print(session)
+#        print(data)
+#    list_sessions = list(df_by_session)
+#    for session_block in list_sessions:
+#        for index, session in session_block:
+#            print(i)
+#    list_sessions.flatten()
+#    for ss in sess_unq:
+#        aux = [ss in x for x in indx]
+#        indx = np.where(df_ss == ss)
+#        trial_sess[indx]
+#    print(1)
+    df_param_ses = df_prms.loc[df_prms.subject_name == subject,
+                               ['session', 'stage_number']]
+    df_trials_ses = df.loc[df.subject_name == subject, ['session', 'trials']]
+    Type_new = pd.Series([])  # create a blank series
+    df_trials_ses.insert(2, 'stage', Type_new)
+    for i in df_trials_ses.index:
+        for j in df_param_ses.index:
+            if df_trials_ses['session'][i] == df_param_ses['session'][j]:
+                df_trials_ses['stage'][i] = df_param_ses['stage_number'][j]
+    return df_trials_ses
 
 
 if __name__ == '__main__':
@@ -541,7 +572,6 @@ if __name__ == '__main__':
     df_params = pd.read_csv(PATH + '/global_params.csv', sep=';')
     df_trials = pd.read_csv(PATH + '/'+dataset+'.csv', sep=';',
                             low_memory=False)
-    
     create_stage_column(df=df_trials, df_prms=df_params, subject='N18')
     subj_unq = ['N16']  # np.unique(df_params.subject_name)
     if do:
