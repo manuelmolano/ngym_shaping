@@ -14,8 +14,8 @@ plt.rcParams['font.sans-serif'] = 'Helvetica'
 PATH = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
 SV_FOLDER = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
 
-# PATH = '/home/manuel/mice_data/standard_training_2020'
-# SV_FOLDER = '/home/manuel/mice_data/standard_training_2020'
+PATH = '/home/manuel/mice_data/standard_training_2020'
+SV_FOLDER = '/home/manuel/mice_data/standard_training_2020'
 
 
 def sv_fig(f, name):
@@ -305,7 +305,7 @@ def concatenate_trials(df, subject):
     return df_sbj_perf
 
 
-def plot_trials_subj(df, subject, df_sbj_perf, conv_w=200):
+def plot_trials_subj(df, subject, df_sbj_perf, ax=None, conv_w=200):
     """
     Plots for each subject all hithistory variables (true/false),
     which describe the success of the trial.
@@ -327,17 +327,18 @@ def plot_trials_subj(df, subject, df_sbj_perf, conv_w=200):
     Plots a figure of the performance of the subject along trials
 
     """
-    plt.figure()
-    plt.plot(np.convolve(df_sbj_perf, np.ones((conv_w,))/conv_w, mode='valid'))
-    plt.title("Accuracy by trials of subject" + subject)
-    plt.xlabel('Trials')
-    plt.ylabel('Accuracy (Hit: True or False)')
+    if ax is None:
+        f, ax = plt.subplots()
+    ax.plot(np.convolve(df_sbj_perf, np.ones((conv_w,))/conv_w, mode='valid'))
+    ax.set_title("Accuracy by trials of subject" + subject)
+    ax.set_xlabel('Trials')
+    ax.set_ylabel('Accuracy (Hit: True or False)')
     session = df.loc[df['subject_name'] == sbj, 'session'].values
     # create the extremes (a 0 at the beggining and a 1 at the ending)
     ses_diff = np.diff(session)  # change of stage
     ses_chng = np.where(ses_diff != 0)[0]
     for i in ses_chng:
-        plt.axvline(i, color='black')
+        ax.axvline(i, color='black')
 
 
 def plot_trials_subj_misses(df, subject, df_sbj_perf, conv_w=200):
@@ -364,7 +365,8 @@ def plot_trials_subj_misses(df, subject, df_sbj_perf, conv_w=200):
     """
     plt.figure()
     plt.plot(np.convolve(df_sbj_perf, np.ones((conv_w,))/conv_w, mode='valid'))
-    plt.title("Accuracy by trials of subject taking into account misses (" + subject+")")
+    plt.title("Accuracy by trials of subject taking into" +
+              " account misses (" + subject+")")
     plt.xlabel('Trials')
     plt.ylabel('Accuracy (Hit: True or False)')
     session = df.loc[df['subject_name'] == sbj, 'session'].values
@@ -377,7 +379,7 @@ def plot_trials_subj_misses(df, subject, df_sbj_perf, conv_w=200):
 
 def plot_trials_subjects(df, conv_w=20):
     """
-    Plots the performance of all the subjects along trials
+    Plots the performance of all the subjects along trials in the same figure.
 
     Parameters
     ----------
@@ -472,7 +474,6 @@ def plot_misses_subj(df, subject, df_sbj_perf, conv_w=200):
         plt.axvline(i, color='black')
 
 
-
 def create_toy_dataset(df_trials):
     """
     Creates a set of data with subjects 01 and 02 and sessions 1,2 and 3.
@@ -495,20 +496,54 @@ def create_toy_dataset(df_trials):
     return minitrials
 
 
-def remove_misses(df):
+def remove_misses(df):  # TODO: add docstring
     d1 = np.where((df['hithistory']==False) & (df['misshistory']==True))
     for index in d1:
         df['hithistory'][index] = 0.5
     return df
 
 
+def create_stage_column(df, df_prms, subject):
+    """
+    Concatenates for each subject all hithistory variables (true/false),
+    which describe the success of the trial.
+
+    Parameters
+    ----------
+    df : dataframe
+        dictionary containing all the stage changes (e.g. '1-2', '2-3'...) and
+        the accuracies associated to each change.
+    subject: str
+        subject chosen
+
+    Returns
+    -------
+    Performance of each subject by trials
+
+    """
+    df_ss = df.loc[df.subject_name == subject, ['session']]
+    _, indx, stages = accuracy_sessions_subj(df=df_prms, subj=subject)
+    sess_unq = np.unique(df_ss)
+    trial_sess = np.zeros_like(df_ss).flatten()
+    for ss in sess_unq:
+        print(ss)
+        aux = [ss in x for x in indx]
+        indx = np.where(df_ss == ss)[0]
+        trial_sess[indx]
+    print(1)
+
+
 if __name__ == '__main__':
     plt.close('all')
-    do = False
+    do = True
     dataset = 'global_trials'  # global_trials-minitrials
     # params data
     df_params = pd.read_csv(PATH + '/global_params.csv', sep=';')
-    subj_unq = np.unique(df_params.subject_name)
+    df_trials = pd.read_csv(PATH + '/'+dataset+'.csv', sep=';',
+                            low_memory=False)
+    
+    create_stage_column(df=df_trials, df_prms=df_params, subject='N18')
+    subj_unq = ['N16']  # np.unique(df_params.subject_name)
     if do:
         # accuracy per session
         plot_final_acc_session_subj(subj_unq)
@@ -522,19 +557,18 @@ if __name__ == '__main__':
                        prev_w=prev_w, nxt_w=nxt_w)
     # trials data
     # low_memory=False to avoid NAN problems
-    df_trials = pd.read_csv(PATH + '/'+dataset+'.csv', sep=';',
-                            low_memory=False)
-    subj_unq = np.unique(df_trials.subject_name)
+    # subj_unq = np.unique(df_trials.subject_name)
     # plot trials accuracy of all the subjects
     for i_s, sbj in enumerate(subj_unq):
         df_sbj_perf = concatenate_trials(df_trials, sbj)
         plot_trials_subj(df_trials, sbj, df_sbj_perf, conv_w=200)
     # remove misses
     df_trials_without_misses = remove_misses(df_trials)
-    #plot the same having into account the misses
+    # plot the same having into account the misses
     for i_s, sbj in enumerate(subj_unq):
         df_sbj_perf = concatenate_trials(df_trials_without_misses, sbj)
-        plot_trials_subj_misses(df_trials_without_misses, sbj, df_sbj_perf, conv_w=200)
+        plot_trials_subj_misses(df_trials_without_misses, sbj, df_sbj_perf,
+                                conv_w=200)
     # plot misses
     for i_s, sbj in enumerate(subj_unq):
         df_sbj_perf = concatenate_misses(df_trials, sbj)
