@@ -101,8 +101,8 @@ def accuracy_sessions_subj(df, subj):
     color_list = []
     for i_stg in range(1, len(stg_chng)):
         color_list.append(stg_exp[stg_chng[i_stg-1]+1]-1)
-        xs = range(stg_chng[i_stg-1], min(stg_chng[i_stg]+1, len(acc)))
-        accs = acc[stg_chng[i_stg-1]:min(stg_chng[i_stg]+1, len(acc))]
+        xs = range(stg_chng[i_stg-1], min(stg_chng[i_stg]+1, len(acc)+1))
+        accs = acc[stg_chng[i_stg-1]:min(stg_chng[i_stg]+1, len(acc)+1)]
         acc_list.append(accs)
         xs_list.append(xs)
     return acc_list, xs_list, color_list
@@ -650,36 +650,23 @@ def create_stage_column(df, df_prms, subject):
     Dataframe with an extra column
 
     """
-#    df_ss = df.loc[df.subject_name == subject, ['session']] # ses in df_trials
-#    _, indx, stages = accuracy_sessions_subj(df=df_prms, subj=subject)
-#    sess_unq = np.unique(df_ss)
-#    trial_sess = np.zeros_like(df_ss).flatten()
-#    df_by_session = df_ss.groupby('session') # group by session
-#    for session, data in df_by_session:
-#        print(session)
-#        print(data)
-#    list_sessions = list(df_by_session)
-#    for session_block in list_sessions:
-#        for index, session in session_block:
-#            print(i)
-#    list_sessions.flatten()
-#    for ss in sess_unq:
-#        aux = [ss in x for x in indx]
-#        indx = np.where(df_ss == ss)
-#        trial_sess[indx]
-#    print(1)
-    df_param_ses = df_prms.loc[df_prms.subject_name == subject,
-                               ['session', 'stage_number']]
-    df_trials_ses = df.loc[df.subject_name == subject, ['session', 'trials',
-                                                        'hithistory',
-                                                        'subject_name']]
-    Type_new = pd.Series([])  # create a blank series
-    df_trials_ses.insert(2, 'stage', Type_new)
-    for i in df_trials_ses.index:
-        for j in df_param_ses.index:
-            if df_trials_ses['session'][i] == df_param_ses['session'][j]:
-                df_trials_ses['stage'][i] = df_param_ses['stage_number'][j]
-    return df_trials_ses
+    df_ss = df.loc[df.subject_name == subject, ['session']]
+    _, indx_stg, stages = accuracy_sessions_subj(df=df_prms, subj=subject)
+    sess_unq = np.unique(df_ss)
+    # TODO: work directly on dataframe
+    trial_sess = np.zeros_like(df_ss).flatten()
+    for ss in sess_unq:
+        print(ss)
+        aux = [i_x for i_x, x in enumerate(indx_stg) if ss in x][0]
+        indx = np.where(df_ss == ss)[0]
+        trial_sess[indx] = stages[aux]+1
+
+    print(1)
+    # TODO: check that trial_sess contains the correct stage for each trial
+    # TODO: get different values of motor and delay
+    # TODO: subdivide stage 3 depending on motor and delay
+    # aux = np.unique(df_trials['Motor_in_end'])
+    # plt.hist(aux[~np.isnan(aux)])
 
 
 if __name__ == '__main__':
@@ -697,7 +684,7 @@ if __name__ == '__main__':
     acc, xs, col = accuracy_sessions_subj_df_trias(new_df_trials, subj='N18')
     # plot accuracy over trials with coloured stages
     plot_accuracy_sessions_subj_df_trials(acc, xs, col, subj='N18')
-    subj_unq = ['N16']  # np.unique(df_params.subject_name)
+    subj_unq = np.unique(df_params.subject_name)
     if do:
         # accuracy per session
         plot_final_acc_session_subj(subj_unq)
