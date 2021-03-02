@@ -108,6 +108,46 @@ def accuracy_sessions_subj(df, subj):
     return acc_list, xs_list, color_list
 
 
+def accuracy_sessions_subj_df_trias(df, subj):
+    """
+    Find accuracy values, number of sessions in each stage and color for each
+    stage for df_trials.
+
+    Parameters
+    ----------
+    df : dataframe
+        dataframe containing data.
+    subj : str
+        subject (each mouse).
+
+    Returns
+    -------
+    For each mouse, it returns a list of the accuracies, a list of the
+    sessions in each stage and a list with the colors of each stage.
+
+    """
+    acc = df.loc[df['subject_name'] == subj, 'hithistory'].values
+    stg = df.loc[df['subject_name'] == subj, 'stage'].values
+
+    # create the extremes (a 0 at the beggining and a 1 at the ending)
+    stg_exp = np.insert(stg, 0, 0)  # extended stages
+    stg_exp = np.append(stg_exp, stg_exp[-1]+1)
+    stg_diff = np.diff(stg_exp)  # change of stage
+    stg_chng = np.where(stg_diff != 0)[0]  # index where stages change
+    # We go over indexes where stage changes and plot chunks from ind_t-1
+    # to ind_t
+    acc_list = []
+    xs_list = []
+    color_list = []
+    for i_stg in range(1, len(stg_chng)):
+        color_list.append(stg_exp[stg_chng[i_stg-1]+1]-1)
+        xs = range(stg_chng[i_stg-1], min(stg_chng[i_stg]+1, len(acc)))
+        accs = acc[stg_chng[i_stg-1]:min(stg_chng[i_stg]+1, len(acc))]
+        acc_list.append(accs)
+        xs_list.append(xs)
+    return acc_list, xs_list, color_list
+
+
 def plot_accuracy_sessions_subj(acc, xs, col, ax, subj):
     """
     The function plots accuracy over session for every subject, showing
@@ -149,6 +189,34 @@ def plot_accuracy_sessions_subj(acc, xs, col, ax, subj):
         ax.set_xlabel('Session')
 
 
+def plot_accuracy_sessions_subj_df_trials(acc, xs, col, subj):
+    """
+    The function plots accuracy over session for every subject, showing
+    the stages the mice are in different colors for df_trials dataset.
+
+    Parameters
+    ----------
+    acc : list
+        list of the accuracy values for each subject.
+    xs : list
+        list of the segments where the subject is in the same stage (e.g.
+        range(0, 8), range(7,11), range(10,23)).
+    color : list
+        list of colors corresponding to the stage.
+    ax : numpy.ndarray
+        Axes object where x and y-axis are rendered inside.
+    subj : str
+        Subject (each mouse)
+
+    Returns
+    -------
+    The plot of accuracy over session for every subject.
+
+    """
+    for i_chnk, chnk in enumerate(acc):
+        plt.plot(xs[i_chnk], acc[i_chnk], color=COLORS[col[i_chnk]])
+
+
 def plot_final_acc_session_subj(subj_unq):
     """
     The function plots accuracy over session for all the subjects.
@@ -184,6 +252,42 @@ def plot_final_acc_session_subj(subj_unq):
     sv_fig(fig, 'Accuracy VS sessions')
 
 
+def plot_final_acc_session_subj_df_trials(subj_unq):
+    """
+    The function plots accuracy over session for all the subjects for df_Trials
+    Dataset.
+
+    Parameters
+    ----------
+    subj_unq : numpy.ndarray
+        array of strings with the name of all the subjects
+
+    Returns
+    -------
+    Plot of accuracy by session for every subject.
+
+    """
+    fig, ax = plt.subplots(nrows=3, ncols=6, figsize=(8, 4),
+                           gridspec_kw={'wspace': 0.5, 'hspace': 0.5})
+    # leave some space between two figures, wspace is the horizontal gap and
+    # hspace is the vertical gap
+    ax = ax.flatten()
+    for i_s, sbj in enumerate(subj_unq):
+        acc_sbj, xs_sbj, color_sbj = accuracy_sessions_subj(df=df_trials,
+                                                            subj=sbj)
+        plot_accuracy_sessions_subj(acc=acc_sbj, xs=xs_sbj, col=color_sbj,
+                                    ax=ax[i_s], subj=sbj)
+    fig.suptitle("Accuracy VS sessions", fontsize="x-large")
+    lines = [obj for obj in ax[0].properties()['children']  # all objs in ax[0]
+             if isinstance(obj, matplotlib.lines.Line2D)  # that are lines
+             and obj.get_linestyle() != '--']  # that are not dashed
+    fig.legend(lines, ['Stage 1', 'Stage 2', 'Stage 3'],
+               loc="center right",   # Position of legend
+               borderaxespad=0.1,  # Small spacing around legend box
+               title='Color legend')
+    sv_fig(fig, 'Accuracy VS sessions')
+
+
 def accuracy_at_stg_change(df, subj_unq, prev_w=10, nxt_w=10):
     """
     The function returns the mean and standard deviation of the changes
@@ -195,6 +299,10 @@ def accuracy_at_stg_change(df, subj_unq, prev_w=10, nxt_w=10):
         dataframe containing data.
     subj_unq : numpy.ndarray
         array of strings with the name of all the subjects
+    prev_w: int
+        previous window size (default value:10)
+    nxt_w: int
+        previous window size (default value:10)
 
     Returns
     -------
@@ -252,6 +360,10 @@ def plot_means_std(means, std, list_samples, prev_w=10, nxt_w=10):
     std : dict
         dictionary containing all the stage changes (e.g. '1-2', '2-3'...) and
         the standard deviations associated to each change.
+    prev_w: int
+        previous window size (default value:10)
+    nxt_w: int
+        previous window size (default value:10)
 
     Returns
     -------
@@ -319,6 +431,8 @@ def plot_trials_subj(df, subject, df_sbj_perf, ax=None, conv_w=200):
         subject chosen
     df_sbj_perf: dataframe
         performance of each subject
+    ax: None
+        axes
     conv_w: int
         window used to smooth (convolving) the accuracy (default 200)
 
@@ -386,6 +500,8 @@ def plot_trials_subjects(df, conv_w=20):
     df : dataframe
         dictionary containing all the stage changes (e.g. '1-2', '2-3'...) and
         the accuracies associated to each change.
+    conv_w: int
+        convolution window size (default value:20)
 
     Returns
     -------
@@ -554,7 +670,9 @@ def create_stage_column(df, df_prms, subject):
 #    print(1)
     df_param_ses = df_prms.loc[df_prms.subject_name == subject,
                                ['session', 'stage_number']]
-    df_trials_ses = df.loc[df.subject_name == subject, ['session', 'trials']]
+    df_trials_ses = df.loc[df.subject_name == subject, ['session', 'trials',
+                                                        'hithistory',
+                                                        'subject_name']]
     Type_new = pd.Series([])  # create a blank series
     df_trials_ses.insert(2, 'stage', Type_new)
     for i in df_trials_ses.index:
@@ -572,7 +690,13 @@ if __name__ == '__main__':
     df_params = pd.read_csv(PATH + '/global_params.csv', sep=';')
     df_trials = pd.read_csv(PATH + '/'+dataset+'.csv', sep=';',
                             low_memory=False)
-    create_stage_column(df=df_trials, df_prms=df_params, subject='N18')
+    # create df_trials data set with stages of df_params
+    new_df_trials = create_stage_column(df=df_trials, df_prms=df_params,
+                                        subject='N18')
+    # obtain accuracy, trials and colors
+    acc, xs, col = accuracy_sessions_subj_df_trias(new_df_trials, subj='N18')
+    # plot accuracy over trials with coloured stages
+    plot_accuracy_sessions_subj_df_trials(acc, xs, col, subj='N18')
     subj_unq = ['N16']  # np.unique(df_params.subject_name)
     if do:
         # accuracy per session
