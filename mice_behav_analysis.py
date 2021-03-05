@@ -14,8 +14,8 @@ plt.rcParams['font.sans-serif'] = 'Helvetica'
 PATH = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
 SV_FOLDER = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
 
-PATH = '/home/manuel/mice_data/standard_training_2020'
-SV_FOLDER = '/home/manuel/mice_data/standard_training_2020'
+#PATH = '/home/manuel/mice_data/standard_training_2020'
+#SV_FOLDER = '/home/manuel/mice_data/standard_training_2020'
 
 
 def sv_fig(f, name):
@@ -108,46 +108,6 @@ def accuracy_sessions_subj(df, subj):
     return acc_list, xs_list, color_list
 
 
-def accuracy_sessions_subj_df_trias(df, subj):
-    """
-    Find accuracy values, number of sessions in each stage and color for each
-    stage for df_trials.
-
-    Parameters
-    ----------
-    df : dataframe
-        dataframe containing data.
-    subj : str
-        subject (each mouse).
-
-    Returns
-    -------
-    For each mouse, it returns a list of the accuracies, a list of the
-    sessions in each stage and a list with the colors of each stage.
-
-    """
-    acc = df.loc[df['subject_name'] == subj, 'hithistory'].values
-    stg = df.loc[df['subject_name'] == subj, 'stage'].values
-
-    # create the extremes (a 0 at the beggining and a 1 at the ending)
-    stg_exp = np.insert(stg, 0, 0)  # extended stages
-    stg_exp = np.append(stg_exp, stg_exp[-1]+1)
-    stg_diff = np.diff(stg_exp)  # change of stage
-    stg_chng = np.where(stg_diff != 0)[0]  # index where stages change
-    # We go over indexes where stage changes and plot chunks from ind_t-1
-    # to ind_t
-    acc_list = []
-    xs_list = []
-    color_list = []
-    for i_stg in range(1, len(stg_chng)):
-        color_list.append(stg_exp[stg_chng[i_stg-1]+1]-1)
-        xs = range(stg_chng[i_stg-1], min(stg_chng[i_stg]+1, len(acc)))
-        accs = acc[stg_chng[i_stg-1]:min(stg_chng[i_stg]+1, len(acc))]
-        acc_list.append(accs)
-        xs_list.append(xs)
-    return acc_list, xs_list, color_list
-
-
 def plot_accuracy_sessions_subj(acc, xs, col, ax, subj):
     """
     The function plots accuracy over session for every subject, showing
@@ -189,34 +149,6 @@ def plot_accuracy_sessions_subj(acc, xs, col, ax, subj):
         ax.set_xlabel('Session')
 
 
-def plot_accuracy_sessions_subj_df_trials(acc, xs, col, subj):
-    """
-    The function plots accuracy over session for every subject, showing
-    the stages the mice are in different colors for df_trials dataset.
-
-    Parameters
-    ----------
-    acc : list
-        list of the accuracy values for each subject.
-    xs : list
-        list of the segments where the subject is in the same stage (e.g.
-        range(0, 8), range(7,11), range(10,23)).
-    color : list
-        list of colors corresponding to the stage.
-    ax : numpy.ndarray
-        Axes object where x and y-axis are rendered inside.
-    subj : str
-        Subject (each mouse)
-
-    Returns
-    -------
-    The plot of accuracy over session for every subject.
-
-    """
-    for i_chnk, chnk in enumerate(acc):
-        plt.plot(xs[i_chnk], acc[i_chnk], color=COLORS[col[i_chnk]])
-
-
 def plot_final_acc_session_subj(subj_unq):
     """
     The function plots accuracy over session for all the subjects.
@@ -238,42 +170,6 @@ def plot_final_acc_session_subj(subj_unq):
     ax = ax.flatten()
     for i_s, sbj in enumerate(subj_unq):
         acc_sbj, xs_sbj, color_sbj = accuracy_sessions_subj(df=df_params,
-                                                            subj=sbj)
-        plot_accuracy_sessions_subj(acc=acc_sbj, xs=xs_sbj, col=color_sbj,
-                                    ax=ax[i_s], subj=sbj)
-    fig.suptitle("Accuracy VS sessions", fontsize="x-large")
-    lines = [obj for obj in ax[0].properties()['children']  # all objs in ax[0]
-             if isinstance(obj, matplotlib.lines.Line2D)  # that are lines
-             and obj.get_linestyle() != '--']  # that are not dashed
-    fig.legend(lines, ['Stage 1', 'Stage 2', 'Stage 3'],
-               loc="center right",   # Position of legend
-               borderaxespad=0.1,  # Small spacing around legend box
-               title='Color legend')
-    sv_fig(fig, 'Accuracy VS sessions')
-
-
-def plot_final_acc_session_subj_df_trials(subj_unq):
-    """
-    The function plots accuracy over session for all the subjects for df_Trials
-    Dataset.
-
-    Parameters
-    ----------
-    subj_unq : numpy.ndarray
-        array of strings with the name of all the subjects
-
-    Returns
-    -------
-    Plot of accuracy by session for every subject.
-
-    """
-    fig, ax = plt.subplots(nrows=3, ncols=6, figsize=(8, 4),
-                           gridspec_kw={'wspace': 0.5, 'hspace': 0.5})
-    # leave some space between two figures, wspace is the horizontal gap and
-    # hspace is the vertical gap
-    ax = ax.flatten()
-    for i_s, sbj in enumerate(subj_unq):
-        acc_sbj, xs_sbj, color_sbj = accuracy_sessions_subj(df=df_trials,
                                                             subj=sbj)
         plot_accuracy_sessions_subj(acc=acc_sbj, xs=xs_sbj, col=color_sbj,
                                     ax=ax[i_s], subj=sbj)
@@ -653,38 +549,113 @@ def create_stage_column(df, df_prms, subject):
     df_ss = df.loc[df.subject_name == subject, ['session']]
     _, indx_stg, stages = accuracy_sessions_subj(df=df_prms, subj=subject)
     sess_unq = np.unique(df_ss)
-    # TODO: work directly on dataframe
     trial_sess = np.zeros_like(df_ss).flatten()
     for ss in sess_unq:
-        print(ss)
         aux = [i_x for i_x, x in enumerate(indx_stg) if ss in x][0]
         indx = np.where(df_ss == ss)[0]
         trial_sess[indx] = stages[aux]+1
+    df_trials_subject = df.loc[df.subject_name == subject]
+    df_trials_subject['stage'] = trial_sess
+    return df_trials_subject
 
-    print(1)
-    # TODO: check that trial_sess contains the correct stage for each trial
-    # TODO: get different values of motor and delay
-    # TODO: subdivide stage 3 depending on motor and delay
-    # aux = np.unique(df_trials['Motor_in_end'])
-    # plt.hist(aux[~np.isnan(aux)])
+
+def plot_stage_motor_delay_subject(subj, new_df, ax):
+    ax.plot(new_df['stage'].values)
+    new_df['Motor_out_start'] = pd.to_numeric(new_df['Motor_out_start'],
+                                              errors='coerce')
+    new_df['Motor_out_end'] = pd.to_numeric(new_df['Motor_out_end'],
+                                            errors='coerce')
+    ax.plot(new_df['Motor_out_start'].values)
+    ax.plot(new_df['Motor_out_end'].values)
+    ax.plot(new_df['delay_times_m'].values)
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    # Only show ticks on the left and bottom spines
+    ax.yaxis.set_ticks_position('left')
+    ax.xaxis.set_ticks_position('bottom')
+    ax.set_title(subj)
+    if subj in ['N13', 'N14', 'N15', 'N16', 'N17', 'N18']:
+        ax.set_xlabel('Trials')
+
+
+def plot_final_stage_motor_delay(subj_unq, df, df_prms):
+    fig, ax = plt.subplots(nrows=3, ncols=6, figsize=(12, 6),
+                           gridspec_kw={'wspace': 0.5, 'hspace': 0.5})
+    # leave some space between two figures, wspace is the horizontal gap and
+    # hspace is the vertical gap
+    ax = ax.flatten()
+    for i_s, sbj in enumerate(subj_unq):
+        new_df_set = create_stage_column(df, df_prms, subject=sbj)
+        plot_stage_motor_delay_subject(subj=sbj, new_df=new_df_set, ax=ax[i_s])
+    fig.suptitle("Motor and Delay variables", fontsize="x-large")
+    lines = [obj for obj in ax[0].properties()['children']  # all objs in ax[0]
+             if isinstance(obj, matplotlib.lines.Line2D)  # that are lines
+             and obj.get_linestyle() != '--']
+    fig.legend(lines, ['Stage', 'Motor_out_start', 'Motor_out_end', ''],
+               loc="center right",   # Position of legend
+               borderaxespad=0.1,  # Small spacing around legend box
+               title='Color legend')
+    sv_fig(fig, 'Motor and Delay variables')
+
+
+def create_motor_column(df, df_prms, subject):
+    """
+    Creation of an extra column for the motor variable in df_trials
+
+    Parameters
+    ----------
+    df : dataframe
+        data of trials
+    df : dataframe
+        data of sessions
+    subject: str
+        subject chosen
+
+    Returns
+    -------
+    Dataframe with an extra column
+
+    """
+    df = df_trials
+    df["motor"] = ""
+    df_prms = df_params
+    subject = 'N08'
+#    df_trials_ss = df.loc[df.subject_name == subject, ['session']
+    for ind1, (sess1, motor) in enumerate(zip(df_prms['session'], df_prms['motor'])):
+        print(ind1, sess1, motor)
+        # de esta forma estoy repitiendo muchas veces el siguiente for loop y no esta bien
+        # pero como hago si no para pasar por todos los datos del df_trials
+        for ind2, sess2 in enumerate(df['session']):
+            print(ind2, sess2)
+            if sess1==sess2:
+                df['motor'][ind2]=df_prms['motor'][ind1]
+    return df['motor']
+
+
+  # no funciona porque los dataframes no tienen igual longitud
+    df_trials_subj['motor'] = np.where(df_trials_subj['session'].isin(df_prms_subj['session']), df_prms_subj['motor'])
+    # no no funciona porque los dataframes no tienen igual longitud
+    df_trials_subj['motor'] = np.where(df_trials_subj['session'] == df_prms_subj['session'], df_prms_subj['motor'], 'False')
+    df_trials_subj = df_trials_subj.merge(df_prms_subj, on='session', how='left')
+    
+
+    for sess in np.unique(df_trials_ss):
+        if df_trials_ss['session'] = sess:
+            df_trials_ss['motor'] =  df_prms['motor'][]
+        df_trials_ss.loc[:,1]
+    df_trials_subj = df.loc[df.subject_name == subject]
+    df_prms_subj = df_prms.loc[df_prms.subject_name == subject]
 
 
 if __name__ == '__main__':
     plt.close('all')
-    do = True
+    do = False
     dataset = 'global_trials'  # global_trials-minitrials
-    # params data
     df_params = pd.read_csv(PATH + '/global_params.csv', sep=';')
     df_trials = pd.read_csv(PATH + '/'+dataset+'.csv', sep=';',
                             low_memory=False)
-    # create df_trials data set with stages of df_params
-    new_df_trials = create_stage_column(df=df_trials, df_prms=df_params,
-                                        subject='N18')
-    # obtain accuracy, trials and colors
-    acc, xs, col = accuracy_sessions_subj_df_trias(new_df_trials, subj='N18')
-    # plot accuracy over trials with coloured stages
-    plot_accuracy_sessions_subj_df_trials(acc, xs, col, subj='N18')
     subj_unq = np.unique(df_params.subject_name)
+    plot_final_stage_motor_delay(subj_unq, df=df_trials, df_prms=df_params)
     if do:
         # accuracy per session
         plot_final_acc_session_subj(subj_unq)
@@ -696,21 +667,19 @@ if __name__ == '__main__':
                                    prev_w=prev_w, nxt_w=nxt_w)
         plot_means_std(mat_mean_perfs, mat_std_perfs, num_samples,
                        prev_w=prev_w, nxt_w=nxt_w)
-    # trials data
-    # low_memory=False to avoid NAN problems
-    # subj_unq = np.unique(df_trials.subject_name)
-    # plot trials accuracy of all the subjects
-    for i_s, sbj in enumerate(subj_unq):
-        df_sbj_perf = concatenate_trials(df_trials, sbj)
-        plot_trials_subj(df_trials, sbj, df_sbj_perf, conv_w=200)
-    # remove misses
-    df_trials_without_misses = remove_misses(df_trials)
-    # plot the same having into account the misses
-    for i_s, sbj in enumerate(subj_unq):
-        df_sbj_perf = concatenate_trials(df_trials_without_misses, sbj)
-        plot_trials_subj_misses(df_trials_without_misses, sbj, df_sbj_perf,
-                                conv_w=200)
-    # plot misses
-    for i_s, sbj in enumerate(subj_unq):
-        df_sbj_perf = concatenate_misses(df_trials, sbj)
-        plot_misses_subj(df_trials, sbj, df_sbj_perf, conv_w=200)
+        # trials data
+        # plot trials accuracy of all the subjects
+        for i_s, sbj in enumerate(subj_unq):
+            df_sbj_perf = concatenate_trials(df_trials, sbj)
+            plot_trials_subj(df_trials, sbj, df_sbj_perf, conv_w=200)
+        # remove misses
+        df_trials_without_misses = remove_misses(df_trials)
+        # plot the same having into account the misses
+        for i_s, sbj in enumerate(subj_unq):
+            df_sbj_perf = concatenate_trials(df_trials_without_misses, sbj)
+            plot_trials_subj_misses(df_trials_without_misses, sbj, df_sbj_perf,
+                                    conv_w=200)
+        # plot misses
+        for i_s, sbj in enumerate(subj_unq):
+            df_sbj_perf = concatenate_misses(df_trials, sbj)
+            plot_misses_subj(df_trials, sbj, df_sbj_perf, conv_w=200)
