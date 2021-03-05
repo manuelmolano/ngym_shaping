@@ -14,8 +14,8 @@ plt.rcParams['font.sans-serif'] = 'Helvetica'
 PATH = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
 SV_FOLDER = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
 
-#PATH = '/home/manuel/mice_data/standard_training_2020'
-#SV_FOLDER = '/home/manuel/mice_data/standard_training_2020'
+PATH = '/home/manuel/mice_data/standard_training_2020'
+SV_FOLDER = '/home/manuel/mice_data/standard_training_2020'
 
 
 def sv_fig(f, name):
@@ -68,7 +68,7 @@ def plot_xvar_VS_yvar(df, x_var, y_var, col, xlabel='x_var', ylabel='y_var',
     sv_fig(f, name)
 
 
-def accuracy_sessions_subj(df, subj):
+def accuracy_sessions_subj(df, subj, stg=None):
     """
     Find accuracy values, number of sessions in each stage and color for each
     stage.
@@ -87,10 +87,11 @@ def accuracy_sessions_subj(df, subj):
 
     """
     acc = df.loc[df['subject_name'] == subj, 'accuracy'].values
-    stg = df.loc[df['subject_name'] == subj, 'stage_number'].values
+    if stg is None:
+        stg = df.loc[df['subject_name'] == subj, 'stage_number'].values
 
     # create the extremes (a 0 at the beggining and a 1 at the ending)
-    stg_exp = np.insert(stg, 0, 0)  # extended stages
+    stg_exp = np.insert(stg, 0, stg[0]-1)  # extended stages
     stg_exp = np.append(stg_exp, stg_exp[-1]+1)
     stg_diff = np.diff(stg_exp)  # change of stage
     stg_chng = np.where(stg_diff != 0)[0]  # index where stages change
@@ -98,14 +99,14 @@ def accuracy_sessions_subj(df, subj):
     # to ind_t
     acc_list = []
     xs_list = []
-    color_list = []
+    stage_list = []
     for i_stg in range(1, len(stg_chng)):
-        color_list.append(stg_exp[stg_chng[i_stg-1]+1]-1)
+        stage_list.append(stg_exp[stg_chng[i_stg-1]+1]-1)
         xs = range(stg_chng[i_stg-1], min(stg_chng[i_stg]+1, len(acc)+1))
         accs = acc[stg_chng[i_stg-1]:min(stg_chng[i_stg]+1, len(acc)+1)]
         acc_list.append(accs)
         xs_list.append(xs)
-    return acc_list, xs_list, color_list
+    return acc_list, xs_list, stage_list
 
 
 def plot_accuracy_sessions_subj(acc, xs, col, ax, subj):
@@ -616,35 +617,20 @@ def create_motor_column(df, df_prms, subject):
     Dataframe with an extra column
 
     """
-    df = df_trials
-    df["motor"] = ""
-    df_prms = df_params
-    subject = 'N08'
-#    df_trials_ss = df.loc[df.subject_name == subject, ['session']
-    for ind1, (sess1, motor) in enumerate(zip(df_prms['session'], df_prms['motor'])):
-        print(ind1, sess1, motor)
-        # de esta forma estoy repitiendo muchas veces el siguiente for loop y no esta bien
-        # pero como hago si no para pasar por todos los datos del df_trials
-        for ind2, sess2 in enumerate(df['session']):
-            print(ind2, sess2)
-            if sess1==sess2:
-                df['motor'][ind2]=df_prms['motor'][ind1]
-    return df['motor']
-
-
-  # no funciona porque los dataframes no tienen igual longitud
-    df_trials_subj['motor'] = np.where(df_trials_subj['session'].isin(df_prms_subj['session']), df_prms_subj['motor'])
-    # no no funciona porque los dataframes no tienen igual longitud
-    df_trials_subj['motor'] = np.where(df_trials_subj['session'] == df_prms_subj['session'], df_prms_subj['motor'], 'False')
-    df_trials_subj = df_trials_subj.merge(df_prms_subj, on='session', how='left')
-    
-
-    for sess in np.unique(df_trials_ss):
-        if df_trials_ss['session'] = sess:
-            df_trials_ss['motor'] =  df_prms['motor'][]
-        df_trials_ss.loc[:,1]
-    df_trials_subj = df.loc[df.subject_name == subject]
-    df_prms_subj = df_prms.loc[df_prms.subject_name == subject]
+    motor = df_prms.loc[df_prms['subject_name'] == subject, 'motor'].values
+    _, indx_mstg, mot_stg = accuracy_sessions_subj(df=df_prms, subj=subject,
+                                                   stg=motor)
+    df_ss = df.loc[df.subject_name == subject, ['session']]
+    sess_unq = np.unique(df_ss)
+    trial_sess = np.zeros_like(df_ss).flatten()
+    for ss in sess_unq:
+        print(ss)
+        aux = [i_x for i_x, x in enumerate(indx_mstg) if ss in x][0]
+        indx = np.where(df_ss == ss)[0]
+        trial_sess[indx] = mot_stg[aux]+1
+    df_trials_subject = df.loc[df.subject_name == subject]
+    df_trials_subject['motor_stage'] = trial_sess
+    return df_trials_subject
 
 
 if __name__ == '__main__':
@@ -654,6 +640,8 @@ if __name__ == '__main__':
     df_params = pd.read_csv(PATH + '/global_params.csv', sep=';')
     df_trials = pd.read_csv(PATH + '/'+dataset+'.csv', sep=';',
                             low_memory=False)
+    df_trials_subject = create_motor_column(df=df_trials, df_prms=df_params,
+                                            subject='N01')
     subj_unq = np.unique(df_params.subject_name)
     plot_final_stage_motor_delay(subj_unq, df=df_trials, df_prms=df_params)
     if do:
