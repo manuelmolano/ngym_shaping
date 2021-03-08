@@ -11,12 +11,25 @@ matplotlib.rcParams['font.size'] = 8
 plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['font.sans-serif'] = 'Helvetica'
 
-PATH = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
-SV_FOLDER = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
 
-#PATH = '/home/manuel/mice_data/standard_training_2020'
-#SV_FOLDER = '/home/manuel/mice_data/standard_training_2020'
+def set_paths(path_ops):
+    global PATH, SV_FOLDER
+    if path_ops == 'Leyre':
+        PATH = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
+        SV_FOLDER = '/Users/leyre/Dropbox/mice_data/standard_training_2020'
+    elif path_ops == 'Manuel':
+        PATH = '/home/manuel/mice_data/standard_training_2020'
+        SV_FOLDER = '/home/manuel/mice_data/standard_training_2020'
 
+
+def load_data():
+    dataset = 'global_trials'  # global_trials-minitrials
+    df_params = pd.read_csv(PATH + '/global_params.csv', sep=';')
+    df_trials = pd.read_csv(PATH + '/'+dataset+'.csv', sep=';',
+                            low_memory=False)
+    subj_unq = np.unique(df_params.subject_name)
+    return df_trials, df_params, subj_unq
+    
 
 def sv_fig(f, name):
     """
@@ -103,6 +116,8 @@ def accuracy_sessions_subj(df, subj, stg=None):
     # iterate every stage to fill the lists
     for i_stg in range(1, len(stg_chng)):
         stage_list.append(stg_exp[stg_chng[i_stg-1]+1]-1)
+        # HINT: xs will be larger than accs at i_stg == len(stg_cng). We need this
+        # bc we will use xs in create_... fns to assign stages to trials.
         xs = range(stg_chng[i_stg-1], min(stg_chng[i_stg]+1, len(acc)+1))
         accs = acc[stg_chng[i_stg-1]:min(stg_chng[i_stg]+1, len(acc)+1)]
         acc_list.append(accs)
@@ -136,7 +151,10 @@ def plot_accuracy_sessions_subj(acc, xs, col, ax, subj):
     """
     for i_chnk, chnk in enumerate(acc):
         # iterate for every chunk, to paint the stages with different colors
-        ax.plot(xs[i_chnk], acc[i_chnk], color=COLORS[col[i_chnk]])
+        # HINT: see accuracy_sessions_... fn for an explanation fo why xs can be
+        # larger than acc
+        ax.plot(xs[i_chnk][:len(acc[i_chnk])],
+                acc[i_chnk], color=COLORS[col[i_chnk]])
     ax.set_title(subj)
     ax.set_ylim(0.4, 1)
     ax.axhline(y=0.5, linestyle='--', color='k', lw=0.5)
@@ -152,7 +170,7 @@ def plot_accuracy_sessions_subj(acc, xs, col, ax, subj):
         ax.set_xlabel('Session')
 
 
-def plot_final_acc_session_subj(subj_unq):
+def plot_final_acc_session_subj(subj_unq, df_params, figsize=(8, 4)):
     """
     The function plots accuracy over session for all the subjects.
 
@@ -166,7 +184,7 @@ def plot_final_acc_session_subj(subj_unq):
     Plot of accuracy by session for every subject.
 
     """
-    fig, ax = plt.subplots(nrows=3, ncols=6, figsize=(8, 4),
+    fig, ax = plt.subplots(nrows=3, ncols=6, figsize=figsize,
                            gridspec_kw={'wspace': 0.5, 'hspace': 0.5})
     # leave some space between two figures, wspace is the horizontal gap and
     # hspace is the vertical gap
@@ -530,7 +548,7 @@ def remove_misses(df):
     Dataset without misses
 
     """
-    # change the values of the performance to 0.5 when hithistory is False 
+    # change the values of the performance to 0.5 when hithistory is False
     # and misshistory is true in order to revome misses
     d1 = np.where((df['hithistory'] is False) & (df['misshistory'] is True))
     for index in d1:
@@ -694,17 +712,16 @@ def plot_final_stage_motor_delay(subj_unq, df, df_prms):
 
 if __name__ == '__main__':
     plt.close('all')
-    do = False
-    dataset = 'global_trials'  # global_trials-minitrials
-    df_params = pd.read_csv(PATH + '/global_params.csv', sep=';')
-    df_trials = pd.read_csv(PATH + '/'+dataset+'.csv', sep=';',
-                            low_memory=False)
-    subj_unq = np.unique(df_params.subject_name)
-    # PLOT MOTOR AND DELAY VARIABLES ACROSS TRIALS FOR ALL THE SUBJECTS
-    plot_final_stage_motor_delay(subj_unq, df=df_trials, df_prms=df_params)
-    if do:
+    plt_acc_vs_sess = True
+    plt_rest = False
+    plt_stg_vars = False
+    if plt_stg_vars:
+        # PLOT MOTOR AND DELAY VARIABLES ACROSS TRIALS FOR ALL THE SUBJECTS
+        plot_final_stage_motor_delay(subj_unq, df=df_trials, df_prms=df_params)
+    if plt_acc_vs_sess:
         # PLOT ACCURACY VS SESSION
         plot_final_acc_session_subj(subj_unq)
+    if plt_rest:  # TODO: organize
         # PLOT PERFORMANCE AT EACH STAGE
         prev_w = 10
         nxt_w = 10
