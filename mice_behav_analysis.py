@@ -122,7 +122,7 @@ def accuracy_sessions_subj(df, subj, stg=None):
     return acc_list, xs_list, stage_list
 
 
-def accuracy_sessions_subj_stage4(df, subj, stg=None, conv_w=300):
+def accuracy_trials_subj_stage4(df, subj, stg=None, conv_w=300):
     """
     Find accuracy values, number of sessions in each stage and color for each
     stage.
@@ -377,7 +377,8 @@ def remove_misses(df):
     """
     # change the values of the performance to 0.5 when hithistory is False
     # and misshistory is true in order to revome misses
-    d1 = np.where((df['hithistory'] is False) & (df['misshistory'] is True))
+    df = df_trials
+    d1 = np.where((df['hithistory'] == False) & (df['misshistory'] == True))
     for index in d1:
         df['hithistory'][index] = 0.5
     return df
@@ -563,7 +564,7 @@ def plot_accuracy_sessions_subj(acc, xs, col, ax, subj):
         ax.set_xlabel('Session')
 
 
-def plot_accuracy_sessions_subj_stage4(hit, xs, col, ax, subj):
+def plot_accuracy_trials_subj_stage4(hit, xs, col, ax, subj):
     """
     The function plots accuracy over session for every subject, showing
     the stages the mice are in different colors.
@@ -665,9 +666,9 @@ def plot_final_acc_session_subj_stage4(subj_unq, df_trials, figsize=(8, 4)):
     ax = ax.flatten()
     # plot a subplot for each subject
     for i_s, sbj in enumerate(subj_unq):
-        hit_sbj, xs_sbj, color_sbj = accuracy_sessions_subj_stage4(df=df_trials,
+        hit_sbj, xs_sbj, color_sbj = accuracy_trials_subj_stage4(df=df_trials,
                                                             subj=sbj)
-        plot_accuracy_sessions_subj_stage4(hit=hit_sbj, xs=xs_sbj, col=color_sbj,
+        plot_accuracy_trials_subj_stage4(hit=hit_sbj, xs=xs_sbj, col=color_sbj,
                                     ax=ax[i_s], subj=sbj)
     fig.suptitle("Accuracy VS trials with fourth stage", fontsize="x-large")
     lines = [obj for obj in ax[0].properties()['children']  # all objs in ax[0]
@@ -704,8 +705,12 @@ def plot_means_std(means, std, list_samples, prev_w=10, nxt_w=10,
     Plot of the mean and standard deviation of each stage for all the subjects
 
     """
-    fig, ax = plt.subplots(nrows=2, ncols=3, figsize=figsize,
-                           gridspec_kw={'wspace': 0.5, 'hspace': 0.5})
+    if len(means) == 5:
+        fig, ax = plt.subplots(nrows=2, ncols=3, figsize=figsize,
+                               gridspec_kw={'wspace': 0.5, 'hspace': 0.5})
+    elif len (means) == 8:
+        fig, ax = plt.subplots(nrows=2, ncols=4, figsize=figsize,
+                               gridspec_kw={'wspace': 0.5, 'hspace': 0.5})
     ax = ax.flatten()
     fig.suptitle('Mean Accuracy of changes', fontsize='x-large')
     xs = np.arange(-prev_w, nxt_w)
@@ -720,11 +725,20 @@ def plot_means_std(means, std, list_samples, prev_w=10, nxt_w=10,
         # Only show ticks on the left and bottom spines
         ax[i_k].yaxis.set_ticks_position('left')
         ax[i_k].xaxis.set_ticks_position('bottom')
-        if i_k in [0, 3]:
-            ax[i_k].set_ylabel('Mean accuracy')
-        if i_k in [3, 4]:
-            ax[i_k].set_xlabel('Sessions after stage change')
-    sv_fig(fig, 'Mean Accuracy of changes')
+        if len(means) == 5:
+            if i_k in [0, 3]:
+                ax[i_k].set_ylabel('Mean accuracy')
+            if i_k in [3, 4]:
+                ax[i_k].set_xlabel('Sessions after stage change')
+        elif len (means) == 8:
+            if i_k in [0, 4]:
+                ax[i_k].set_ylabel('Mean accuracy')
+            if i_k in [4, 5, 6, 7]:
+                ax[i_k].set_xlabel('Trials after stage change')
+    if len(means) == 5:
+        sv_fig(fig, 'Mean Accuracy of changes for 3 stages')
+    elif len (means) == 8:
+        sv_fig(fig, 'Mean Accuracy of changes for 4 stages')
 
 
 def plot_trials_subj(df, subject, df_sbj_perf, ax=None, conv_w=200,
@@ -1010,12 +1024,12 @@ if __name__ == '__main__':
     set_paths('Leyre')
     # set_paths('Manuel')
     plt_stg_vars = False
-    plt_stg_with_fourth = True
+    plt_stg_with_fourth = False
     plt_acc_vs_sess = False
     plt_perf_stage_session = False
     plt_perf_stage_trial = False
-    plt_trial_acc = False
-    plt_trial_acc_misses = False
+    plt_trial_acc = True
+    plt_trial_acc_misses = True
     plt_misses = False
     df_trials, df_params, subj_unq = load_data()
     if plt_stg_vars:
@@ -1028,7 +1042,6 @@ if __name__ == '__main__':
         dataframe_4stage = dataframes_joint(df_trials, df_params, subj_unq)
         plot_final_acc_session_subj_stage4(subj_unq, dataframe_4stage,
                                            figsize=(8, 4))
-        # TODO: TERMINAR
     if plt_acc_vs_sess:
         # PLOT ACCURACY VS SESSION
         plot_final_acc_session_subj(subj_unq, df_params)
@@ -1045,24 +1058,17 @@ if __name__ == '__main__':
         # PLOT PERFORMANCE AT EACH STAGE FOR EACH TRIAL
         # Create a new dataset from df_trials adding a column for stage and
         # other for motor, from df_params
-        for sbj in subj_unq:
-            # add the stage column to df_trials
-            df_trials_new = create_stage_column(df_trials, df_params,
-                                                subject=sbj)
-            # add the motor stage column to df_trials
-            df_trials_new = create_motor_column(df_trials_new, df_params,
-                                                subject=sbj)
+        dataframe_4stage = dataframes_joint(df_trials, df_params, subj_unq)
         prev_w = 10
         nxt_w = 10
         mat_mean_perfs, mat_std_perfs, num_samples =\
-            accuracy_at_stg_change_trials(df_trials_new, subj_unq,
+            accuracy_at_stg_change_trials(dataframe_4stage, subj_unq,
                                           prev_w=prev_w, nxt_w=nxt_w)
         plot_means_std(mat_mean_perfs, mat_std_perfs, num_samples,
                        prev_w=prev_w, nxt_w=nxt_w)
     if plt_trial_acc:
         # PLOT TRIALS ACCURACY OF ALL THE SUBJECTS
         for i_s, sbj in enumerate(subj_unq):
-            sbj = 'N01'
             df_sbj_perf = concatenate_trials(df_trials, sbj)
             plot_trials_subj(df_trials, sbj, df_sbj_perf, conv_w=200)
     if plt_trial_acc_misses:
