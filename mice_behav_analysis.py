@@ -12,7 +12,7 @@ plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['font.sans-serif'] = 'Helvetica'
 
 
-### AUXILIAR FUNCTIONS TO LOAD DATA
+### HINT: AUXILIAR FUNCTIONS TO LOAD DATA
 def set_paths(path_ops):
     """
     Set paths.
@@ -57,7 +57,6 @@ def load_data():
     return df_trials, df_params, subj_unq
 
 
-### SAVE FIGURES
 def sv_fig(f, name):
     """
     Save figure.
@@ -78,7 +77,7 @@ def sv_fig(f, name):
     f.savefig(SV_FOLDER+'/'+name+'.png', dpi=400, bbox_inches='tight')
 
 
-### FUNCTIONS TO OBTAIN VARIABLES
+### HINT: FUNCTIONS TO OBTAIN VARIABLES
 def accuracy_sessions_subj(df, subj, stg=None):
     """
     Find accuracy values, number of sessions in each stage and color for each
@@ -409,7 +408,7 @@ def create_motor_column(df, df_prms, subject):
     return df_trials_subject
 
 
-def create_stage4(df, df_prms, subject):
+def create_stage4(df, df_prms, sbj):
     """
     Fourth stage for the subjects that are in the third stage and the
     motor_stage has achieved the 6th position.
@@ -423,18 +422,23 @@ def create_stage4(df, df_prms, subject):
     Dataframe with four stages
 
     """
-    for i_s, sbj in enumerate(subj_unq):
-        # add the stage column to df_trials
-        new_df_set = create_stage_column(df, df_prms, subject=sbj)
-        # add the motor stage column to df_trials
-        new_df_set = create_motor_column(new_df_set, df_prms, subject=sbj)
+    # add the stage column to df_trials
+    new_df_sbj = create_stage_column(df, df_prms, subject=sbj)
+    # add the motor stage column to df_trials
+    new_df_sbj = create_motor_column(new_df_sbj, df_prms, subject=sbj)
     # TODO: fourth stage
-    fourth_stage = new_df_set.loc[(new_df_set["motor_stage"] == 6) &
-                                  (new_df_set["stage"] == 3), "stage"].values
-    return fourth_stage
+    new_df_sbj['new_stage'] = np.nan
+    new_df_sbj['new_stage'][(new_df_sbj["motor_stage"] == 6) &
+                            (new_df_sbj["stage"] == 3)] = 4
+    return new_df_sbj
 
 
-### FUNCTIONS TO PLOT
+def create_new_columns(df, df_prms, sbj_unq):
+    for sbj in sbj_unq:
+        df_sbj = create_stage4(df, df_prms, sbj)
+        
+
+### HINT: FUNCTIONS TO PLOT
 def plot_xvar_VS_yvar(df, x_var, y_var, col, xlabel='x_var', ylabel='y_var',
                       name='X variable VS Y variable'):
     """
@@ -829,44 +833,45 @@ def plot_final_stage_motor_delay(subj_unq, df, df_prms, figsize=(12, 6)):
     sv_fig(fig, 'Motor and Delay variables')
 
 
-### MAIN
+### HINT: MAIN
 if __name__ == '__main__':
     plt.close('all')
-    set_paths('Leyre')
+    # set_paths('Leyre')
+    set_paths('Manuel')
     plt_stg_vars = False
     plt_stg_with_fourth = False
     plt_acc_vs_sess = False
     plt_perf_stage_session = False
-    plt_perf_stage_trial = True
+    plt_perf_stage_trial = False
     plt_trial_acc = False
     plt_trial_acc_misses = False
     plt_misses = False
     df_trials, df_params, subj_unq = load_data()
     # subject = 'N01'
-    # four_stage_dataset = create_stage4(df_trials, df_params, subject)
+    four_stage_dataset = create_stage4(df_trials, df_params)
     if plt_stg_vars:
-    # PLOT MOTOR AND DELAY VARIABLES ACROSS TRIALS FOR ALL THE SUBJECTS
+        # PLOT MOTOR AND DELAY VARIABLES ACROSS TRIALS FOR ALL THE SUBJECTS
         plot_final_stage_motor_delay(subj_unq, df=df_trials, df_prms=df_params)
-    # if plt_stg_with_fourth:
-    #     # PLOT ACCURACY WITH 4 STAGES. The fourth is an aditional stage we 
-    #     # have created when the subject is at stage 3 and motor 6 is activated
-    # # TODO 
+        # if plt_stg_with_fourth:
+        #     # PLOT ACCURACY WITH 4 STAGES. The fourth is an aditional stage we
+        #     # created when the subject is at stage 3 and motor 6 is activated
+        # TODO
     if plt_acc_vs_sess:
-    # PLOT ACCURACY VS SESSION
+        # PLOT ACCURACY VS SESSION
         plot_final_acc_session_subj(subj_unq, df_params)
     if plt_perf_stage_session:
-    # PLOT PERFORMANCE AT EACH STAGE FOR EACH SESSION
+        # PLOT PERFORMANCE AT EACH STAGE FOR EACH SESSION
         prev_w = 10
         nxt_w = 10
         mat_mean_perfs, mat_std_perfs, num_samples =\
             accuracy_at_stg_change(df_params, subj_unq,
-                                    prev_w=prev_w, nxt_w=nxt_w)
+                                   prev_w=prev_w, nxt_w=nxt_w)
         plot_means_std(mat_mean_perfs, mat_std_perfs, num_samples,
-                        prev_w=prev_w, nxt_w=nxt_w)
+                       prev_w=prev_w, nxt_w=nxt_w)
     if plt_perf_stage_trial:
-    # PLOT PERFORMANCE AT EACH STAGE FOR EACH TRIAL
-    # Create a new dataset from df_trials adding a column for stage and
-    # other for motor, from df_params
+        # PLOT PERFORMANCE AT EACH STAGE FOR EACH TRIAL
+        # Create a new dataset from df_trials adding a column for stage and
+        # other for motor, from df_params
         for sbj in subj_unq:
             # add the stage column to df_trials
             df_trials_new = create_stage_column(df_trials, df_params,
@@ -880,14 +885,14 @@ if __name__ == '__main__':
             accuracy_at_stg_change_trials(df_trials_new, subj_unq,
                                           prev_w=prev_w, nxt_w=nxt_w)
         plot_means_std(mat_mean_perfs, mat_std_perfs, num_samples,
-                        prev_w=prev_w, nxt_w=nxt_w)
+                       prev_w=prev_w, nxt_w=nxt_w)
     if plt_trial_acc:
-    # PLOT TRIALS ACCURACY OF ALL THE SUBJECTS
+        # PLOT TRIALS ACCURACY OF ALL THE SUBJECTS
         for i_s, sbj in enumerate(subj_unq):
             df_sbj_perf = concatenate_trials(df_trials, sbj)
             plot_trials_subj(df_trials, sbj, df_sbj_perf, conv_w=200)
     if plt_trial_acc_misses:
-    # PLOT TRIALS ACCURACY OF ALL THE SUBJECTS CONSIDERING MISSES
+        # PLOT TRIALS ACCURACY OF ALL THE SUBJECTS CONSIDERING MISSES
         # remove misses
         df_trials_without_misses = remove_misses(df_trials)
         for i_s, sbj in enumerate(subj_unq):
@@ -895,7 +900,7 @@ if __name__ == '__main__':
             plot_trials_subj_misses(df_trials_without_misses, sbj, df_sbj_perf,
                                     conv_w=200)
     if plt_misses:
-    # PLOT MISSES ACROSS TRIALS OF ALL THE SUBJECTS
+        # PLOT MISSES ACROSS TRIALS OF ALL THE SUBJECTS
         for i_s, sbj in enumerate(subj_unq):
             df_sbj_perf = concatenate_misses(df_trials, sbj)
             plot_misses_subj(df_trials, sbj, df_sbj_perf, conv_w=200,
