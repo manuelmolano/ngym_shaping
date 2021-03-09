@@ -423,15 +423,15 @@ def create_stage4(df, df_prms, subject):
     Dataframe with four stages
 
     """
-    # add the stage column to df_trials
-    new_df_set = create_stage_column(df, df_prms, subject=subject)
-    # add the motor stage column to df_trials
-    new_df_set = create_motor_column(new_df_set, df_prms, subject=subject)
+    for i_s, sbj in enumerate(subj_unq):
+        # add the stage column to df_trials
+        new_df_set = create_stage_column(df, df_prms, subject=sbj)
+        # add the motor stage column to df_trials
+        new_df_set = create_motor_column(new_df_set, df_prms, subject=sbj)
+    # TODO: fourth stage
     fourth_stage = new_df_set.loc[(new_df_set["motor_stage"] == 6) &
-                                  (new_df_set["stage"] == 3)]
-    for index in fourth_stage.index:
-        new_df_set["stage"][index] = 4
-    return new_df_set
+                                  (new_df_set["stage"] == 3), "stage"].values
+    return fourth_stage
 
 
 ### FUNCTIONS TO PLOT
@@ -842,16 +842,15 @@ if __name__ == '__main__':
     plt_trial_acc_misses = False
     plt_misses = False
     df_trials, df_params, subj_unq = load_data()
+    # subject = 'N01'
+    # four_stage_dataset = create_stage4(df_trials, df_params, subject)
     if plt_stg_vars:
     # PLOT MOTOR AND DELAY VARIABLES ACROSS TRIALS FOR ALL THE SUBJECTS
         plot_final_stage_motor_delay(subj_unq, df=df_trials, df_prms=df_params)
-    if plt_stg_with_fourth:
-        # TODO: stage 4 
-        # PLOT ACCURACY WITH 4 STAGES. The fourth is an aditional stage we 
-        # have created when the subject is at stage 3 and motor 6 is activated
-        for subject in subj_unq:
-            create_stage4(df_trials, df_params, subject)
-            plot_final_acc_session_subj(subj_unq, df_params)
+    # if plt_stg_with_fourth:
+    #     # PLOT ACCURACY WITH 4 STAGES. The fourth is an aditional stage we 
+    #     # have created when the subject is at stage 3 and motor 6 is activated
+    # # TODO 
     if plt_acc_vs_sess:
     # PLOT ACCURACY VS SESSION
         plot_final_acc_session_subj(subj_unq, df_params)
