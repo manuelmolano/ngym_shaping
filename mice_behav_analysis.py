@@ -4,7 +4,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
-COLORS = sns.color_palette("mako", n_colors=3)
+COLORS = sns.color_palette("mako", n_colors=4)
 COLORS_qlt = sns.color_palette("tab10", n_colors=80)
 matplotlib.rcParams['font.size'] = 8
 # matplotlib.rcParams['font.family'] = 'Arial'
@@ -122,6 +122,50 @@ def accuracy_sessions_subj(df, subj, stg=None):
     return acc_list, xs_list, stage_list
 
 
+def accuracy_sessions_subj_stage4(df, subj, stg=None):
+    """
+    Find accuracy values, number of sessions in each stage and color for each
+    stage.
+
+    Parameters
+    ----------
+    df : dataframe
+        dataframe containing data.
+    subj : str
+        subject (each mouse).
+
+    Returns
+    -------
+    For each mouse, it returns a list of the accuracies, a list of the
+    sessions in each stage and a list with the colors of each stage.
+
+    """
+    hit = df.loc[df['subject_name'] == subj, 'hithistory'].values
+    if stg is None:
+        stg = df.loc[df['subject_name'] == subj, 'new_stage'].values
+
+    # create the extremes (a 0 at the beggining and a 1 at the ending)
+    stg_exp = np.insert(stg, 0, stg[0]-1)  # extended stages
+    stg_exp = np.append(stg_exp, stg_exp[-1]+1)
+    stg_diff = np.diff(stg_exp)  # change of stage
+    stg_chng = np.where(stg_diff != 0)[0]  # index where stages change
+    # We go over indexes where stage changes and plot chunks from ind_t-1
+    # to ind_t
+    hit_list = []  # list for accuracy
+    xs_list = []  # list for the x axis
+    stage_list = []  # list for the stages
+    # iterate every stage to fill the lists
+    for i_stg in range(1, len(stg_chng)):
+        stage_list.append(stg_exp[stg_chng[i_stg-1]+1]-1)
+        # HINT: xs will be larger than accs at i_stg == len(stg_cng). We need 
+        # this bc we will use xs in create_... fns to assign stages to trials.
+        xs = range(stg_chng[i_stg-1], min(stg_chng[i_stg]+1, len(hit)+1))
+        hits = hit[stg_chng[i_stg-1]:min(stg_chng[i_stg]+1, len(hit)+1)]
+        hit_list.append(hits)
+        xs_list.append(xs)
+    return hit_list, xs_list, stage_list
+
+
 def accuracy_at_stg_change(df, subj_unq, prev_w=10, nxt_w=10):
     """
     The function returns the mean and standard deviation of the changes
@@ -208,7 +252,7 @@ def accuracy_at_stg_change_trials(df, subj_unq, prev_w=10, nxt_w=10):
     mat_perfs = {}
     for i_s, sbj in enumerate(subj_unq):
         acc = df.loc[df['subject_name'] == sbj, 'hithistory'].values
-        stg = df.loc[df['subject_name'] == sbj, 'stage'].values
+        stg = df.loc[df['subject_name'] == sbj, 'new_stage'].values
         # create the extremes (a 0 at the beggining and a 1 at the ending)
         stg_diff = np.diff(stg)  # change of stage
         stg_chng = np.where(stg_diff != 0)[0]  # index where stages change
@@ -426,17 +470,21 @@ def create_stage4(df, df_prms, sbj):
     new_df_sbj = create_stage_column(df, df_prms, subject=sbj)
     # add the motor stage column to df_trials
     new_df_sbj = create_motor_column(new_df_sbj, df_prms, subject=sbj)
-    # TODO: fourth stage
-    new_df_sbj['new_stage'] = np.nan
+    # duplicate stage column
+    new_df_sbj['new_stage'] = new_df_sbj['stage']
+    # change the values we want for the new fourth stage
     new_df_sbj['new_stage'][(new_df_sbj["motor_stage"] == 6) &
                             (new_df_sbj["stage"] == 3)] = 4
     return new_df_sbj
 
 
-def create_new_columns(df, df_prms, sbj_unq):
-    for sbj in sbj_unq:
-        df_sbj = create_stage4(df, df_prms, sbj)
-        
+def dataframes_joint(df, df_prms, sbj_unq):
+    list_dataframes = []  # empty list to save each subject dataframe
+    for subject in sbj_unq:
+        new_df = create_stage4(df_trials, df_params, subject)
+        list_dataframes.append(new_df)
+    result = pd.concat(list_dataframes)
+    return result
 
 ### HINT: FUNCTIONS TO PLOT
 def plot_xvar_VS_yvar(df, x_var, y_var, col, xlabel='x_var', ylabel='y_var',
@@ -514,6 +562,51 @@ def plot_accuracy_sessions_subj(acc, xs, col, ax, subj):
         ax.set_xlabel('Session')
 
 
+def plot_accuracy_sessions_subj_stage4(hit, xs, col, ax, subj):
+    """
+    The function plots accuracy over session for every subject, showing
+    the stages the mice are in different colors.
+
+    Parameters
+    ----------
+    acc : list
+        list of the accuracy values for each subject.
+    xs : list
+        list of the segments where the subject is in the same stage (e.g.
+        range(0, 8), range(7,11), range(10,23)).
+    color : list
+        list of colors corresponding to the stage.
+    ax : numpy.ndarray
+        Axes object where x and y-axis are rendered inside.
+    subj : str
+        Subject (each mouse)
+
+    Returns
+    -------
+    The plot of accuracy over session for every subject.
+
+    """
+    for i_chnk, chnk in enumerate(hit):
+        # iterate for every chunk, to paint the stages with different colors
+        # HINT: see accuracy_sessions_... fn for an explanation fo why xs can
+        # be larger than acc
+        ax.plot(xs[i_chnk][:len(hit[i_chnk])],
+                hit[i_chnk], color=COLORS[col[i_chnk]])
+    ax.set_title(subj)
+    # ax.set_ylim(0.4, 1)
+    ax.axhline(y=0.5, linestyle='--', color='k', lw=0.5)
+    # Hide the right and top spines
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    # Only show ticks on the left and bottom spines
+    ax.yaxis.set_ticks_position('left')
+    ax.xaxis.set_ticks_position('bottom')
+    if subj in ['N01', 'N07', 'N13']:
+        ax.set_ylabel('Accuracy')
+    if subj in ['N13', 'N14', 'N15', 'N16', 'N17', 'N18']:
+        ax.set_xlabel('Session')
+
+
 def plot_final_acc_session_subj(subj_unq, df_params, figsize=(8, 4)):
     """
     The function plots accuracy over session for all the subjects.
@@ -548,6 +641,42 @@ def plot_final_acc_session_subj(subj_unq, df_params, figsize=(8, 4)):
                borderaxespad=0.1,  # Small spacing around legend box
                title='Color legend')
     sv_fig(fig, 'Accuracy VS sessions')
+
+
+def plot_final_acc_session_subj_stage4(subj_unq, df_trials, figsize=(8, 4)):
+    """
+    The function plots accuracy over session for all the subjects.
+
+    Parameters
+    ----------
+    subj_unq : numpy.ndarray
+        array of strings with the name of all the subjects
+
+    Returns
+    -------
+    Plot of accuracy by session for every subject.
+
+    """
+    fig, ax = plt.subplots(nrows=3, ncols=6, figsize=figsize,
+                           gridspec_kw={'wspace': 0.5, 'hspace': 0.5})
+    # leave some space between two figures, wspace is the horizontal gap and
+    # hspace is the vertical gap
+    ax = ax.flatten()
+    # plot a subplot for each subject
+    for i_s, sbj in enumerate(subj_unq):
+        hit_sbj, xs_sbj, color_sbj = accuracy_sessions_subj_stage4(df=df_trials,
+                                                            subj=sbj)
+        plot_accuracy_sessions_subj_stage4(hit=hit_sbj, xs=xs_sbj, col=color_sbj,
+                                    ax=ax[i_s], subj=sbj)
+    fig.suptitle("Accuracy VS sessions", fontsize="x-large")
+    lines = [obj for obj in ax[0].properties()['children']  # all objs in ax[0]
+             if isinstance(obj, matplotlib.lines.Line2D)  # that are lines
+             and obj.get_linestyle() != '--']  # that are not dashed
+    fig.legend(lines, ['Stage 1', 'Stage 2', 'Stage 3', 'Stage 4'],
+               loc="center right",   # Position of legend
+               borderaxespad=0.1,  # Small spacing around legend box
+               title='Color legend')
+    sv_fig(fig, 'Accuracy VS sessions with fourth stage')
 
 
 def plot_means_std(means, std, list_samples, prev_w=10, nxt_w=10,
@@ -831,15 +960,56 @@ def plot_final_stage_motor_delay(subj_unq, df, df_prms, figsize=(12, 6)):
                borderaxespad=0.1,  # Small spacing around legend box
                title='Color legend')
     sv_fig(fig, 'Motor and Delay variables')
+    
+
+def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
+    """
+    Plots the performance of all the subjects along trials in the same figure.
+
+    Parameters
+    ----------
+    df : dataframe
+        data
+    conv_w: int
+        convolution window size (default value:20)
+
+    Returns
+    -------
+    Plots a figure with subplots containing the performance of the subjects
+    along all trials
+
+    """
+    # dataframe with only hithistory and subject_name columns
+    df_hh = df[['hithistory', 'subject_name']]
+    # make a group for each subject
+    df_grps = df_hh.groupby('subject_name')
+    subj_unq = np.unique(df_hh.subject_name)
+    fig, ax = plt.subplots(nrows=3, ncols=6, figsize=figsize,
+                           gridspec_kw={'wspace': 0.5, 'hspace': 0.5})
+    ax = ax.flatten()
+    for i_s, sbj in enumerate(subj_unq):
+        df_sbj_perf = df_grps.get_group(sbj)['hithistory'].values
+        ax[i_s].plot(np.convolve(df_sbj_perf, np.ones((conv_w,))/conv_w))
+        ax[i_s].set_title(sbj)
+        # ax[i_s].set_xlim(0, 30000)
+        ax[i_s].spines['right'].set_visible(False)
+        ax[i_s].spines['top'].set_visible(False)
+        ax[i_s].yaxis.set_ticks_position('left')
+        ax[i_s].xaxis.set_ticks_position('bottom')
+        if sbj in ['N01', 'N07', 'N13']:
+            ax[i_s].set_ylabel('Hit (T/F)')
+        if sbj in ['N13', 'N14', 'N15', 'N16', 'N17', 'N18']:
+            ax[i_s].set_xlabel('Trials')
+    fig.suptitle("Accuracy over trials")
 
 
 ### HINT: MAIN
 if __name__ == '__main__':
     plt.close('all')
-    # set_paths('Leyre')
-    set_paths('Manuel')
+    set_paths('Leyre')
+    # set_paths('Manuel')
     plt_stg_vars = False
-    plt_stg_with_fourth = False
+    plt_stg_with_fourth = True
     plt_acc_vs_sess = False
     plt_perf_stage_session = False
     plt_perf_stage_trial = False
@@ -847,15 +1017,15 @@ if __name__ == '__main__':
     plt_trial_acc_misses = False
     plt_misses = False
     df_trials, df_params, subj_unq = load_data()
-    # subject = 'N01'
-    four_stage_dataset = create_stage4(df_trials, df_params)
     if plt_stg_vars:
         # PLOT MOTOR AND DELAY VARIABLES ACROSS TRIALS FOR ALL THE SUBJECTS
         plot_final_stage_motor_delay(subj_unq, df=df_trials, df_prms=df_params)
-        # if plt_stg_with_fourth:
-        #     # PLOT ACCURACY WITH 4 STAGES. The fourth is an aditional stage we
-        #     # created when the subject is at stage 3 and motor 6 is activated
-        # TODO
+    if plt_stg_with_fourth:
+        # PLOT ACCURACY WITH 4 STAGES. The fourth is an aditional stage we
+        # created when the subject is at stage 3 and motor 6 is activated
+        dataframe_4stage = dataframes_joint(df_trials, df_params, subj_unq)
+        plot_final_acc_session_subj_stage4(subj_unq, dataframe_4stage, figsize=(8, 4))
+        # TODO: TERMINAR
     if plt_acc_vs_sess:
         # PLOT ACCURACY VS SESSION
         plot_final_acc_session_subj(subj_unq, df_params)
