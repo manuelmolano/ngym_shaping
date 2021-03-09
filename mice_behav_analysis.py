@@ -122,7 +122,7 @@ def accuracy_sessions_subj(df, subj, stg=None):
     return acc_list, xs_list, stage_list
 
 
-def accuracy_sessions_subj_stage4(df, subj, stg=None):
+def accuracy_sessions_subj_stage4(df, subj, stg=None, conv_w=300):
     """
     Find accuracy values, number of sessions in each stage and color for each
     stage.
@@ -140,7 +140,8 @@ def accuracy_sessions_subj_stage4(df, subj, stg=None):
     sessions in each stage and a list with the colors of each stage.
 
     """
-    hit = df.loc[df['subject_name'] == subj, 'hithistory'].values
+    hit_raw = df.loc[df['subject_name'] == subj, 'hithistory'].values
+    hit = np.convolve(hit_raw, np.ones((conv_w,))/conv_w, mode='valid')
     if stg is None:
         stg = df.loc[df['subject_name'] == subj, 'new_stage'].values
 
@@ -604,7 +605,7 @@ def plot_accuracy_sessions_subj_stage4(hit, xs, col, ax, subj):
     if subj in ['N01', 'N07', 'N13']:
         ax.set_ylabel('Accuracy')
     if subj in ['N13', 'N14', 'N15', 'N16', 'N17', 'N18']:
-        ax.set_xlabel('Session')
+        ax.set_xlabel('Trials')
 
 
 def plot_final_acc_session_subj(subj_unq, df_params, figsize=(8, 4)):
@@ -668,7 +669,7 @@ def plot_final_acc_session_subj_stage4(subj_unq, df_trials, figsize=(8, 4)):
                                                             subj=sbj)
         plot_accuracy_sessions_subj_stage4(hit=hit_sbj, xs=xs_sbj, col=color_sbj,
                                     ax=ax[i_s], subj=sbj)
-    fig.suptitle("Accuracy VS sessions", fontsize="x-large")
+    fig.suptitle("Accuracy VS trials with fourth stage", fontsize="x-large")
     lines = [obj for obj in ax[0].properties()['children']  # all objs in ax[0]
              if isinstance(obj, matplotlib.lines.Line2D)  # that are lines
              and obj.get_linestyle() != '--']  # that are not dashed
@@ -676,7 +677,7 @@ def plot_final_acc_session_subj_stage4(subj_unq, df_trials, figsize=(8, 4)):
                loc="center right",   # Position of legend
                borderaxespad=0.1,  # Small spacing around legend box
                title='Color legend')
-    sv_fig(fig, 'Accuracy VS sessions with fourth stage')
+    sv_fig(fig, 'Accuracy VS trials with fourth stage')
 
 
 def plot_means_std(means, std, list_samples, prev_w=10, nxt_w=10,
@@ -1019,12 +1020,14 @@ if __name__ == '__main__':
     df_trials, df_params, subj_unq = load_data()
     if plt_stg_vars:
         # PLOT MOTOR AND DELAY VARIABLES ACROSS TRIALS FOR ALL THE SUBJECTS
-        plot_final_stage_motor_delay(subj_unq, df=df_trials, df_prms=df_params)
+        plot_final_stage_motor_delay(subj_unq, df=df_trials,
+                                     df_prms=df_params)
     if plt_stg_with_fourth:
         # PLOT ACCURACY WITH 4 STAGES. The fourth is an aditional stage we
         # created when the subject is at stage 3 and motor 6 is activated
         dataframe_4stage = dataframes_joint(df_trials, df_params, subj_unq)
-        plot_final_acc_session_subj_stage4(subj_unq, dataframe_4stage, figsize=(8, 4))
+        plot_final_acc_session_subj_stage4(subj_unq, dataframe_4stage,
+                                           figsize=(8, 4))
         # TODO: TERMINAR
     if plt_acc_vs_sess:
         # PLOT ACCURACY VS SESSION
@@ -1059,6 +1062,7 @@ if __name__ == '__main__':
     if plt_trial_acc:
         # PLOT TRIALS ACCURACY OF ALL THE SUBJECTS
         for i_s, sbj in enumerate(subj_unq):
+            sbj = 'N01'
             df_sbj_perf = concatenate_trials(df_trials, sbj)
             plot_trials_subj(df_trials, sbj, df_sbj_perf, conv_w=200)
     if plt_trial_acc_misses:
