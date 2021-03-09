@@ -377,7 +377,6 @@ def remove_misses(df):
     """
     # change the values of the performance to 0.5 when hithistory is False
     # and misshistory is true in order to revome misses
-    df = df_trials
     d1 = np.where((df['hithistory'] == False) & (df['misshistory'] == True))
     for index in d1:
         df['hithistory'][index] = 0.5
@@ -480,7 +479,7 @@ def create_stage4(df, df_prms, sbj):
     return new_df_sbj
 
 
-def dataframes_joint(df, df_prms, sbj_unq):
+def dataframes_joint(df_trials, df_params, sbj_unq):
     list_dataframes = []  # empty list to save each subject dataframe
     for subject in sbj_unq:
         new_df = create_stage4(df_trials, df_params, subject)
@@ -818,47 +817,6 @@ def plot_trials_subj_misses(df, subject, df_sbj_perf, conv_w=200,
         plt.axvline(i, color='black')
 
 
-def plot_trials_subjects(df, conv_w=20, figsize=(6, 4)):
-    """
-    Plots the performance of all the subjects along trials in the same figure.
-
-    Parameters
-    ----------
-    df : dataframe
-        data
-    conv_w: int
-        convolution window size (default value:20)
-
-    Returns
-    -------
-    Plots a figure with subplots containing the performance of the subjects
-    along all trials
-
-    """
-    # dataframe with only hithistory and subject_name columns
-    df_hh = df[['hithistory', 'subject_name']]
-    # make a group for each subject
-    df_grps = df_hh.groupby('subject_name')
-    subj_unq = np.unique(df_hh.subject_name)
-    fig, ax = plt.subplots(nrows=3, ncols=6, figsize=figsize,
-                           gridspec_kw={'wspace': 0.5, 'hspace': 0.5})
-    ax = ax.flatten()
-    for i_s, sbj in enumerate(subj_unq):
-        df_sbj_perf = df_grps.get_group(sbj)['hithistory'].values
-        ax[i_s].plot(np.convolve(df_sbj_perf, np.ones((conv_w,))/conv_w))
-        ax[i_s].set_title(sbj)
-        # ax[i_s].set_xlim(0, 30000)
-        ax[i_s].spines['right'].set_visible(False)
-        ax[i_s].spines['top'].set_visible(False)
-        ax[i_s].yaxis.set_ticks_position('left')
-        ax[i_s].xaxis.set_ticks_position('bottom')
-        if sbj in ['N01', 'N07', 'N13']:
-            ax[i_s].set_ylabel('Hit (T/F)')
-        if sbj in ['N13', 'N14', 'N15', 'N16', 'N17', 'N18']:
-            ax[i_s].set_xlabel('Trials')
-    fig.suptitle("Accuracy over trials")
-
-
 def plot_misses_subj(df, subject, df_sbj_perf, conv_w=200, figsize=None):
     """
     Plots for each subject all hithistory variables (true/false),
@@ -1027,9 +985,9 @@ if __name__ == '__main__':
     plt_stg_with_fourth = False
     plt_acc_vs_sess = False
     plt_perf_stage_session = False
-    plt_perf_stage_trial = False
-    plt_trial_acc = True
-    plt_trial_acc_misses = True
+    plt_perf_stage_trial = True
+    plt_trial_acc = False
+    plt_trial_acc_misses = False
     plt_misses = False
     df_trials, df_params, subj_unq = load_data()
     if plt_stg_vars:
@@ -1059,8 +1017,8 @@ if __name__ == '__main__':
         # Create a new dataset from df_trials adding a column for stage and
         # other for motor, from df_params
         dataframe_4stage = dataframes_joint(df_trials, df_params, subj_unq)
-        prev_w = 10
-        nxt_w = 10
+        prev_w = 40
+        nxt_w = 40
         mat_mean_perfs, mat_std_perfs, num_samples =\
             accuracy_at_stg_change_trials(dataframe_4stage, subj_unq,
                                           prev_w=prev_w, nxt_w=nxt_w)
