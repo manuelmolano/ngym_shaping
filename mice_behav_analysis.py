@@ -716,7 +716,7 @@ def plot_means_std(means, std, list_samples, prev_w=10, nxt_w=10,
     xs = np.arange(-prev_w, nxt_w)
     for i_k, (key, val) in enumerate(means.items()):
         ax[i_k].errorbar(xs, val, std[key], label=key)
-        ax[i_k].set_ylim(0.5, 1)
+        ax[i_k].set_ylim(0., 1)
         ax[i_k].set_title(key + ' (N='+str(list_samples[i_k])+')')
         ax[i_k].axvline(0, color='black', linestyle='--')
         # Hide the right and top spines
