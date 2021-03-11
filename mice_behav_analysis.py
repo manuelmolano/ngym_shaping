@@ -377,9 +377,8 @@ def remove_misses(df):
     """
     # change the values of the performance to 0.5 when hithistory is False
     # and misshistory is true in order to revome misses
-    d1 = np.where((df['hithistory']) & (df['misshistory']))
-    for index in d1:
-        df['hithistory'][index] = 0.5
+    assert (~df['hithistory'][df['misshistory']]).all()
+    df['hithistory'][df['misshistory']] = 0.5  # XXX: not the most elegant
     return df
 
 
@@ -982,12 +981,12 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 if __name__ == '__main__':
     plt.close('all')
     set_paths('Leyre')
-    # set_paths('Manuel')
+    set_paths('Manuel')
     plt_stg_vars = False
     plt_stg_with_fourth = False
     plt_acc_vs_sess = False
     plt_perf_stage_session = False
-    plt_perf_stage_trial = True
+    plt_perf_stage_trial = False
     plt_trial_acc = False
     plt_trial_acc_misses = False
     plt_misses = False
