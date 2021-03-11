@@ -377,7 +377,7 @@ def remove_misses(df):
     """
     # change the values of the performance to 0.5 when hithistory is False
     # and misshistory is true in order to revome misses
-    d1 = np.where((df['hithistory'] == False) & (df['misshistory'] == True))
+    d1 = np.where((df['hithistory']) & (df['misshistory']))
     for index in d1:
         df['hithistory'][index] = 0.5
     return df
@@ -488,6 +488,8 @@ def dataframes_joint(df_trials, df_params, sbj_unq):
     return result
 
 ### HINT: FUNCTIONS TO PLOT
+
+
 def plot_xvar_VS_yvar(df, x_var, y_var, col, xlabel='x_var', ylabel='y_var',
                       name='X variable VS Y variable'):
     """
@@ -666,9 +668,9 @@ def plot_final_acc_session_subj_stage4(subj_unq, df_trials, figsize=(8, 4)):
     # plot a subplot for each subject
     for i_s, sbj in enumerate(subj_unq):
         hit_sbj, xs_sbj, color_sbj = accuracy_trials_subj_stage4(df=df_trials,
-                                                            subj=sbj)
+                                                                 subj=sbj)
         plot_accuracy_trials_subj_stage4(hit=hit_sbj, xs=xs_sbj, col=color_sbj,
-                                    ax=ax[i_s], subj=sbj)
+                                         ax=ax[i_s], subj=sbj)
     fig.suptitle("Accuracy VS trials with fourth stage", fontsize="x-large")
     lines = [obj for obj in ax[0].properties()['children']  # all objs in ax[0]
              if isinstance(obj, matplotlib.lines.Line2D)  # that are lines
@@ -707,7 +709,7 @@ def plot_means_std(means, std, list_samples, prev_w=10, nxt_w=10,
     if len(means) == 5:
         fig, ax = plt.subplots(nrows=2, ncols=3, figsize=figsize,
                                gridspec_kw={'wspace': 0.5, 'hspace': 0.5})
-    elif len (means) == 8:
+    elif len(means) == 8:
         fig, ax = plt.subplots(nrows=2, ncols=4, figsize=figsize,
                                gridspec_kw={'wspace': 0.5, 'hspace': 0.5})
     ax = ax.flatten()
@@ -729,14 +731,14 @@ def plot_means_std(means, std, list_samples, prev_w=10, nxt_w=10,
                 ax[i_k].set_ylabel('Mean accuracy')
             if i_k in [3, 4]:
                 ax[i_k].set_xlabel('Sessions after stage change')
-        elif len (means) == 8:
+        elif len(means) == 8:
             if i_k in [0, 4]:
                 ax[i_k].set_ylabel('Mean accuracy')
             if i_k in [4, 5, 6, 7]:
                 ax[i_k].set_xlabel('Trials after stage change')
     if len(means) == 5:
         sv_fig(fig, 'Mean Accuracy of changes for 3 stages')
-    elif len (means) == 8:
+    elif len(means) == 8:
         sv_fig(fig, 'Mean Accuracy of changes for 4 stages')
 
 
@@ -933,7 +935,7 @@ def plot_final_stage_motor_delay(subj_unq, df, df_prms, figsize=(12, 6)):
                borderaxespad=0.1,  # Small spacing around legend box
                title='Color legend')
     sv_fig(fig, 'Motor and Delay variables')
-    
+
 
 def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
     """
