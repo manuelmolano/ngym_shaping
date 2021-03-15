@@ -777,7 +777,7 @@ def plot_final_acc_session_subj(subj_unq, df_params, figsize=(8, 4)):
     Plot of accuracy by session for every subject.
 
     """
-    fig, ax = plt.subplots(nrows=3, ncols=6, figsize=figsize,
+    fig, ax = plt.subplots(nrows=6, ncols=3, figsize=figsize,
                            gridspec_kw={'wspace': 0.5, 'hspace': 0.5})
     # leave some space between two figures, wspace is the horizontal gap and
     # hspace is the vertical gap
@@ -1030,7 +1030,7 @@ def plot_final_stage_motor_delay(subj_unq, df, df_prms, figsize=(12, 6)):
     Plot with a subplot for each subject
 
     """
-    fig, ax = plt.subplots(nrows=3, ncols=6, figsize=figsize,
+    fig, ax = plt.subplots(nrows=6, ncols=3, figsize=figsize,
                            gridspec_kw={'wspace': 0.5, 'hspace': 0.5})
     # leave some space between two figures, wspace is the horizontal gap and
     # hspace is the vertical gap
