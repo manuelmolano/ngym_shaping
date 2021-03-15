@@ -229,6 +229,72 @@ def accuracy_at_stg_change(df, subj_unq, prev_w=10, nxt_w=10):
     return mat_mean_perfs, mat_std_perfs, number_samples
 
 
+def accuracy_at_stg_change_trials(df, subj_unq, prev_w=10, nxt_w=10, conv_w=10):
+    """
+    The function returns the mean and standard deviation of the changes
+    from a stage to another.
+
+    Parameters
+    ----------
+    df : dataframe
+        dataframe containing data.
+    subj_unq : numpy.ndarray
+        array of strings with the name of all the subjects
+    prev_w: int
+        previous window size (default value:10)
+    nxt_w: int
+        previous window size (default value:10)
+
+    Returns
+    -------
+    Mean and standard deviation of each subject
+
+    """
+    mat_perfs = {}
+    for i_s, sbj in enumerate(subj_unq):
+        acc = df.loc[df['subject_name'] == sbj, 'hithistory'].values
+        if conv_w > 0:
+            accur_conv = np.convolve(acc, np.ones((conv_w,))/conv_w,
+                                     mode='same')
+        else:
+            accur_conv = acc
+        stg = df.loc[df['subject_name'] == sbj, 'new_stage'].values
+        # create the extremes (a 0 at the beggining and a 1 at the ending)
+        stg_diff = np.diff(stg)  # change of stage
+        stg_chng = np.where(stg_diff != 0)[0]  # index where stages change
+        # We go over indexes where stage changes and plot chunks from ind_t-1
+        # to ind_t
+        for i_stg in range(len(stg_chng)):
+            # color = stg_exp[stg_chng[i_stg-1]+1]-1
+            stg_prev = stg[stg_chng[i_stg]]  # get stage before the change
+            stg_nxt = stg[stg_chng[i_stg]+1]  # get stage after the change
+            assert stg_prev != stg_nxt, 'stages are supposed to be different'
+            key = str(stg_prev)+'-'+str(stg_nxt)  # e.g. 1-2
+            if key not in mat_perfs.keys():
+                mat_perfs[key] = []
+            # build chunk
+            i_previo = max(0, stg_chng[i_stg]-prev_w)
+            i_next = stg_chng[i_stg]+nxt_w
+            chunk = -min(0, stg_chng[i_stg]-prev_w)*[np.nan] +\
+                accur_conv[i_previo:i_next].tolist() +\
+                max(0, i_next-len(acc))*[np.nan]
+            # add chunk to the dictionary
+            mat_perfs[key].append(chunk)
+    # dictionary of the mean of the performance
+    mat_mean_perfs = {}
+    # dictionary of the standard deviation of the performace
+    mat_std_perfs = {}
+    # list of the number of samples of each change of stage
+    number_samples = []
+    for key in mat_perfs.keys():
+        number_samples.append(len(mat_perfs[key]))  # save number of samples
+        assert np.std([len(p) for p in mat_perfs[key]]) == 0
+        mat_mean_perfs[key] = np.nanmean(np.array(mat_perfs[key]), axis=0)
+        sqrt_n_smpls = np.sqrt(np.array(mat_perfs[key]).shape[0])
+        mat_std_perfs[key] =\
+            np.nanstd(np.array(mat_perfs[key]), axis=0)/sqrt_n_smpls
+    return mat_mean_perfs, mat_std_perfs, number_samples
+
 # def accuracy_at_stg_change_trials(df, subj_unq, prev_w=10, nxt_w=10, conv_w=10):
 #     """
 #     The function returns the mean and standard deviation of the changes
@@ -250,6 +316,8 @@ def accuracy_at_stg_change(df, subj_unq, prev_w=10, nxt_w=10):
 #     Mean and standard deviation of each subject
 
 #     """
+#     # df_trials_without_misses = remove_misses(df_trials)
+#     # df = dataframes_joint(df_trials_without_misses, df_params, subj_unq)
 #     mat_perfs = {}
 #     for i_s, sbj in enumerate(subj_unq):
 #         acc = df.loc[df['subject_name'] == sbj, 'hithistory'].values
@@ -270,10 +338,16 @@ def accuracy_at_stg_change(df, subj_unq, prev_w=10, nxt_w=10):
 #             # build chunk
 #             i_previo = max(0, stg_chng[i_stg]-prev_w)
 #             i_next = stg_chng[i_stg]+nxt_w
-#             accur_conv = np.convolve(acc, np.ones((conv_w,))/conv_w,
-#                                       mode='same')
+#             # acc_prev = np.convolve(acc[i_previo:stg_chng[i_stg]],
+#             #                        np.ones((conv_w,))/conv_w, mode='valid')
+#             # acc_next = np.convolve(acc[stg_chng[i_stg]:i_next],
+#             #                        np.ones((conv_w,))/conv_w, mode='valid')
+#             # acc_sum = acc_prev.tolist() + acc_next.tolist()
+#             # chunk = -min(0, stg_chng[i_stg]-prev_w)*[np.nan] + acc_sum +\
+
+#             acc_sum = acc_prev + acc_next
 #             chunk = -min(0, stg_chng[i_stg]-prev_w)*[np.nan] +\
-#                 accur_conv[i_previo:i_next].tolist() +\
+#                 acc_sum[i_previo:i_next].tolist() +\
 #                 max(0, i_next-len(acc))*[np.nan]
 #             # add chunk to the dictionary
 #             mat_perfs[key].append(chunk)
@@ -291,74 +365,6 @@ def accuracy_at_stg_change(df, subj_unq, prev_w=10, nxt_w=10):
 #         mat_std_perfs[key] =\
 #             np.nanstd(np.array(mat_perfs[key]), axis=0)/sqrt_n_smpls
 #     return mat_mean_perfs, mat_std_perfs, number_samples
-
-def accuracy_at_stg_change_trials(df, subj_unq, prev_w=10, nxt_w=10, conv_w=10):
-    """
-    The function returns the mean and standard deviation of the changes
-    from a stage to another.
-
-    Parameters
-    ----------
-    df : dataframe
-        dataframe containing data.
-    subj_unq : numpy.ndarray
-        array of strings with the name of all the subjects
-    prev_w: int
-        previous window size (default value:10)
-    nxt_w: int
-        previous window size (default value:10)
-
-    Returns
-    -------
-    Mean and standard deviation of each subject
- 
-    """
-    # df_trials_without_misses = remove_misses(df_trials)
-    # df = dataframes_joint(df_trials_without_misses, df_params, subj_unq)
-    mat_perfs = {}
-    for i_s, sbj in enumerate(subj_unq):
-        acc = df.loc[df['subject_name'] == sbj, 'hithistory'].values
-        stg = df.loc[df['subject_name'] == sbj, 'new_stage'].values
-        # create the extremes (a 0 at the beggining and a 1 at the ending)
-        stg_diff = np.diff(stg)  # change of stage
-        stg_chng = np.where(stg_diff != 0)[0]  # index where stages change
-        # We go over indexes where stage changes and plot chunks from ind_t-1
-        # to ind_t
-        for i_stg in range(len(stg_chng)):
-            # color = stg_exp[stg_chng[i_stg-1]+1]-1
-            stg_prev = stg[stg_chng[i_stg]]  # get stage before the change
-            stg_nxt = stg[stg_chng[i_stg]+1]  # get stage after the change
-            assert stg_prev != stg_nxt, 'stages are supposed to be different'
-            key = str(stg_prev)+'-'+str(stg_nxt)  # e.g. 1-2
-            if key not in mat_perfs.keys():
-                mat_perfs[key] = []
-            # build chunk
-            i_previo = max(0, stg_chng[i_stg]-prev_w)
-            i_next = stg_chng[i_stg]+nxt_w
-            acc_prev = np.convolve(acc[(i_previo-i_previo):(((i_previo+i_next)/2)-i_previo)],
-                                   np.ones((conv_w,))/conv_w, mode='same')
-            acc_next = np.convolve(acc[(((i_previo+i_next)/2)-i_previo):(i_next-i_previo)],
-                                   np.ones((conv_w,))/conv_w, mode='same')
-            acc_sum = acc_prev + acc_next
-            chunk = -min(0, stg_chng[i_stg]-prev_w)*[np.nan] +\
-                acc_sum[i_previo:i_next].tolist() +\
-                max(0, i_next-len(acc))*[np.nan]
-            # add chunk to the dictionary
-            mat_perfs[key].append(chunk)
-    # dictionary of the mean of the performance
-    mat_mean_perfs = {}
-    # dictionary of the standard deviation of the performace
-    mat_std_perfs = {}
-    # list of the number of samples of each change of stage
-    number_samples = []
-    for key in mat_perfs.keys():
-        number_samples.append(len(mat_perfs[key]))  # save number of samples
-        assert np.std([len(p) for p in mat_perfs[key]]) == 0
-        mat_mean_perfs[key] = np.nanmean(np.array(mat_perfs[key]), axis=0)
-        sqrt_n_smpls = np.sqrt(np.array(mat_perfs[key]).shape[0])
-        mat_std_perfs[key] =\
-            np.nanstd(np.array(mat_perfs[key]), axis=0)/sqrt_n_smpls
-    return mat_mean_perfs, mat_std_perfs, number_samples
 
 
 def concatenate_trials(df, subject):
@@ -554,8 +560,45 @@ def dataframes_joint(df_trials, df_params, sbj_unq):
     for subject in sbj_unq:
         new_df = create_stage4(df_trials, df_params, subject)
         list_dataframes.append(new_df)
-    result = pd.concat(list_dataframes)
-    return result
+    all_subjs = pd.concat(list_dataframes)
+    return all_subjs
+
+
+def aha_moments(df, subj_unq, aha_num_corr=5, rate_w=10,
+                rw_rt_bf=0.2, rw_rt_aft=0.6,):
+    """
+    The function returns the mean and standard deviation of the changes
+    from a stage to another.
+
+    Parameters
+    ----------
+    df : dataframe
+        dataframe containing data.
+    subj_unq : numpy.ndarray
+        array of strings with the name of all the subjects
+    prev_w: int
+        previous window size (default value:10)
+    nxt_w: int
+        previous window size (default value:10)
+
+    Returns
+    -------
+    Mean and standard deviation of each subject
+
+    """
+    mat_perfs = {}
+    for i_s, sbj in enumerate(subj_unq):
+        acc = df.loc[df['subject_name'] == sbj, 'hithistory'].values
+        aha_moments = np.convolve(acc, np.ones((aha_num_corr,))/aha_num_corr)
+        aha_indx = np.where(aha_moments == 1)[0]
+        rates = np.convolve(acc, np.ones((rate_w,))/rate_w)
+
+        plt.figure()
+        plt.plot(acc)
+        plt.plot(aha_moments)
+        plt.plot(rates)
+        
+        # for indx in aha_indx:
 
 ### HINT: FUNCTIONS TO PLOT
 
@@ -688,7 +731,7 @@ def plot_accuracy_trials_coloured_stage4(sbj, df, figsize=(8, 4)):
     Parameters
     ----------
     sbj : string
-        Subject (each mouse)    
+        Subject (each mouse)
     df : dataframe
         data
     color : list
@@ -706,7 +749,7 @@ def plot_accuracy_trials_coloured_stage4(sbj, df, figsize=(8, 4)):
         # HINT: see accuracy_sessions_... fn for an explanation fo why xs can
         # be larger than acc
         plt.plot(xs_sbj[i_chnk][:len(hit_sbj[i_chnk])],
-                hit_sbj[i_chnk], color=COLORS[color_sbj[i_chnk]])
+                 hit_sbj[i_chnk], color=COLORS[color_sbj[i_chnk]])
     plt.title("Accuracy by trials of subject taking into" +
               " account misses (" + sbj+")")
     plt.xlabel('Trials')
@@ -718,7 +761,6 @@ def plot_accuracy_trials_coloured_stage4(sbj, df, figsize=(8, 4)):
     # plot a vertical line for every change os session
     for i in ses_chng:
         plt.axvline(i, color='gray')
-
 
 
 def plot_final_acc_session_subj(subj_unq, df_params, figsize=(8, 4)):
@@ -1056,7 +1098,7 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 if __name__ == '__main__':
     plt.close('all')
     set_paths('Leyre')
-    # set_paths('Manuel')
+    set_paths('Manuel')
     plt_stg_vars = False
     plt_stg_with_fourth = False
     plt_acc_vs_sess = False
@@ -1066,6 +1108,7 @@ if __name__ == '__main__':
     plt_trial_acc_misses = False
     plt_misses = False
     df_trials, df_params, subj_unq = load_data()
+    aha_moments(df=df_trials, subj_unq=subj_unq, aha_num_corr=5)
     if plt_stg_vars:
         # PLOT MOTOR AND DELAY VARIABLES ACROSS TRIALS FOR ALL THE SUBJECTS
         plot_final_stage_motor_delay(subj_unq, df=df_trials,
@@ -1073,7 +1116,8 @@ if __name__ == '__main__':
     if plt_stg_with_fourth:
         # PLOT ACCURACY WITH 4 STAGES. The fourth is an aditional stage we
         # created when the subject is at stage 3 and motor 6 is activated
-        dataframe_4stage_with_misses = dataframes_joint(df_trials, df_params, subj_unq)
+        dataframe_4stage_with_misses = dataframes_joint(df_trials, df_params,
+                                                        subj_unq)
         dataframe_4stage = remove_misses(dataframe_4stage_with_misses)
         plot_final_acc_session_subj_stage4(subj_unq, dataframe_4stage,
                                            figsize=(8, 4))
@@ -1123,4 +1167,4 @@ if __name__ == '__main__':
             df_sbj_perf = concatenate_misses(df_trials, sbj)
             plot_misses_subj(df_trials, sbj, df_sbj_perf, conv_w=200,
                              figsize=None)
-            
+
