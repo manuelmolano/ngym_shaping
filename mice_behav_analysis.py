@@ -672,9 +672,9 @@ def plot_accuracy_sessions_subj(acc, xs, col, ax, subj):
     # Only show ticks on the left and bottom spines
     ax.yaxis.set_ticks_position('left')
     ax.xaxis.set_ticks_position('bottom')
-    if subj in ['N01', 'N07', 'N13']:
+    if subj in ['N01', 'N04', 'N07', 'N10', 'N13', 'N16']:
         ax.set_ylabel('Accuracy')
-    if subj in ['N13', 'N14', 'N15', 'N16', 'N17', 'N18']:
+    if subj in ['N16', 'N17', 'N18']:
         ax.set_xlabel('Session')
 
 
@@ -1006,7 +1006,7 @@ def plot_stage_motor_delay_subject(subj, new_df, ax):
     ax.yaxis.set_ticks_position('left')
     ax.xaxis.set_ticks_position('bottom')
     ax.set_title(subj)
-    if subj in ['N13', 'N14', 'N15', 'N16', 'N17', 'N18']:
+    if subj in ['N16', 'N17', 'N18']:
         ax.set_xlabel('Trials')
 
 
