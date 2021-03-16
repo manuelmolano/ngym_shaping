@@ -828,7 +828,8 @@ def plot_final_acc_session_subj_stage4(subj_unq, df_trials, figsize=(8, 4)):
     lines = [obj for obj in ax[0].properties()['children']  # all objs in ax[0]
              if isinstance(obj, matplotlib.lines.Line2D)  # that are lines
              and obj.get_linestyle() != '--']  # that are not dashed
-    fig.legend(lines, ['Stage 1', 'Stage 2', 'Stage 3', 'Stage 4'],
+    fig.legend(lines, ['Stage 1', 'Stage 2', 'Stage 3 (motor)',
+                       'Stage 3 (motor+delay)'],
                loc="center right",   # Position of legend
                borderaxespad=0.1,  # Small spacing around legend box
                title='Color legend')
@@ -1100,7 +1101,7 @@ if __name__ == '__main__':
     set_paths('Leyre')
     set_paths('Manuel')
     plt_stg_vars = False
-    plt_stg_with_fourth = False
+    plt_stg_with_fourth = True
     plt_acc_vs_sess = False
     plt_perf_stage_session = False
     plt_perf_stage_trial = True
@@ -1108,7 +1109,7 @@ if __name__ == '__main__':
     plt_trial_acc_misses = False
     plt_misses = False
     df_trials, df_params, subj_unq = load_data()
-    aha_moments(df=df_trials, subj_unq=subj_unq, aha_num_corr=5)
+    # aha_moments(df=df_trials, subj_unq=subj_unq, aha_num_corr=5)
     if plt_stg_vars:
         # PLOT MOTOR AND DELAY VARIABLES ACROSS TRIALS FOR ALL THE SUBJECTS
         plot_final_stage_motor_delay(subj_unq, df=df_trials,
@@ -1120,7 +1121,7 @@ if __name__ == '__main__':
                                                         subj_unq)
         dataframe_4stage = remove_misses(dataframe_4stage_with_misses)
         plot_final_acc_session_subj_stage4(subj_unq, dataframe_4stage,
-                                           figsize=(8, 4))
+                                           figsize=(10, 5))
     if plt_acc_vs_sess:
         # PLOT ACCURACY VS SESSION
         plot_final_acc_session_subj(subj_unq, df_params)
