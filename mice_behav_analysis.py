@@ -1099,6 +1099,13 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
     fig.suptitle("Accuracy over trials")
 
 
+def discard_trials_by_date(df_tr, subj, event):
+    # take only 8 first digits of date, discarding exact time
+    # TODO: label dates as before/after event
+    # alternatively, find index of events in dates
+    dates = [x[:8] for x in df_tr['date'][df_tr.subject_name == subj].values]
+
+
 ### HINT: MAIN
 if __name__ == '__main__':
     plt.close('all')
