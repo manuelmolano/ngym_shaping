@@ -763,7 +763,7 @@ def plot_accuracy_trials_coloured_stage4(sbj, df, figsize=(8, 4)):
         plt.axvline(i, color='gray')
 
 
-def plot_final_acc_session_subj(subj_unq, df_params, figsize=(8, 4)):
+def plot_final_acc_session_subj(subj_unq, df_params, figsize=(8, 8)):
     """
     The function plots accuracy over session for all the subjects.
 
@@ -824,16 +824,16 @@ def plot_final_acc_session_subj_stage4(subj_unq, df_trials, figsize=(8, 4)):
                                                                  subj=sbj)
         plot_accuracy_trials_subj_stage4(hit=hit_sbj, xs=xs_sbj, col=color_sbj,
                                          ax=ax[i_s], subj=sbj)
-    fig.suptitle("Accuracy VS trials with fourth stage", fontsize="x-large")
+    fig.suptitle("Accuracy VS trials with 3.1 stage", fontsize="x-large")
     lines = [obj for obj in ax[0].properties()['children']  # all objs in ax[0]
              if isinstance(obj, matplotlib.lines.Line2D)  # that are lines
              and obj.get_linestyle() != '--']  # that are not dashed
-    fig.legend(lines, ['Stage 1', 'Stage 2', 'Stage 3 (motor)',
-                       'Stage 3 (motor+delay)'],
+    fig.legend(lines, ['Stg 1', 'Stg 2', 'Stg 3 (motor)',
+                       'Stg 3.1 (motor+delay)'],
                loc="center right",   # Position of legend
                borderaxespad=0.1,  # Small spacing around legend box
                title='Color legend')
-    sv_fig(fig, 'Accuracy VS trials with fourth stage')
+    sv_fig(fig, 'Accuracy VS trials with 3.1 stage')
 
 
 def plot_means_std(means, std, list_samples, prev_w=10, nxt_w=10,
@@ -1011,7 +1011,7 @@ def plot_stage_motor_delay_subject(subj, new_df, ax):
         ax.set_xlabel('Trials')
 
 
-def plot_final_stage_motor_delay(subj_unq, df, df_prms, figsize=(12, 6)):
+def plot_final_stage_motor_delay(subj_unq, df, df_prms, figsize=(12, 12)):
     """
     Plot with a subplot for each subject showing the following variables:
         'Stage', 'Motor_stage', 'Motor_out_end', 'Motor_in_end',
@@ -1099,15 +1099,15 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 if __name__ == '__main__':
     plt.close('all')
     set_paths('Leyre')
-    set_paths('Manuel')
+    # set_paths('Manuel')
     plt_stg_vars = False
-    plt_stg_with_fourth = True
+    plt_stg_with_fourth = False
     plt_acc_vs_sess = False
     plt_perf_stage_session = False
-    plt_perf_stage_trial = True
+    plt_perf_stage_trial = False
     plt_trial_acc = False
     plt_trial_acc_misses = False
-    plt_misses = False
+    plt_misses = True
     df_trials, df_params, subj_unq = load_data()
     # aha_moments(df=df_trials, subj_unq=subj_unq, aha_num_corr=5)
     if plt_stg_vars:
