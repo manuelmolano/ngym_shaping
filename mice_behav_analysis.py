@@ -122,7 +122,7 @@ def accuracy_sessions_subj(df, subj, stg=None):
     return acc_list, xs_list, stage_list
 
 
-def accuracy_trials_subj_stage4(df, subj, stg=None, conv_w=300):
+def accuracy_trials_subj_stage4(df, subj, stg=None, conv_w=50):
     """
     Find accuracy values, number of sessions in each stage and color for each
     stage.
@@ -793,7 +793,7 @@ def plot_accuracy_trials_coloured_stage4(sbj, df, figsize=(8, 4)):
     The plot of accuracy over trial for every subject.
 
     """
-    plt.figure(figsize=figsize)
+    f = plt.figure(figsize=figsize)
     hit_sbj, xs_sbj, color_sbj = accuracy_trials_subj_stage4(df, subj=sbj)
     for i_chnk, chnk in enumerate(hit_sbj):
         # iterate for every chunk, to paint the stages with different colors
@@ -804,7 +804,7 @@ def plot_accuracy_trials_coloured_stage4(sbj, df, figsize=(8, 4)):
     plt.title("Accuracy by trials of subject taking into" +
               " account misses (" + sbj+")")
     plt.xlabel('Trials')
-    plt.ylabel('Accuracy (Hit: True or False)')
+    plt.ylabel('Accuracy')
     session = df.loc[df['subject_name'] == sbj, 'session'].values
     # create the extremes (a 0 at the beggining and a 1 at the ending)
     ses_diff = np.diff(session)  # find change of stage
@@ -812,6 +812,7 @@ def plot_accuracy_trials_coloured_stage4(sbj, df, figsize=(8, 4)):
     # plot a vertical line for every change os session
     for i in ses_chng:
         plt.axvline(i, color='gray')
+    sv_fig(f=f, name='acc_acr_tr_subj_'+sbj)
 
 
 def plot_final_acc_session_subj(subj_unq, df_params, figsize=(8, 8)):
@@ -850,7 +851,8 @@ def plot_final_acc_session_subj(subj_unq, df_params, figsize=(8, 8)):
     sv_fig(fig, 'Accuracy VS sessions')
 
 
-def plot_final_acc_session_subj_stage4(subj_unq, df_trials, figsize=(8, 4)):
+def plot_final_acc_session_subj_stage4(subj_unq, df_trials, figsize=(8, 4),
+                                       conv_w=200):
     """
     The function plots accuracy over session for all the subjects.
 
@@ -872,7 +874,8 @@ def plot_final_acc_session_subj_stage4(subj_unq, df_trials, figsize=(8, 4)):
     # plot a subplot for each subject
     for i_s, sbj in enumerate(subj_unq):
         hit_sbj, xs_sbj, color_sbj = accuracy_trials_subj_stage4(df=df_trials,
-                                                                 subj=sbj)
+                                                                 subj=sbj,
+                                                                 conv_w=conv_w)
         plot_accuracy_trials_subj_stage4(hit=hit_sbj, xs=xs_sbj, col=color_sbj,
                                          ax=ax[i_s], subj=sbj)
     fig.suptitle("Accuracy VS trials with 3.1 stage", fontsize="x-large")
@@ -987,7 +990,7 @@ def plot_trials_subj(df, subject, df_sbj_perf, ax=None, conv_w=200,
         ax.axvline(i, color='black')
 
 
-def plot_misses_subj(df, subject, df_sbj_perf, conv_w=200, figsize=None):
+def plot_misses_subj(df, subject, df_sbj_perf, conv_w=50, figsize=(6, 3)):
     """
     Plots for each subject all hithistory variables (true/false),
     which describe the success of the trial.
@@ -1008,17 +1011,18 @@ def plot_misses_subj(df, subject, df_sbj_perf, conv_w=200, figsize=None):
     Plots a figure of the performance of the subject along trials
 
     """
-    plt.figure(figsize=figsize)
+    f = plt.figure(figsize=figsize)
     plt.plot(np.convolve(df_sbj_perf, np.ones((conv_w,))/conv_w, mode='valid'))
     plt.title("Misses by trials of subject" + subject)
     plt.xlabel('Trials')
-    plt.ylabel('Misses (True:responds or False:do nothing)')
+    plt.ylabel('Misses')
     session = df.loc[df['subject_name'] == subject, 'session'].values
     # create the extremes (a 0 at the beggining and a 1 at the ending)
     ses_diff = np.diff(session)  # change of stage
     ses_chng = np.where(ses_diff != 0)[0]
     for i in ses_chng:
         plt.axvline(i, color='black')
+    sv_fig(f=f, name='misses_subj_'+sbj)
 
 
 def plot_stage_motor_delay_subject(subj, new_df, ax):
@@ -1146,6 +1150,13 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
     fig.suptitle("Accuracy over trials")
 
 
+def discard_trials_by_date(df_tr, subj, event):
+    # take only 8 first digits of date, discarding exact time
+    # TODO: label dates as before/after event
+    # alternatively, find index of events in dates
+    dates = [x[:8] for x in df_tr['date'][df_tr.subject_name == subj].values]
+
+
 ### HINT: MAIN
 if __name__ == '__main__':
     plt.close('all')
@@ -1156,9 +1167,13 @@ if __name__ == '__main__':
     plt_acc_vs_sess = False
     plt_perf_stage_session = False
     plt_perf_stage_trial = False
+<<<<<<< HEAD
     plt_trial_acc = True
+=======
+    plt_trial_acc = False
+>>>>>>> 810a236f40196173c05efee65506d118b5e20272
     plt_trial_acc_misses = False
-    plt_misses = False
+    plt_misses = True
     df_trials, df_params, subj_unq = load_data()
     # aha_moments(df=df_trials, subj_unq=subj_unq, aha_num_corr=5)
     if plt_stg_vars:
@@ -1212,10 +1227,11 @@ if __name__ == '__main__':
         df_trials_without_misses = remove_misses(dataframe_4stage)
         for i_s, sbj in enumerate(subj_unq):
             plot_accuracy_trials_coloured_stage4(sbj, df_trials_without_misses,
-                                                 figsize=(8, 4))
+                                                 figsize=(6, 3))
     if plt_misses:
         # PLOT MISSES ACROSS TRIALS OF ALL THE SUBJECTS
         for i_s, sbj in enumerate(subj_unq):
             df_sbj_perf = concatenate_misses(df_trials, sbj)
-            plot_misses_subj(df_trials, sbj, df_sbj_perf, conv_w=200,
-                             figsize=None)
+            plot_misses_subj(df_trials, sbj, df_sbj_perf, conv_w=50, figsize=(6, 3))
+
+
