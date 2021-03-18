@@ -556,12 +556,63 @@ def create_stage4(df, df_prms, sbj):
 
 
 def dataframes_joint(df_trials, df_params, sbj_unq):
+    """
+    Joins df_trials and df_params dataframes.
+
+    Parameters
+    ----------
+    df_trials : dataframe
+        dataframe containing data.
+    df_params : dataframe
+        dataframe containing data.
+    subj_unq : numpy.ndarray
+        array of strings with the name of all the subjects
+
+    Returns
+    -------
+    List of subjects dataframes
+
+    """
     list_dataframes = []  # empty list to save each subject dataframe
     for subject in sbj_unq:
         new_df = create_stage4(df_trials, df_params, subject)
         list_dataframes.append(new_df)
     all_subjs = pd.concat(list_dataframes)
     return all_subjs
+
+def max_num_trials_stage(df_trials, df_params, subj_unq, stage = 4):
+    """
+    The function returns the mean and standard deviation of the changes
+    from a stage to another.
+
+    Parameters
+    ----------
+    df : dataframe
+        dataframe containing data.
+    subj_unq : numpy.ndarray
+        array of strings with the name of all the subjects
+    prev_w: int
+        previous window size (default value:10)
+    nxt_w: int
+        previous window size (default value:10)
+
+    Returns
+    -------
+    Mean and standard deviation of each subject
+
+    """
+    dataframe_4stage_with_misses = dataframes_joint(df_trials, df_params,
+                                                        subj_unq)
+    dataframe_4stage = remove_misses(dataframe_4stage_with_misses)
+    subj_trials_3_1 = {}
+    for sbj in subj_unq:
+        key = sbj
+        if key not in subj_trials_3_1.keys():
+            subj_trials_3_1[key] = 0
+            if dataframe_4stage_with_misses['new_stage'] == stage:
+                subj_trials_3_1[key]+=1
+    return subj_trials_3_1
+    
 
 
 def aha_moments(df, subj_unq, aha_num_corr=5, rate_w=10,
@@ -1105,9 +1156,9 @@ if __name__ == '__main__':
     plt_acc_vs_sess = False
     plt_perf_stage_session = False
     plt_perf_stage_trial = False
-    plt_trial_acc = False
+    plt_trial_acc = True
     plt_trial_acc_misses = False
-    plt_misses = True
+    plt_misses = False
     df_trials, df_params, subj_unq = load_data()
     # aha_moments(df=df_trials, subj_unq=subj_unq, aha_num_corr=5)
     if plt_stg_vars:
@@ -1168,4 +1219,3 @@ if __name__ == '__main__':
             df_sbj_perf = concatenate_misses(df_trials, sbj)
             plot_misses_subj(df_trials, sbj, df_sbj_perf, conv_w=200,
                              figsize=None)
-
