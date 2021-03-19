@@ -774,7 +774,7 @@ def plot_accuracy_trials_subj_stage4(hit, xs, col, ax, subj):
 
 
 def plot_accuracy_trials_coloured_stage4(sbj, df, index_event=None, color_ev='',
-                                         figsize=(8, 4), f=None):
+                                         figsize=(8, 4), f=None, plt_sess=True):
     """
     The function plots accuracy over trials for every subject, showing
     the stages the mice are in different colors.
@@ -813,13 +813,20 @@ def plot_accuracy_trials_coloured_stage4(sbj, df, index_event=None, color_ev='',
     ses_diff = np.diff(session)  # find change of stage
     ses_chng = np.where(ses_diff != 0)[0]  # find where is the previous change
     # plot a vertical line for every change os session
-    for i in ses_chng:
-        plt.axvline(i, color='gray')
+    if plt_sess:
+        for i in ses_chng:
+            plt.axvline(i, color='gray')
+    # TODO: separate into another function
     if index_event is not None and index_event != -1:
-        plt.axvline(index_event, color=color_ev, linestyle='--', lw=0.5)
+        plt.axvline(index_event, color=color_ev, linestyle='--')
     if save_fig:
         sv_fig(f=f, name='acc_acr_tr_subj_'+sbj)
 
+
+def plot_events(ax):
+
+def add_dates(ax):
+    
 
 def plot_final_acc_session_subj(subj_unq, df_params, figsize=(8, 8)):
     """
@@ -1236,7 +1243,7 @@ if __name__ == '__main__':
         figsize = (6, 3)
         events = ['surgery', 'sick', 'wounds']
         colors = 'rgb'
-        for subj in subj_unq:
+        for subj in ['N02']:  # subj_unq:
             f = plt.figure(figsize=figsize)
             for i_e, ev in enumerate(events):
                 index_ev = find_events(df_tr=df_trials, subj=subj, event=ev)
@@ -1246,5 +1253,6 @@ if __name__ == '__main__':
                 plot_accuracy_trials_coloured_stage4(sbj=subj, f=f,
                                                      df=df_trials_without_misses,
                                                      index_event=index_ev,
-                                                     color_ev=colors[i_e])
+                                                     color_ev=colors[i_e],
+                                                     plt_sess=(i_e == 2))
             sv_fig(f=f, name='acc_acr_tr_subj_'+subj)
