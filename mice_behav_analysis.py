@@ -583,7 +583,7 @@ def dataframes_joint(df_trials, df_params, sbj_unq):
     return all_subjs
 
 
-def discard_trials_by_date(df_tr, subj, event):
+def find_events(df_tr, subj, event):
     """
     The function returns the day in which the subject had an event
 
@@ -604,19 +604,14 @@ def discard_trials_by_date(df_tr, subj, event):
     # take only 8 first digits of date, discarding exact time
     # TODO: label dates as before/after event
     # alternatively, find index of events in dates
-    dates = [x[:8] for x in df_tr['date'][df_tr.subject_name == subj].values]
-    index = df_tr['date'][df_tr.subject_name == subj].index
-    index_date_event = []
-    if md.events_dict[subj][event] != '-':
-        for date in dates:
-            if md.events_dict[subj][event] == date:
-                index_date_event.append(date)
-    # index_date_event[0]
-    for index, date in enumerate(dates):
-        # print(index, date)
-        if index_date_event[0] == str(date):
-            index_final = df_tr[df_tr.subject_name == subj].iloc[(index),:]
-    return index_final.name
+    index = np.where(df_tr.subject_name == subj)[0]
+    dates = [x[:8] for x in df_tr['date'][index].values]
+    index = np.where(np.array(dates) == md.events_dict[subj][event])[0]
+    if len(index) > 0:
+        index = index[0]
+    else:
+        index = -1
+    return index
 
 
 def aha_moments(df, subj_unq, aha_num_corr=5, rate_w=10,
@@ -641,18 +636,18 @@ def aha_moments(df, subj_unq, aha_num_corr=5, rate_w=10,
     Mean and standard deviation of each subject
 
     """
-    mat_perfs = {}
+    # mat_perfs = {}
     for i_s, sbj in enumerate(subj_unq):
         acc = df.loc[df['subject_name'] == sbj, 'hithistory'].values
         aha_moments = np.convolve(acc, np.ones((aha_num_corr,))/aha_num_corr)
-        aha_indx = np.where(aha_moments == 1)[0]
+        # aha_indx = np.where(aha_moments == 1)[0]
         rates = np.convolve(acc, np.ones((rate_w,))/rate_w)
 
         plt.figure()
         plt.plot(acc)
         plt.plot(aha_moments)
         plt.plot(rates)
-        
+
         # for indx in aha_indx:
 
 ### HINT: FUNCTIONS TO PLOT
@@ -778,7 +773,8 @@ def plot_accuracy_trials_subj_stage4(hit, xs, col, ax, subj):
         ax.set_xlabel('Trials')
 
 
-def plot_accuracy_trials_coloured_stage4(sbj, df, index_event=None, figsize=(8, 4)):
+def plot_accuracy_trials_coloured_stage4(sbj, df, index_event=None, color_ev='',
+                                         figsize=(8, 4), f=None):
     """
     The function plots accuracy over trials for every subject, showing
     the stages the mice are in different colors.
@@ -797,7 +793,10 @@ def plot_accuracy_trials_coloured_stage4(sbj, df, index_event=None, figsize=(8, 
     The plot of accuracy over trial for every subject.
 
     """
-    f = plt.figure(figsize=figsize)
+    save_fig = False
+    if f is None:
+        f = plt.figure(figsize=figsize)
+        save_fig = True
     hit_sbj, xs_sbj, color_sbj = accuracy_trials_subj_stage4(df, subj=sbj)
     for i_chnk, chnk in enumerate(hit_sbj):
         # iterate for every chunk, to paint the stages with different colors
@@ -816,9 +815,10 @@ def plot_accuracy_trials_coloured_stage4(sbj, df, index_event=None, figsize=(8, 
     # plot a vertical line for every change os session
     for i in ses_chng:
         plt.axvline(i, color='gray')
-    if plot_events == True:
-        plt.axvline(index_event, color='red')
-    sv_fig(f=f, name='acc_acr_tr_subj_'+sbj)
+    if index_event is not None and index_event != -1:
+        plt.axvline(index_event, color=color_ev, linestyle='--', lw=0.5)
+    if save_fig:
+        sv_fig(f=f, name='acc_acr_tr_subj_'+sbj)
 
 
 def plot_final_acc_session_subj(subj_unq, df_params, figsize=(8, 8)):
@@ -1160,7 +1160,7 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 if __name__ == '__main__':
     plt.close('all')
     set_paths('Leyre')
-    # set_paths('Manuel')
+    set_paths('Manuel')
     plt_stg_vars = False
     plt_stg_with_fourth = False
     plt_acc_vs_sess = False
@@ -1228,17 +1228,23 @@ if __name__ == '__main__':
         # PLOT MISSES ACROSS TRIALS OF ALL THE SUBJECTS
         for i_s, sbj in enumerate(subj_unq):
             df_sbj_perf = concatenate_misses(df_trials, sbj)
-            plot_misses_subj(df_trials, sbj, df_sbj_perf, conv_w=50, figsize=(6, 3))
-    
+            plot_misses_subj(df_trials, sbj, df_sbj_perf, conv_w=50,
+                             figsize=(6, 3))
+
     if plot_events:
         # FIND INDEX IN WHICH A EVENT HAPPENS
-        subject = 'N02'
-        event = 'surgery'
-        index_ev = discard_trials_by_date(df_trials, subject, event)
-        # PLOT TRIALS ACCURACY OF ALL THE SUBJECTS CONSIDERING MISSES WITH EVENTS
-        dataframe_4stage = dataframes_joint(df_trials, df_params, subj_unq)
-        df_trials_without_misses = remove_misses(dataframe_4stage)
-        plot_accuracy_trials_coloured_stage4(subject, df_trials_without_misses,
-                                             index_event=index_ev, figsize=(6, 3))
-        
-        
+        figsize = (6, 3)
+        events = ['surgery', 'sick', 'wounds']
+        colors = 'rgb'
+        for subj in subj_unq:
+            f = plt.figure(figsize=figsize)
+            for i_e, ev in enumerate(events):
+                index_ev = find_events(df_tr=df_trials, subj=subj, event=ev)
+                # PLOT TRIALS ACCURACY FOR ALL SUBJS CONSIDERING MISSES AND EVENTS
+                dataframe_4stage = dataframes_joint(df_trials, df_params, subj_unq)
+                df_trials_without_misses = remove_misses(dataframe_4stage)
+                plot_accuracy_trials_coloured_stage4(sbj=subj, f=f,
+                                                     df=df_trials_without_misses,
+                                                     index_event=index_ev,
+                                                     color_ev=colors[i_e])
+            sv_fig(f=f, name='acc_acr_tr_subj_'+subj)
