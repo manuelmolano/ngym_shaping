@@ -855,6 +855,7 @@ def plot_accuracy_trials_coloured_stage4(sbj, df, index_event=None, color_ev='',
                  " account misses (" + sbj+")")
     ax.set_xlabel('Trials')
     ax.set_ylabel('Accuracy')
+    # TODO: separate into another function
     ax2 = ax.twiny()  # ax2 is responsible for "top" axis and "right" axis
     ax2.set_xticks([0., .5*np.pi, np.pi, 1.5*np.pi, 2*np.pi])
     ax2.set_xticklabels(["$0$", r"$\frac{1}{2}\pi$",
@@ -876,7 +877,6 @@ def plot_accuracy_trials_coloured_stage4(sbj, df, index_event=None, color_ev='',
         ax.axvline(index_event, color=color_ev, linestyle='--')
     if save_fig:
         sv_fig(f=f, name='acc_acr_tr_subj_'+sbj)
-
 
 
     # TODO: separate into another function
