@@ -824,7 +824,7 @@ def plot_accuracy_trials_subj_stage4(hit, xs, col, ax, subj):
 #         sv_fig(f=f, name='acc_acr_tr_subj_'+sbj)
 
 def plot_accuracy_trials_coloured_stage4(sbj, df, index_event=None, color_ev='',
-                                          figsize=(8, 4), f=None, plt_sess=True):
+                                         figsize=(8, 4), ax=None, plt_sess=True):
     """
     The function plots accuracy over trials for every subject, showing
     the stages the mice are in different colors.
@@ -841,7 +841,7 @@ def plot_accuracy_trials_coloured_stage4(sbj, df, index_event=None, color_ev='',
     The plot of accuracy over trial for every subject.
     """
     save_fig = False
-    if f is None:
+    if ax is None:
         f, ax = plt.subplots(figsize=figsize)
         save_fig = True
     hit_sbj, xs_sbj, color_sbj = accuracy_trials_subj_stage4(df, subj=sbj)
@@ -850,16 +850,16 @@ def plot_accuracy_trials_coloured_stage4(sbj, df, index_event=None, color_ev='',
         # HINT: see accuracy_sessions_... fn for an explanation fo why xs can
         # be larger than acc
         ax.plot(xs_sbj[i_chnk][:len(hit_sbj[i_chnk])],
-                  hit_sbj[i_chnk], color=COLORS[color_sbj[i_chnk]])
+                hit_sbj[i_chnk], color=COLORS[color_sbj[i_chnk]])
     ax.set_title("Accuracy by trials of subject taking into" +
-              " account misses (" + sbj+")")
+                 " account misses (" + sbj+")")
     ax.set_xlabel('Trials')
     ax.set_ylabel('Accuracy')
-    ax2 = ax.twin()  # ax2 is responsible for "top" axis and "right" axis
+    ax2 = ax.twiny()  # ax2 is responsible for "top" axis and "right" axis
     ax2.set_xticks([0., .5*np.pi, np.pi, 1.5*np.pi, 2*np.pi])
     ax2.set_xticklabels(["$0$", r"$\frac{1}{2}\pi$",
                          r"$\pi$", r"$\frac{3}{2}\pi$", r"$2\pi$"])
-    
+
     ax2.axis["right"].major_ticklabels.set_visible(False)
     ax2.axis["top"].major_ticklabels.set_visible(True)
 
@@ -1228,7 +1228,7 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 if __name__ == '__main__':
     plt.close('all')
     set_paths('Leyre')
-    # set_paths('Manuel')
+    set_paths('Manuel')
     plt_stg_vars = False
     plt_stg_with_fourth = False
     plt_acc_vs_sess = False
@@ -1306,13 +1306,13 @@ if __name__ == '__main__':
         colors = 'rgb'
         # for subj in subj_unq:  # subj_unq:
         subj = 'N07'
-        f = plt.figure(figsize=figsize)
+        f, ax = plt.subplots(figsize=figsize)
         for i_e, ev in enumerate(events):
             index_ev = find_events(df_tr=df_trials, subj=subj, event=ev)
             # PLOT TRIALS ACCURACY FOR ALL SUBJS CONSIDERING MISSES AND EVENTS
             dataframe_4stage = dataframes_joint(df_trials, df_params, subj_unq)
             df_trials_without_misses = remove_misses(dataframe_4stage)
-            plot_accuracy_trials_coloured_stage4(sbj=subj, f=f,
+            plot_accuracy_trials_coloured_stage4(sbj=subj, ax=ax,
                                                  df=df_trials_without_misses,
                                                  index_event=index_ev,
                                                  color_ev=colors[i_e],
