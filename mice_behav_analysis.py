@@ -840,6 +840,9 @@ def plot_accuracy_trials_coloured_stage4(sbj, df, index_event=None, color_ev='',
     -------
     The plot of accuracy over trial for every subject.
     """
+    df = df_trials
+    df = dataframes_joint(df_trials, df_params, subj_unq)
+    sbj = 'N01'
     save_fig = False
     if ax is None:
         f, ax = plt.subplots(figsize=figsize)
@@ -856,14 +859,16 @@ def plot_accuracy_trials_coloured_stage4(sbj, df, index_event=None, color_ev='',
     ax.set_xlabel('Trials')
     ax.set_ylabel('Accuracy')
     # TODO: separate into another function
+    index = np.where(df.subject_name == sbj)[0]
+    # index = index-321041
+    dates = [int(i) for i in ([x[:8] for x in df['date'][index].values])]
+    dates_unique = list(np.unique(dates))
+    indexes = []
+    for i in dates_unique:
+        indexes.append(dates.index(i))
     ax2 = ax.twiny()  # ax2 is responsible for "top" axis and "right" axis
-    ax2.set_xticks([0., .5*np.pi, np.pi, 1.5*np.pi, 2*np.pi])
-    ax2.set_xticklabels(["$0$", r"$\frac{1}{2}\pi$",
-                         r"$\pi$", r"$\frac{3}{2}\pi$", r"$2\pi$"])
-
-    ax2.axis["right"].major_ticklabels.set_visible(False)
-    ax2.axis["top"].major_ticklabels.set_visible(True)
-
+    ax2.set_xticks(dates_uniqueindexes)
+    # ax2.set_xticklabels(dates)
     session = df.loc[df['subject_name'] == sbj, 'session'].values
     # create the extremes (a 0 at the beggining and a 1 at the ending)
     ses_diff = np.diff(session)  # find change of stage
@@ -1228,7 +1233,7 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 if __name__ == '__main__':
     plt.close('all')
     set_paths('Leyre')
-    set_paths('Manuel')
+    # set_paths('Manuel')
     plt_stg_vars = False
     plt_stg_with_fourth = False
     plt_acc_vs_sess = False
