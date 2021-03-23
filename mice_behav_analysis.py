@@ -840,9 +840,6 @@ def plot_accuracy_trials_coloured_stage4(sbj, df, index_event=None, color_ev='',
     -------
     The plot of accuracy over trial for every subject.
     """
-    df = df_trials
-    df = dataframes_joint(df_trials, df_params, subj_unq)
-    sbj = 'N01'
     save_fig = False
     if ax is None:
         f, ax = plt.subplots(figsize=figsize)
@@ -859,21 +856,28 @@ def plot_accuracy_trials_coloured_stage4(sbj, df, index_event=None, color_ev='',
     ax.set_xlabel('Trials')
     ax.set_ylabel('Accuracy')
     # TODO: separate into another function
+    # TODO: change dates format
     index = np.where(df.subject_name == sbj)[0]
     # index = index-321041
     dates = [int(i) for i in ([x[:8] for x in df['date'][index].values])]
     dates_unique = list(np.unique(dates))
-    indexes = []
-    for i in dates_unique:
-        indexes.append(dates.index(i))
+    indexes = np.array([dates.index(d_u) for d_u in dates_unique])
     ax2 = ax.twiny()  # ax2 is responsible for "top" axis and "right" axis
-    ax2.set_xticks(dates_uniqueindexes)
+    num_dates = 4
+    events = np.linspace(0, len(dates), num=num_dates, endpoint=False)
+    ax2.set_xticks(events)
+    dates_to_print = [dates_unique[np.argmin(np.abs(indexes-ev))]
+                      for ev in events]
+    ax2.set_xticklabels(dates_to_print)
+    
     # ax2.set_xticklabels(dates)
+    # TODO: check warnings about loc
     session = df.loc[df['subject_name'] == sbj, 'session'].values
     # create the extremes (a 0 at the beggining and a 1 at the ending)
     ses_diff = np.diff(session)  # find change of stage
     ses_chng = np.where(ses_diff != 0)[0]  # find where is the previous change
     # plot a vertical line for every change os session
+    # TODO: separate into a different function
     if plt_sess:
         for i in ses_chng:
             ax.axvline(i, color='gray')
@@ -1233,7 +1237,7 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 if __name__ == '__main__':
     plt.close('all')
     set_paths('Leyre')
-    # set_paths('Manuel')
+    set_paths('Manuel')
     plt_stg_vars = False
     plt_stg_with_fourth = False
     plt_acc_vs_sess = False
@@ -1310,8 +1314,15 @@ if __name__ == '__main__':
         events = ['surgery', 'sick', 'wounds']
         colors = 'rgb'
         # for subj in subj_unq:  # subj_unq:
-        subj = 'N07'
         f, ax = plt.subplots(figsize=figsize)
+        subj = 'N07'
+        # TODO: do this
+        # 1. plot_accuracies()
+        # 2. add_dates()
+        # 3. plot_sessions()
+        # 4. for ev in events:
+        #       plot_events()
+        # TODO: remove unnecessary variables
         for i_e, ev in enumerate(events):
             index_ev = find_events(df_tr=df_trials, subj=subj, event=ev)
             # PLOT TRIALS ACCURACY FOR ALL SUBJS CONSIDERING MISSES AND EVENTS
@@ -1321,5 +1332,5 @@ if __name__ == '__main__':
                                                  df=df_trials_without_misses,
                                                  index_event=index_ev,
                                                  color_ev=colors[i_e],
-                                                 plt_sess=(i_e == 2))
+                                                 plt_sess=(i_e == 0))
         sv_fig(f=f, name='acc_acr_tr_subj_'+subj)
