@@ -492,7 +492,7 @@ def create_stage_column(df, df_prms, subject):
         # datasets are the same
         trial_sess[indx] = stages[aux]+1  # sessions are index+1
     df_trials_subject = df.loc[df.subject_name == subject]
-    df_trials_subject.loc[:,['stage']] = trial_sess
+    df_trials_subject['stage'] = trial_sess
     return df_trials_subject
 
 
@@ -544,7 +544,7 @@ def create_stage4(df, df_prms, sbj):
     df : dataframe
         data of sessions
     subject: str
-        subject chosen 
+        subject chosen
 
     Returns
     -------
@@ -556,7 +556,7 @@ def create_stage4(df, df_prms, sbj):
     # add the motor stage column to df_trials
     new_df_sbj = create_motor_column(new_df_sbj, df_prms, subject=sbj)
     # duplicate stage column
-    new_df_sbj.loc[:,['new_stage']] = new_df_sbj.loc[:,['stage']]
+    new_df_sbj['new_stage'] = new_df_sbj['stage']
     # change the values we want for the new fourth stage
     new_df_sbj['new_stage'][(new_df_sbj["motor_stage"] == 6) &
                             (new_df_sbj["stage"] == 3)] = 4
@@ -826,7 +826,8 @@ def plot_accuracy_trials_subj_stage4(hit, xs, col, ax, subj):
 
 def int2date(argdate: int) -> date:
     """
-    If you have date as an integer, use this method to obtain a datetime.date object.
+    If you have date as an integer, use this method to obtain a datetime.date
+    object.
 
     Parameters
     ----------
@@ -898,10 +899,12 @@ def add_dates(ax, df, sbj):
         dates_to_print_2.append(int2date(i))
     ax2.set_xticklabels(dates_to_print_2)
 
+
 def vertical_line_events(ax, index_event, color_ev):
     if index_event is not None and index_event != -1:
         ax.axvline(index_event, color=color_ev, linestyle='--')
-        
+
+
 def vertical_line_session(ax, df, sbj):
     # TODO: check warnings about loc
     session = df.loc[df['subject_name'] == sbj, 'session'].values
@@ -911,7 +914,7 @@ def vertical_line_session(ax, df, sbj):
     for i in ses_chng:
         # plot a vertical line for every change os session
         ax.axvline(i, color='gray')
-    
+
 
 def plot_final_acc_session_subj(subj_unq, df_params, figsize=(8, 8)):
     """
@@ -1252,7 +1255,7 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 if __name__ == '__main__':
     plt.close('all')
     set_paths('Leyre')
-    # set_paths('Manuel')
+    set_paths('Manuel')
     plt_stg_vars = False
     plt_stg_with_fourth = False
     plt_acc_vs_sess = False
@@ -1321,7 +1324,7 @@ if __name__ == '__main__':
         for i_s, sbj in enumerate(subj_unq):
             df_sbj_perf = concatenate_misses(df_trials, sbj)
             plot_misses_subj(df_trials, sbj, df_sbj_perf, conv_w=50,
-                              figsize=(6, 3))
+                             figsize=(6, 3))
 
     if plot_events:
         # FIND INDEX IN WHICH A EVENT HAPPENS
@@ -1335,7 +1338,7 @@ if __name__ == '__main__':
         dataframe_4stage = dataframes_joint(df_trials, df_params, subj_unq)
         df_trials_without_misses = remove_misses(dataframe_4stage)
         plot_accuracy_trials_coloured_stage4(sbj=subj, ax=ax,
-                                              df=df_trials_without_misses)
+                                             df=df_trials_without_misses)
         add_dates(ax, df=df_trials_without_misses, sbj=subj)
         vertical_line_session(ax, df=df_trials_without_misses, sbj=subj)
         for i_e, ev in enumerate(events):
