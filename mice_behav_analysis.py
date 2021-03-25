@@ -29,6 +29,8 @@ def set_paths(path_ops):
     None.
 
     """
+    # TODO: allow changing path **and sv_folder** for different datasets
+
     global PATH, SV_FOLDER
     if path_ops == 'Leyre':
         PATH = '/Users/leyreazcarate/Dropbox/mice_data/standard_training_2020'
@@ -640,6 +642,8 @@ def aha_moments(df, subj_unq, aha_num_corr=5, rate_w=10,
         # for indx in aha_indx:
 
 ### HINT: FUNCTIONS TO PLOT
+
+
 def plot_xvar_VS_yvar(df, x_var, y_var, col, xlabel='x_var', ylabel='y_var',
                       name='X variable VS Y variable'):
     """
@@ -1135,7 +1139,7 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 if __name__ == '__main__':
     plt.close('all')
     set_paths('Leyre')
-    # set_paths('Manuel')
+    set_paths('Manuel')
     plt_stg_vars = False
     plt_stg_with_fourth = False
     plt_acc_vs_sess = False
@@ -1220,5 +1224,6 @@ if __name__ == '__main__':
             vertical_line_session(ax, df=df_trials_without_misses, sbj=subj)
             for i_e, ev in enumerate(events):
                 index_ev = find_events(df_tr=df_trials, subj=subj, event=ev)
-                vertical_line_events(ax, index_event=index_ev, color_ev=colors[i_e])
+                vertical_line_events(ax, index_event=index_ev,
+                                     color_ev=colors[i_e])
             sv_fig(f=f, name='acc_acr_tr_subj_'+subj)

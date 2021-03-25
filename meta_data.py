@@ -40,5 +40,5 @@ events_dict = {'N01': {'lick_teach': 3, 'surgery': '-',
                        'sick': '-', 'wounds': '-'},
                'N17': {'lick_teach': 5, 'surgery': '20200203',
                        'sick': '-', 'wounds': '-'},
-               'N018': {'lick_teach': 4, 'surgery': '-',
+               'N18': {'lick_teach': 4, 'surgery': '-',
                        'sick': '-', 'wounds': '-'}}
