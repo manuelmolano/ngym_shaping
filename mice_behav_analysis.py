@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import meta_data as md
-from datetime import datetime
 from datetime import date
 COLORS = sns.color_palette("mako", n_colors=4)
 COLORS_qlt = sns.color_palette("tab10", n_colors=80)
@@ -298,77 +297,6 @@ def accuracy_at_stg_change_trials(df, subj_unq, prev_w=10, nxt_w=10, conv_w=10):
             np.nanstd(np.array(mat_perfs[key]), axis=0)/sqrt_n_smpls
     return mat_mean_perfs, mat_std_perfs, number_samples
 
-# def accuracy_at_stg_change_trials(df, subj_unq, prev_w=10, nxt_w=10, conv_w=10):
-#     """
-#     The function returns the mean and standard deviation of the changes
-#     from a stage to another.
-
-#     Parameters
-#     ----------
-#     df : dataframe
-#         dataframe containing data.
-#     subj_unq : numpy.ndarray
-#         array of strings with the name of all the subjects
-#     prev_w: int
-#         previous window size (default value:10)
-#     nxt_w: int
-#         previous window size (default value:10)
-
-#     Returns
-#     -------
-#     Mean and standard deviation of each subject
-
-#     """
-#     # df_trials_without_misses = remove_misses(df_trials)
-#     # df = dataframes_joint(df_trials_without_misses, df_params, subj_unq)
-#     mat_perfs = {}
-#     for i_s, sbj in enumerate(subj_unq):
-#         acc = df.loc[df['subject_name'] == sbj, 'hithistory'].values
-#         stg = df.loc[df['subject_name'] == sbj, 'new_stage'].values
-#         # create the extremes (a 0 at the beggining and a 1 at the ending)
-#         stg_diff = np.diff(stg)  # change of stage
-#         stg_chng = np.where(stg_diff != 0)[0]  # index where stages change
-#         # We go over indexes where stage changes and plot chunks from ind_t-1
-#         # to ind_t
-#         for i_stg in range(len(stg_chng)):
-#             # color = stg_exp[stg_chng[i_stg-1]+1]-1
-#             stg_prev = stg[stg_chng[i_stg]]  # get stage before the change
-#             stg_nxt = stg[stg_chng[i_stg]+1]  # get stage after the change
-#             assert stg_prev != stg_nxt, 'stages are supposed to be different'
-#             key = str(stg_prev)+'-'+str(stg_nxt)  # e.g. 1-2
-#             if key not in mat_perfs.keys():
-#                 mat_perfs[key] = []
-#             # build chunk
-#             i_previo = max(0, stg_chng[i_stg]-prev_w)
-#             i_next = stg_chng[i_stg]+nxt_w
-#             # acc_prev = np.convolve(acc[i_previo:stg_chng[i_stg]],
-#             #                        np.ones((conv_w,))/conv_w, mode='valid')
-#             # acc_next = np.convolve(acc[stg_chng[i_stg]:i_next],
-#             #                        np.ones((conv_w,))/conv_w, mode='valid')
-#             # acc_sum = acc_prev.tolist() + acc_next.tolist()
-#             # chunk = -min(0, stg_chng[i_stg]-prev_w)*[np.nan] + acc_sum +\
-
-#             acc_sum = acc_prev + acc_next
-#             chunk = -min(0, stg_chng[i_stg]-prev_w)*[np.nan] +\
-#                 acc_sum[i_previo:i_next].tolist() +\
-#                 max(0, i_next-len(acc))*[np.nan]
-#             # add chunk to the dictionary
-#             mat_perfs[key].append(chunk)
-#     # dictionary of the mean of the performance
-#     mat_mean_perfs = {}
-#     # dictionary of the standard deviation of the performace
-#     mat_std_perfs = {}
-#     # list of the number of samples of each change of stage
-#     number_samples = []
-#     for key in mat_perfs.keys():
-#         number_samples.append(len(mat_perfs[key]))  # save number of samples
-#         assert np.std([len(p) for p in mat_perfs[key]]) == 0
-#         mat_mean_perfs[key] = np.nanmean(np.array(mat_perfs[key]), axis=0)
-#         sqrt_n_smpls = np.sqrt(np.array(mat_perfs[key]).shape[0])
-#         mat_std_perfs[key] =\
-#             np.nanstd(np.array(mat_perfs[key]), axis=0)/sqrt_n_smpls
-#     return mat_mean_perfs, mat_std_perfs, number_samples
-
 
 def concatenate_trials(df, subject):
     """
@@ -619,6 +547,62 @@ def find_events(df_tr, subj, event):
     return index
 
 
+def int2date(argdate: int) -> date:
+    """
+    If you have date as an integer, use this method to obtain a datetime.date
+    object.
+
+    Parameters
+    ----------
+    argdate : int
+      Date as a regular integer value (example: 20160618)
+
+    Returns
+    -------
+    dateandtime.date
+      A date object which corresponds to the given value `argdate`.
+    """
+    year = int(argdate / 10000)
+    month = int((argdate % 10000) / 100)
+    day = int(argdate % 100)
+
+    return date(year, month, day)
+
+
+def add_dates(ax, df, sbj):
+    index = np.where(df.subject_name == sbj)[0]
+    # index = index-321041
+    dates = [int(i) for i in ([x[:8] for x in df['date'][index].values])]
+    dates_unique = list(np.unique(dates))
+    indexes = np.array([dates.index(d_u) for d_u in dates_unique])
+    ax2 = ax.twiny()  # ax2 is responsible for "top" axis and "right" axis
+    num_dates = 4
+    events = np.linspace(0, len(dates), num=num_dates, endpoint=False)
+    ax2.set_xticks(events)
+    dates_to_print = [dates_unique[np.argmin(np.abs(indexes-ev))]
+                      for ev in events]
+    dates_to_print_2 = []
+    for i in dates_to_print:
+        dates_to_print_2.append(int2date(i))
+    ax2.set_xticklabels(dates_to_print_2)
+
+
+def vertical_line_events(ax, index_event, color_ev):
+    if index_event is not None and index_event != -1:
+        ax.axvline(index_event, color=color_ev, linestyle='--')
+
+
+def vertical_line_session(ax, df, sbj):
+    # TODO: check warnings about loc
+    session = df.loc[df['subject_name'] == sbj, 'session'].values
+    # create the extremes (a 0 at the beggining and a 1 at the ending)
+    ses_diff = np.diff(session)  # find change of stage
+    ses_chng = np.where(ses_diff != 0)[0]  # find where is the previous change
+    for i in ses_chng:
+        # plot a vertical line for every change os session
+        ax.axvline(i, color='gray')
+
+
 def aha_moments(df, subj_unq, aha_num_corr=5, rate_w=10,
                 rw_rt_bf=0.2, rw_rt_aft=0.6,):
     """
@@ -656,8 +640,6 @@ def aha_moments(df, subj_unq, aha_num_corr=5, rate_w=10,
         # for indx in aha_indx:
 
 ### HINT: FUNCTIONS TO PLOT
-
-
 def plot_xvar_VS_yvar(df, x_var, y_var, col, xlabel='x_var', ylabel='y_var',
                       name='X variable VS Y variable'):
     """
@@ -777,74 +759,6 @@ def plot_accuracy_trials_subj_stage4(hit, xs, col, ax, subj):
     if subj in ['N13', 'N14', 'N15', 'N16', 'N17', 'N18']:
         ax.set_xlabel('Trials')
 
-# def plot_accuracy_trials_coloured_stage4(sbj, df, index_event=None, color_ev='',
-#                                           figsize=(8, 4), f=None, plt_sess=True):
-#     """
-#     The function plots accuracy over trials for every subject, showing
-#     the stages the mice are in different colors.
-#     Parameters
-#     ----------
-#     sbj : string
-#         Subject (each mouse)
-#     df : dataframe
-#         data
-#     color : list
-#         list of colors corresponding to the stage.
-#     Returns
-#     -------
-#     The plot of accuracy over trial for every subject.
-#     """
-#     save_fig = False
-#     if f is None:
-#         f = plt.figure(figsize=figsize)
-#         save_fig = True
-#     hit_sbj, xs_sbj, color_sbj = accuracy_trials_subj_stage4(df, subj=sbj)
-#     for i_chnk, chnk in enumerate(hit_sbj):
-#         # iterate for every chunk, to paint the stages with different colors
-#         # HINT: see accuracy_sessions_... fn for an explanation fo why xs can
-#         # be larger than acc
-#         plt.plot(xs_sbj[i_chnk][:len(hit_sbj[i_chnk])],
-#                   hit_sbj[i_chnk], color=COLORS[color_sbj[i_chnk]])
-#     plt.title("Accuracy by trials of subject taking into" +
-#               " account misses (" + sbj+")")
-#     plt.xlabel('Trials')
-#     plt.ylabel('Accuracy')
-#     session = df.loc[df['subject_name'] == sbj, 'session'].values
-#     # create the extremes (a 0 at the beggining and a 1 at the ending)
-#     ses_diff = np.diff(session)  # find change of stage
-#     ses_chng = np.where(ses_diff != 0)[0]  # find where is the previous change
-#     # plot a vertical line for every change os session
-#     if plt_sess:
-#         for i in ses_chng:
-#             plt.axvline(i, color='gray')
-#     # TODO: separate into another function
-#     if index_event is not None and index_event != -1:
-#         plt.axvline(index_event, color=color_ev, linestyle='--')
-#     if save_fig:
-#         sv_fig(f=f, name='acc_acr_tr_subj_'+sbj)
-
-
-def int2date(argdate: int) -> date:
-    """
-    If you have date as an integer, use this method to obtain a datetime.date
-    object.
-
-    Parameters
-    ----------
-    argdate : int
-      Date as a regular integer value (example: 20160618)
-
-    Returns
-    -------
-    dateandtime.date
-      A date object which corresponds to the given value `argdate`.
-    """
-    year = int(argdate / 10000)
-    month = int((argdate % 10000) / 100)
-    day = int(argdate % 100)
-
-    return date(year, month, day)
-
 
 def plot_accuracy_trials_coloured_stage4(sbj, df, index_event=None, color_ev='',
                                          figsize=(8, 4), ax=None, plt_sess=True):
@@ -880,40 +794,6 @@ def plot_accuracy_trials_coloured_stage4(sbj, df, index_event=None, color_ev='',
     ax.set_ylabel('Accuracy')
     if save_fig:
         sv_fig(f=f, name='acc_acr_tr_subj_'+sbj)
-
-
-def add_dates(ax, df, sbj):
-    index = np.where(df.subject_name == sbj)[0]
-    # index = index-321041
-    dates = [int(i) for i in ([x[:8] for x in df['date'][index].values])]
-    dates_unique = list(np.unique(dates))
-    indexes = np.array([dates.index(d_u) for d_u in dates_unique])
-    ax2 = ax.twiny()  # ax2 is responsible for "top" axis and "right" axis
-    num_dates = 4
-    events = np.linspace(0, len(dates), num=num_dates, endpoint=False)
-    ax2.set_xticks(events)
-    dates_to_print = [dates_unique[np.argmin(np.abs(indexes-ev))]
-                      for ev in events]
-    dates_to_print_2 = []
-    for i in dates_to_print:
-        dates_to_print_2.append(int2date(i))
-    ax2.set_xticklabels(dates_to_print_2)
-
-
-def vertical_line_events(ax, index_event, color_ev):
-    if index_event is not None and index_event != -1:
-        ax.axvline(index_event, color=color_ev, linestyle='--')
-
-
-def vertical_line_session(ax, df, sbj):
-    # TODO: check warnings about loc
-    session = df.loc[df['subject_name'] == sbj, 'session'].values
-    # create the extremes (a 0 at the beggining and a 1 at the ending)
-    ses_diff = np.diff(session)  # find change of stage
-    ses_chng = np.where(ses_diff != 0)[0]  # find where is the previous change
-    for i in ses_chng:
-        # plot a vertical line for every change os session
-        ax.axvline(i, color='gray')
 
 
 def plot_final_acc_session_subj(subj_unq, df_params, figsize=(8, 8)):
@@ -1255,7 +1135,7 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 if __name__ == '__main__':
     plt.close('all')
     set_paths('Leyre')
-    set_paths('Manuel')
+    # set_paths('Manuel')
     plt_stg_vars = False
     plt_stg_with_fourth = False
     plt_acc_vs_sess = False
@@ -1325,23 +1205,20 @@ if __name__ == '__main__':
             df_sbj_perf = concatenate_misses(df_trials, sbj)
             plot_misses_subj(df_trials, sbj, df_sbj_perf, conv_w=50,
                              figsize=(6, 3))
-
     if plot_events:
         # FIND INDEX IN WHICH A EVENT HAPPENS
         figsize = (6, 3)
         events = ['surgery', 'sick', 'wounds']
         colors = 'rgb'
-        # for subj in subj_unq:  # subj_unq:
-        f, ax = plt.subplots(figsize=figsize)
-        subj = 'N17'
-        # PLOT TRIALS ACCURACY FOR ALL SUBJS CONSIDERING MISSES AND EVENTS
-        dataframe_4stage = dataframes_joint(df_trials, df_params, subj_unq)
-        df_trials_without_misses = remove_misses(dataframe_4stage)
-        plot_accuracy_trials_coloured_stage4(sbj=subj, ax=ax,
-                                             df=df_trials_without_misses)
-        add_dates(ax, df=df_trials_without_misses, sbj=subj)
-        vertical_line_session(ax, df=df_trials_without_misses, sbj=subj)
-        for i_e, ev in enumerate(events):
-            index_ev = find_events(df_tr=df_trials, subj=subj, event=ev)
-            vertical_line_events(ax, index_event=index_ev, color_ev=colors[i_e])
-        sv_fig(f=f, name='acc_acr_tr_subj_'+subj)
+        for subj in subj_unq:
+            f, ax = plt.subplots(figsize=figsize)
+            dataframe_4stage = dataframes_joint(df_trials, df_params, subj_unq)
+            df_trials_without_misses = remove_misses(dataframe_4stage)
+            plot_accuracy_trials_coloured_stage4(sbj=subj, ax=ax,
+                                                 df=df_trials_without_misses)
+            add_dates(ax, df=df_trials_without_misses, sbj=subj)
+            vertical_line_session(ax, df=df_trials_without_misses, sbj=subj)
+            for i_e, ev in enumerate(events):
+                index_ev = find_events(df_tr=df_trials, subj=subj, event=ev)
+                vertical_line_events(ax, index_event=index_ev, color_ev=colors[i_e])
+            sv_fig(f=f, name='acc_acr_tr_subj_'+subj)
