@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import meta_data as md
+import meta_data_2 as md_2
 from datetime import date
 COLORS = sns.color_palette("mako", n_colors=4)
 COLORS_qlt = sns.color_palette("tab10", n_colors=80)
@@ -40,7 +41,7 @@ def set_paths(path_ops):
         SV_FOLDER = '/home/manuel/mice_data/standard_training_2020'
 
 
-def load_data():
+def load_data(dataset):
     """
     Load the data.
 
@@ -53,12 +54,27 @@ def load_data():
     Trials dataframe, Params dataframe and the list of subjects.
 
     """
-    dataset = 'global_trials'  # global_trials or minitrials
-    df_params = pd.read_csv(PATH + '/global_params.csv', sep=';')
-    df_trials = pd.read_csv(PATH + '/'+dataset+'.csv', sep=';',
-                            low_memory=False)
-    subj_unq = np.unique(df_params.subject_name)
-    return df_trials, df_params, subj_unq
+    if dataset == 'dataset_N01':
+        dataset = 'global_trials_N01'  # global_trials or minitrials
+        df_params = pd.read_csv(PATH + '/global_params_N01.csv', sep=';')
+        df_trials = pd.read_csv(PATH + '/'+dataset+'.csv', sep=';',
+                                low_memory=False)
+        subj_unq = np.unique(df_params.subject_name)
+        return df_trials, df_params, subj_unq
+    elif dataset == 'dataset_N19':
+        dataset = 'global_trials_N19'  # global_trials or minitrials
+        df_params = pd.read_csv(PATH + '/global_params_N19.csv', sep=';')
+        df_trials = pd.read_csv(PATH + '/'+dataset+'.csv', sep=';',
+                                low_memory=False)
+        subj_unq = np.unique(df_params.subject_name)
+        return df_trials, df_params, subj_unq
+    elif dataset == 'dataset_C17':
+            dataset = 'global_trials_C17'  # global_trials or minitrials
+            df_params = pd.read_csv(PATH + '/global_params_C17.csv', sep=';')
+            df_trials = pd.read_csv(PATH + '/'+dataset+'.csv', sep=';',
+                                    low_memory=False)
+            subj_unq = np.unique(df_params.subject_name)
+            return df_trials, df_params, subj_unq
 
 
 def sv_fig(f, name):
@@ -541,13 +557,20 @@ def find_events(df_tr, subj, event):
     # alternatively, find index of events in dates
     index = np.where(df_tr.subject_name == subj)[0]
     dates = [x[:8] for x in df_tr['date'][index].values]
-    index = np.where(np.array(dates) == md.events_dict[subj][event])[0]
-    if len(index) > 0:
-        index = index[0]
+    if subj in ['C17', 'C18', 'C19', 'C20', 'C21', 'C22']:  
+        index = np.where(np.array(dates) == md_2.events_dict[subj][event])[0]
+        if len(index) > 0:
+            index = index[0]
+        else:
+            index = -1
+        return index
     else:
-        index = -1
-    return index
-
+        index = np.where(np.array(dates) == md.events_dict[subj][event])[0]
+        if len(index) > 0:
+            index = index[0]
+        else:
+            index = -1
+        return index
 
 def int2date(argdate: int) -> date:
     """
@@ -568,7 +591,7 @@ def int2date(argdate: int) -> date:
     month = int((argdate % 10000) / 100)
     day = int(argdate % 100)
 
-    return date(year, month, day)
+    return (str(day) + '/' + str(month) + '/' + str(year))
 
 
 def add_dates(ax, df, sbj):
@@ -602,7 +625,7 @@ def vertical_line_session(ax, df, sbj):
     ses_chng = np.where(ses_diff != 0)[0]  # find where is the previous change
     for i in ses_chng:
         # plot a vertical line for every change os session
-        ax.axvline(i, color='gray')
+        ax.axvline(i, color='gray', linewidth=0.5)
 
 
 def aha_moments(df, subj_unq, aha_num_corr=5, rate_w=10,
@@ -876,7 +899,7 @@ def plot_final_acc_session_subj_stage4(subj_unq, df_trials, figsize=(8, 4),
 
 
 def plot_means_std(means, std, list_samples, prev_w=10, nxt_w=10,
-                   figsize=(6, 4)):
+                   figsize=(14, 6)):
     """
     Plot mean and standard deviation from the accuracies of each state of each
     mouse.
@@ -1051,7 +1074,7 @@ def plot_stage_motor_delay_subject(subj, new_df, ax):
         ax.set_xlabel('Trials')
 
 
-def plot_final_stage_motor_delay(subj_unq, df, df_prms, figsize=(12, 12)):
+def plot_final_stage_motor_delay(subj_unq, df, df_prms, figsize=(10, 10)):
     """
     Plot with a subplot for each subject showing the following variables:
         'Stage', 'Motor_stage', 'Motor_out_end', 'Motor_in_end',
@@ -1139,7 +1162,7 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 if __name__ == '__main__':
     plt.close('all')
     set_paths('Leyre')
-    set_paths('Manuel')
+    # set_paths('Manuel')
     plt_stg_vars = False
     plt_stg_with_fourth = False
     plt_acc_vs_sess = False
@@ -1148,9 +1171,11 @@ if __name__ == '__main__':
     plt_trial_acc = False
     plt_trial_acc_misses = False
     plt_misses = False
-    plot_events = True
-    df_trials, df_params, subj_unq = load_data()
-    # aha_moments(df=df_trials, subj_unq=subj_unq, aha_num_corr=5)
+    plot_events = False
+    # 'dataset_N01' (subject from N01 to N18)
+    # 'dataset_N19' (subject from N19 to N28)
+    # 'dataset_C17' (subject from C17 to C22)
+    df_trials, df_params, subj_unq = load_data('dataset_N19')
     if plt_stg_vars:
         # PLOT MOTOR AND DELAY VARIABLES ACROSS TRIALS FOR ALL THE SUBJECTS
         plot_final_stage_motor_delay(subj_unq, df=df_trials,
@@ -1214,16 +1239,30 @@ if __name__ == '__main__':
         figsize = (6, 3)
         events = ['surgery', 'sick', 'wounds']
         colors = 'rgb'
-        for subj in subj_unq:
-            f, ax = plt.subplots(figsize=figsize)
-            dataframe_4stage = dataframes_joint(df_trials, df_params, subj_unq)
-            df_trials_without_misses = remove_misses(dataframe_4stage)
-            plot_accuracy_trials_coloured_stage4(sbj=subj, ax=ax,
-                                                 df=df_trials_without_misses)
-            add_dates(ax, df=df_trials_without_misses, sbj=subj)
-            vertical_line_session(ax, df=df_trials_without_misses, sbj=subj)
-            for i_e, ev in enumerate(events):
-                index_ev = find_events(df_tr=df_trials, subj=subj, event=ev)
-                vertical_line_events(ax, index_event=index_ev,
-                                     color_ev=colors[i_e])
-            sv_fig(f=f, name='acc_acr_tr_subj_'+subj)
+        subj = 'N25'
+        f, ax = plt.subplots(figsize=figsize)
+        dataframe_4stage = dataframes_joint(df_trials, df_params, subj_unq)
+        df_trials_without_misses = remove_misses(dataframe_4stage)
+        plot_accuracy_trials_coloured_stage4(sbj=subj, ax=ax,
+                                              df=df_trials_without_misses)
+        add_dates(ax, df=df_trials_without_misses, sbj=subj)
+        vertical_line_session(ax, df=df_trials_without_misses, sbj=subj)
+        for i_e, ev in enumerate(events):
+            index_ev = find_events(df_tr=df_trials, subj=subj, event=ev)
+            vertical_line_events(ax, index_event=index_ev,
+                                  color_ev=colors[i_e])
+            ax.legend(colors, events)
+
+        # for subj in subj_unq:
+        #     f, ax = plt.subplots(figsize=figsize)
+        #     dataframe_4stage = dataframes_joint(df_trials, df_params, subj_unq)
+        #     df_trials_without_misses = remove_misses(dataframe_4stage)
+        #     plot_accuracy_trials_coloured_stage4(sbj=subj, ax=ax,
+        #                                           df=df_trials_without_misses)
+        #     add_dates(ax, df=df_trials_without_misses, sbj=subj)
+        #     vertical_line_session(ax, df=df_trials_without_misses, sbj=subj)
+        #     for i_e, ev in enumerate(events):
+        #         index_ev = find_events(df_tr=df_trials, subj=subj, event=ev)
+        #         vertical_line_events(ax, index_event=index_ev,
+        #                               color_ev=colors[i_e])
+        #     sv_fig(f=f, name='acc_acr_tr_subj_'+subj)
