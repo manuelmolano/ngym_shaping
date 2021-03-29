@@ -41,7 +41,7 @@ def set_paths(path_ops):
         SV_FOLDER = '/home/manuel/mice_data/standard_training_2020'
 
 
-def load_data(dataset):
+def load_data(dataset='N01'):
     """
     Load the data.
 
@@ -54,27 +54,11 @@ def load_data(dataset):
     Trials dataframe, Params dataframe and the list of subjects.
 
     """
-    if dataset == 'dataset_N01':
-        dataset = 'global_trials_N01'  # global_trials or minitrials
-        df_params = pd.read_csv(PATH + '/global_params_N01.csv', sep=';')
-        df_trials = pd.read_csv(PATH + '/'+dataset+'.csv', sep=';',
-                                low_memory=False)
-        subj_unq = np.unique(df_params.subject_name)
-        return df_trials, df_params, subj_unq
-    elif dataset == 'dataset_N19':
-        dataset = 'global_trials_N19'  # global_trials or minitrials
-        df_params = pd.read_csv(PATH + '/global_params_N19.csv', sep=';')
-        df_trials = pd.read_csv(PATH + '/'+dataset+'.csv', sep=';',
-                                low_memory=False)
-        subj_unq = np.unique(df_params.subject_name)
-        return df_trials, df_params, subj_unq
-    elif dataset == 'dataset_C17':
-            dataset = 'global_trials_C17'  # global_trials or minitrials
-            df_params = pd.read_csv(PATH + '/global_params_C17.csv', sep=';')
-            df_trials = pd.read_csv(PATH + '/'+dataset+'.csv', sep=';',
-                                    low_memory=False)
-            subj_unq = np.unique(df_params.subject_name)
-            return df_trials, df_params, subj_unq
+    df_params = pd.read_csv(PATH + '/global_params_'+dataset+'.csv', sep=';')
+    df_trials = pd.read_csv(PATH + '/global_trials_'+dataset+'.csv', sep=';',
+                            low_memory=False)
+    subj_unq = np.unique(df_params.subject_name)
+    return df_trials, df_params, subj_unq
 
 
 def sv_fig(f, name):
@@ -1175,7 +1159,7 @@ if __name__ == '__main__':
     # 'dataset_N01' (subject from N01 to N18)
     # 'dataset_N19' (subject from N19 to N28)
     # 'dataset_C17' (subject from C17 to C22)
-    df_trials, df_params, subj_unq = load_data('dataset_N19')
+    df_trials, df_params, subj_unq = load_data(dataset='N19')  # N01 N19 C17
     if plt_stg_vars:
         # PLOT MOTOR AND DELAY VARIABLES ACROSS TRIALS FOR ALL THE SUBJECTS
         plot_final_stage_motor_delay(subj_unq, df=df_trials,
