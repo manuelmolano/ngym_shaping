@@ -55,7 +55,7 @@ def _get_envs(foldername=None, env_prefix=None, allow_list=None):
     return env_dict
 
 
-NATIVE_ALLOW_LIST = ['NAltPerceptualDecisionMaking', 'NAltConditionalVisuomotor']
+NATIVE_ALLOW_LIST = ['DR_shaping']
 ALL_ENVS = _get_envs(foldername=None, env_prefix=None,
                             allow_list=NATIVE_ALLOW_LIST)
 
