@@ -11,7 +11,7 @@ import neurogym as ngym
 from neurogym import spaces
 
 
-class MakingDelayResponse_stage(ngym.TrialEnv):
+class Shaping(ngym.TrialEnv):
     """Perceptual decision-making with delayed responses.
 
     Agents have to integrate two stimuli and report which one is
