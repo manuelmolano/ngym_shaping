@@ -55,39 +55,7 @@ def _get_envs(foldername=None, env_prefix=None, allow_list=None):
     return env_dict
 
 
-NATIVE_ALLOW_LIST = [
-    'AntiReach',
-    'Bandit',
-    'ContextDecisionMaking',
-    'DawTwoStep',
-    'DelayComparison',
-    'DelayMatchCategory',
-    'DelayMatchSample',
-    'DelayMatchSampleDistractor1D',
-    'DelayPairedAssociation',
-    # 'Detection',  # TODO: Temporary removing until bug fixed
-    'DualDelayMatchSample',
-    'EconomicDecisionMaking',
-    'GoNogo',
-    'HierarchicalReasoning',
-    'IntervalDiscrimination',
-    'MotorTiming',
-    'MultiSensoryIntegration',
-    'Null',
-    'OneTwoThreeGo',
-    'PerceptualDecisionMaking',
-    'PerceptualDecisionMakingDelayResponse',
-    'PostDecisionWager',
-    'ProbabilisticReasoning',
-    'PulseDecisionMaking',
-    'Reaching1D',
-    'Reaching1DWithSelfDistraction',
-    'ReachingDelayResponse',
-    'ReadySetGo',
-    'SingleContextDecisionMaking',
-    'SpatialSuppressMotion',
-    # 'ToneDetection'  # TODO: Temporary removing until bug fixed
-]
+NATIVE_ALLOW_LIST = ['Shaping']
 ALL_NATIVE_ENVS = _get_envs(foldername=None, env_prefix=None,
                             allow_list=NATIVE_ALLOW_LIST)
 
