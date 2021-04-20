@@ -8,7 +8,6 @@ from ngym_shaping.envs.registration import make
 from ngym_shaping.envs.registration import register
 from ngym_shaping.envs.registration import all_envs
 from ngym_shaping.envs.registration import all_tags
-from ngym_shaping.envs.collections import get_collection
 from ngym_shaping.wrappers import all_wrappers
 from ngym_shaping.utils.data import Dataset
 import ngym_shaping.utils.random as random

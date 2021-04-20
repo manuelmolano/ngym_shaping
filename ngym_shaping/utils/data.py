@@ -131,16 +131,3 @@ class Dataset(object):
         self._seq_start = self._seq_end
         return inputs, target
         # return inputs, np.expand_dims(target, axis=2)
-
-
-if __name__ == '__main__':
-    import neurogym as ngym
-    dataset = ngym.Dataset(
-        'PerceptualDecisionMaking-v0', env_kwargs={'dt': 100}, batch_size=32,
-        seq_len=40)
-    inputs_list = list()
-    for i in range(2):
-        inputs, target = dataset()
-        inputs_list.append(inputs)
-    # print(inputs.shape)
-    # print(target.shape)
