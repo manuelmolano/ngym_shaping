@@ -3,7 +3,6 @@ from inspect import getmembers, isfunction, isclass
 from pathlib import Path
 
 import gym
-from ngym_shaping.envs.collections import get_collection
 
 
 def _get_envs(foldername=None, env_prefix=None, allow_list=None):
@@ -117,35 +116,13 @@ ALL_CONTRIB_ENVS = _get_envs(foldername='contrib', env_prefix='contrib',
                              allow_list=CONTRIB_ALLOW_LIST)
 
 
-# Automatically register all tasks in collections
-def _get_collection_envs():
-    """Register collection tasks in collections folder.
 
-    Each environment is named collection_name.env_name-v0
-    """
-    derived_envs = {}
-    # collection_libs = ['perceptualdecisionmaking', 'yang19', 'priors']
-    # TODO: Temporary disabling priors task
-    collection_libs = ['perceptualdecisionmaking', 'yang19']
-    for l in collection_libs:
-        lib = 'ngym_shaping.envs.collections.' + l
-        module = importlib.import_module(lib)
-        envs = [name for name, val in getmembers(module) if isfunction(val) or isclass(val)]
-        envs = [env for env in envs if env[0] != '_']  # ignore private members
-        # TODO: check is instance gym.env
-        env_dict = {l+'.'+env+'-v0': lib + ':' + env for env in envs}
-        valid_envs = get_collection(l)
-        derived_envs.update({key: env_dict[key] for key in valid_envs})
-    return derived_envs
-
-
-ALL_COLLECTIONS_ENVS = _get_collection_envs()
 
 ALL_ENVS = {
     **ALL_NATIVE_ENVS, **ALL_PSYCHOPY_ENVS, **ALL_CONTRIB_ENVS
 }
 
-ALL_EXTENDED_ENVS = {**ALL_ENVS, **ALL_COLLECTIONS_ENVS}
+ALL_EXTENDED_ENVS = ALL_ENVS
 
 
 def all_envs(tag=None, psychopy=False, contrib=False, collections=False):
@@ -155,8 +132,6 @@ def all_envs(tag=None, psychopy=False, contrib=False, collections=False):
         envs.update(ALL_PSYCHOPY_ENVS)
     if contrib:
         envs.update(ALL_CONTRIB_ENVS)
-    if collections:
-        envs.update(ALL_COLLECTIONS_ENVS)
     env_list = sorted(list(envs.keys()))
     if tag is None:
         return env_list
