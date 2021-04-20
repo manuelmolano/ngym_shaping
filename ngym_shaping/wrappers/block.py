@@ -1,6 +1,6 @@
 from gym import spaces
-import neurogym as ngym
-from neurogym.core import TrialWrapper
+import ngym_shaping as ngym
+from ngym_shaping.core import TrialWrapper
 import numpy as np
 
 

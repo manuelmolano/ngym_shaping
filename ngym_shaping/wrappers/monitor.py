@@ -4,7 +4,7 @@
 from gym import Wrapper
 import os
 import numpy as np
-from neurogym.utils.plotting import fig_
+from ngym_shaping.utils.plotting import fig_
 
 
 class Monitor(Wrapper):

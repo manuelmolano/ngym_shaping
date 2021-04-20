@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-import neurogym as ngym
+import ngym_shaping as ngym
 
 
 class SideBias(ngym.TrialWrapper):
