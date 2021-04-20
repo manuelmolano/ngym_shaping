@@ -1,5 +1,5 @@
 import importlib
-from inspect import getmembers, isfunction, isclass
+from inspect import getmembers
 from pathlib import Path
 
 import gym
@@ -91,47 +91,13 @@ NATIVE_ALLOW_LIST = [
 ALL_NATIVE_ENVS = _get_envs(foldername=None, env_prefix=None,
                             allow_list=NATIVE_ALLOW_LIST)
 
-_psychopy_prefix = 'ngym_shaping.envs.psychopy.'
-ALL_PSYCHOPY_ENVS = {
-    'psychopy.RandomDotMotion-v0':
-        _psychopy_prefix + 'perceptualdecisionmaking:RandomDotMotion',
-    'psychopy.VisualSearch-v0':
-        _psychopy_prefix + 'visualsearch:VisualSearch',
-    'psychopy.SpatialSuppressMotion-v0':
-        _psychopy_prefix + 'spatialsuppressmotion:SpatialSuppressMotion',
-}
 
-_contrib_name_prefix = 'contrib.'
-_contrib_prefix = 'ngym_shaping.envs.contrib.'
-CONTRIB_ALLOW_LIST = [
-    # 'AngleReproduction',
-    # 'CVLearning',
-    # 'ChangingEnvironment',
-    # 'IBL',
-    # 'MatchingPenny',
-    # 'MemoryRecall',
-    # 'Pneumostomeopening'
-]
-ALL_CONTRIB_ENVS = _get_envs(foldername='contrib', env_prefix='contrib',
-                             allow_list=CONTRIB_ALLOW_LIST)
-
-
-
-
-ALL_ENVS = {
-    **ALL_NATIVE_ENVS, **ALL_PSYCHOPY_ENVS, **ALL_CONTRIB_ENVS
-}
-
-ALL_EXTENDED_ENVS = ALL_ENVS
+ALL_EXTENDED_ENVS = ALL_NATIVE_ENVS
 
 
 def all_envs(tag=None, psychopy=False, contrib=False, collections=False):
     """Return a list of all envs in ngym_shaping."""
     envs = ALL_NATIVE_ENVS.copy()
-    if psychopy:
-        envs.update(ALL_PSYCHOPY_ENVS)
-    if contrib:
-        envs.update(ALL_CONTRIB_ENVS)
     env_list = sorted(list(envs.keys()))
     if tag is None:
         return env_list
@@ -150,9 +116,11 @@ def all_envs(tag=None, psychopy=False, contrib=False, collections=False):
 
 
 def all_tags():
-    return ['confidence', 'context dependent', 'continuous action space', 'delayed response', 'go-no-go',
-            'motor', 'multidimensional action space', 'n-alternative', 'perceptual', 'reaction time',
-            'steps action space', 'supervised', 'timing', 'two-alternative', 'value-based', 'working memory']
+    return ['confidence', 'context dependent', 'continuous action space',
+            'delayed response', 'go-no-go', 'motor', 'perceptual', 'reaction time',
+            'multidimensional action space', 'n-alternative', 'two-alternative',
+            'steps action space', 'supervised', 'timing',  'value-based',
+            'working memory']
 
 
 def _distance(s0, s1):
