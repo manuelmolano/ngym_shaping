@@ -3,6 +3,7 @@ from inspect import getmembers, isfunction, isclass
 from pathlib import Path
 
 import gym
+from ngym_shaping.envs.collections import get_collection
 
 
 def _get_envs(foldername=None, env_prefix=None, allow_list=None):
@@ -55,14 +56,107 @@ def _get_envs(foldername=None, env_prefix=None, allow_list=None):
     return env_dict
 
 
-NATIVE_ALLOW_LIST = ['Shaping']
-ALL_ENVS = _get_envs(foldername=None, env_prefix=None,
+NATIVE_ALLOW_LIST = [
+    'AntiReach',
+    'Bandit',
+    'ContextDecisionMaking',
+    'DawTwoStep',
+    'DelayComparison',
+    'DelayMatchCategory',
+    'DelayMatchSample',
+    'DelayMatchSampleDistractor1D',
+    'DelayPairedAssociation',
+    # 'Detection',  # TODO: Temporary removing until bug fixed
+    'DualDelayMatchSample',
+    'EconomicDecisionMaking',
+    'GoNogo',
+    'HierarchicalReasoning',
+    'IntervalDiscrimination',
+    'MotorTiming',
+    'MultiSensoryIntegration',
+    'Null',
+    'OneTwoThreeGo',
+    'PerceptualDecisionMaking',
+    'PerceptualDecisionMakingDelayResponse',
+    'PostDecisionWager',
+    'ProbabilisticReasoning',
+    'PulseDecisionMaking',
+    'Reaching1D',
+    'Reaching1DWithSelfDistraction',
+    'ReachingDelayResponse',
+    'ReadySetGo',
+    'SingleContextDecisionMaking',
+    'SpatialSuppressMotion',
+    # 'ToneDetection'  # TODO: Temporary removing until bug fixed
+]
+ALL_NATIVE_ENVS = _get_envs(foldername=None, env_prefix=None,
                             allow_list=NATIVE_ALLOW_LIST)
+
+_psychopy_prefix = 'ngym_shaping.envs.psychopy.'
+ALL_PSYCHOPY_ENVS = {
+    'psychopy.RandomDotMotion-v0':
+        _psychopy_prefix + 'perceptualdecisionmaking:RandomDotMotion',
+    'psychopy.VisualSearch-v0':
+        _psychopy_prefix + 'visualsearch:VisualSearch',
+    'psychopy.SpatialSuppressMotion-v0':
+        _psychopy_prefix + 'spatialsuppressmotion:SpatialSuppressMotion',
+}
+
+_contrib_name_prefix = 'contrib.'
+_contrib_prefix = 'ngym_shaping.envs.contrib.'
+CONTRIB_ALLOW_LIST = [
+    # 'AngleReproduction',
+    # 'CVLearning',
+    # 'ChangingEnvironment',
+    # 'IBL',
+    # 'MatchingPenny',
+    # 'MemoryRecall',
+    # 'Pneumostomeopening'
+]
+ALL_CONTRIB_ENVS = _get_envs(foldername='contrib', env_prefix='contrib',
+                             allow_list=CONTRIB_ALLOW_LIST)
+
+
+# Automatically register all tasks in collections
+def _get_collection_envs():
+    """Register collection tasks in collections folder.
+
+    Each environment is named collection_name.env_name-v0
+    """
+    derived_envs = {}
+    # collection_libs = ['perceptualdecisionmaking', 'yang19', 'priors']
+    # TODO: Temporary disabling priors task
+    collection_libs = ['perceptualdecisionmaking', 'yang19']
+    for l in collection_libs:
+        lib = 'ngym_shaping.envs.collections.' + l
+        module = importlib.import_module(lib)
+        envs = [name for name, val in getmembers(module) if isfunction(val) or isclass(val)]
+        envs = [env for env in envs if env[0] != '_']  # ignore private members
+        # TODO: check is instance gym.env
+        env_dict = {l+'.'+env+'-v0': lib + ':' + env for env in envs}
+        valid_envs = get_collection(l)
+        derived_envs.update({key: env_dict[key] for key in valid_envs})
+    return derived_envs
+
+
+ALL_COLLECTIONS_ENVS = _get_collection_envs()
+
+ALL_ENVS = {
+    **ALL_NATIVE_ENVS, **ALL_PSYCHOPY_ENVS, **ALL_CONTRIB_ENVS
+}
+
+ALL_EXTENDED_ENVS = {**ALL_ENVS, **ALL_COLLECTIONS_ENVS}
 
 
 def all_envs(tag=None, psychopy=False, contrib=False, collections=False):
     """Return a list of all envs in ngym_shaping."""
-    envs = ALL_ENVS.copy()
+    envs = ALL_NATIVE_ENVS.copy()
+    if psychopy:
+        envs.update(ALL_PSYCHOPY_ENVS)
+    if contrib:
+        envs.update(ALL_CONTRIB_ENVS)
+    if collections:
+        envs.update(ALL_COLLECTIONS_ENVS)
     env_list = sorted(list(envs.keys()))
     if tag is None:
         return env_list
@@ -119,7 +213,7 @@ def _distance(s0, s1):
 
 def make(id, **kwargs):
     try:
-        gym.make(id, **kwargs)
+        return gym.make(id, **kwargs)
     except gym.error.UnregisteredEnv:
         all_ids = [env.id for env in gym.envs.registry.all()]
         dists = [_distance(id, env_id) for env_id in all_ids]
@@ -140,5 +234,5 @@ def register(id, **kwargs):
         gym.envs.registration.register(id=id, **kwargs)
 
 
-for env_id, entry_point in ALL_ENVS.items():
+for env_id, entry_point in ALL_EXTENDED_ENVS.items():
     register(id=env_id, entry_point=entry_point)

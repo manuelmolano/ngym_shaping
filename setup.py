@@ -12,6 +12,20 @@ if sys.version_info.major != 3:
           'Python {}. The installation will likely fail.'.format(sys.version_info.major))
 
 
+# Environment-specific dependencies.
+extras = {
+  'psychopy': ['psychopy'],
+}
+
+# Meta dependency groups.
+extras['all'] = [item for group in extras.values() for item in group]
+
+# For developers
+extras['dev'] = extras['all'] + [
+    'jupyter', 'pytest', 'sphinx', 'sphinx_rtd_theme', 'sphinxcontrib.katex',
+    'nbsphinx'
+]
+
 setup(name='ngym_shaping',
       packages=[package for package in find_packages()
                 if package.startswith('ngym_shaping')],
@@ -20,8 +34,9 @@ setup(name='ngym_shaping',
           'gym',
           'matplotlib',
       ],
-      description='ngym_shaping: Gym-style shaping tasks',
-      author='Manuel Molano',
-      url='https://github.com/gyyang/neurogym',
+      extras_require=extras,
+      description='ngym_shaping: Gym-style cognitive neuroscience tasks',
+      author='Manuel Molano, Guangyu Robert Yang, and contributors',
+      url='https://github.com/manuelmolano/ngym_shaping',
       version=VERSION)
 

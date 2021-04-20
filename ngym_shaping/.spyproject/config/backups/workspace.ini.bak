@@ -1,0 +1,10 @@
+[workspace]
+restore_data_on_startup = True
+save_data_on_exit = True
+save_history = True
+save_non_project_files = False
+
+[main]
+version = 0.2.0
+recent_files = ['../../.config/spyder-py3/temp.py', 'tests/test_envs.py', 'core.py', 'envs/null.py', 'envs/tonedetection.py', 'envs/reaching.py', '../../ngym_usage/bsc_run.py', '../../anaconda3/lib/python3.7/site-packages/stable_baselines/a2c/a2c.py', '../../anaconda3/lib/python3.7/site-packages/stable_baselines/common/policies.py']
+

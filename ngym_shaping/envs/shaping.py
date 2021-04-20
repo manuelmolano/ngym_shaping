@@ -7,8 +7,8 @@ Created on Fri Apr 16 15:44:59 2021
 """
 import numpy as np
 
-import neurogym as ngym
-from neurogym import spaces
+import ngym_shaping as ngym
+from ngym_shaping import spaces
 
 
 class Shaping(ngym.TrialEnv):

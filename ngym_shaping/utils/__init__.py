@@ -1,0 +1,1 @@
+from ngym_shaping.utils.plotting import plot_env
