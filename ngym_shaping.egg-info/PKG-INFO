@@ -1,0 +1,12 @@
+Metadata-Version: 2.1
+Name: ngym-shaping
+Version: 0.0.1
+Summary: ngym_shaping: Gym-style cognitive neuroscience tasks
+Home-page: https://github.com/manuelmolano/ngym_shaping
+Author: Manuel Molano, Guangyu Robert Yang, and contributors
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
+Provides-Extra: psychopy
+Provides-Extra: all
+Provides-Extra: dev

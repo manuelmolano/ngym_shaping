@@ -145,3 +145,9 @@ class Shaping(ngym.TrialEnv):
             self.rep_counter += action_1_minus_1  # add to counter
         else:
             self.rep_counter = action_1_minus_1   # reset counter
+
+
+if __name__ == '__main__':
+    env = Shaping(stage=0)
+    ngym.utils.plot_env(env, fig_kwargs={'figsize': (12, 12)}, num_steps=50,
+                        ob_traces=['Fixation cue', 'Stim 1', 'Stim 2'], def_act=1)    
