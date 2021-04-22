@@ -134,7 +134,7 @@ class Shaping(ngym.TrialEnv):
             elif action == 3 - gt and self.stage != 1:  # 3-action is the other act
                 reward = self.rewards['fail']
 
-        info = {'new_trial': new_trial, 'gt': gt}
+        info = {'new_trial': new_trial, 'gt': gt, 'real_performance': self.real_performance}  # TODO: think!
         return self.ob_now, reward, False, info
 
     def count(self, action):
@@ -154,6 +154,13 @@ if __name__ == '__main__':
     timing = {'decision': 1000}
     rewards = {'abort': -0.1, 'correct': +1., 'fail': -1.}
     env = Shaping(stage=2, timing=timing, rewards=rewards)
+    env.reset()
+    for ind in range(100):
+        action = 1
+        ob_now, reward, _, info = env.step(action)
+        if info['new_trial']:
+            print(info['gt'])
+            print(info['gt'] == action)
     ngym.utils.plot_env(env, fig_kwargs={'figsize': (12, 12)}, num_steps=50,
                         ob_traces=['Fixation cue', 'Stim 1', 'Stim 2'])
     # ,def_act=1)
