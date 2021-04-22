@@ -32,15 +32,15 @@ class Shaping(ngym.TrialEnv):
                  sigma=1.0, stage=4, max_num_rep=3):
         super().__init__(dt=dt)
         self.abort = False
-        self.choices = [1, 2] # right or left options
-        delays = (0) # until stage 3 there are no delays
+        self.choices = [1, 2]  # right or left options
+        delays = (0)  # until stage 3 there are no delays
         self.cohs = np.array([51.2])*stim_scale
         # cohs specifies the amount of evidence (modulated by stim_scale)
         # cohs = How much different are right and left stimulus
-        self.sigma = 0 # How much noise is applied
+        self.sigma = 0  # How much noise is applied
         # until stage 4 there is not noise
         self.stage = stage
-        self.first_counts = False # first answer is not penalized
+        self.first_counts = False  # first answer is not penalized
         # this only happens in stage 1
         self.max_num_rep = max_num_rep
         self.rep_counter = 0
@@ -63,8 +63,8 @@ class Shaping(ngym.TrialEnv):
             self.sigma = sigma / np.sqrt(self.dt)  # Input noise
 
         if rewards:
-            self.rewards.update(rewards)        
-        self.timing = {'fixation': 0, 'stimulus': 300, 'delay':delays,
+            self.rewards.update(rewards)
+        self.timing = {'fixation': 0, 'stimulus': 300, 'delay': delays,
                        'decision': 400}
         if timing:
             self.timing.update(timing)
@@ -153,6 +153,7 @@ if __name__ == '__main__':
     plt.close('all')
     timing = {'decision': 1000}
     rewards = {'abort': -0.1, 'correct': +1., 'fail': -1.}
-    env = Shaping(stage=4, timing=timing, rewards=rewards)
+    env = Shaping(stage=2, timing=timing, rewards=rewards)
     ngym.utils.plot_env(env, fig_kwargs={'figsize': (12, 12)}, num_steps=50,
-                        ob_traces=['Fixation cue', 'Stim 1', 'Stim 2']) # , def_act=1)    
+                        ob_traces=['Fixation cue', 'Stim 1', 'Stim 2'])
+    # ,def_act=1)
