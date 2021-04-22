@@ -124,13 +124,14 @@ class Shaping(ngym.TrialEnv):
             # allow change of mind
             new_trial = True if self.stage != 1 else action == gt
             if self.stage == 0:
-                reward = 0 if self.rep_counter >= self.max_num_rep\
-                    else self.rewards['correct'] # reward is 0 if it repeating more than it should
                 self.count(action)
+                # reward is 0 if it repeating more than it should
+                reward = 0 if abs(self.rep_counter) > self.max_num_rep\
+                    else self.rewards['correct']
             elif action == gt:
                 reward = self.rewards['correct']
                 self.performance = 1
-            elif action == 3 - gt:  # 3-action is the other act
+            elif action == 3 - gt and self.stage != 1:  # 3-action is the other act
                 reward = self.rewards['fail']
 
         info = {'new_trial': new_trial, 'gt': gt}
@@ -148,6 +149,10 @@ class Shaping(ngym.TrialEnv):
 
 
 if __name__ == '__main__':
-    env = Shaping(stage=0)
+    import matplotlib.pyplot as plt
+    plt.close('all')
+    timing = {'decision': 1000}
+    rewards = {'abort': -0.1, 'correct': +1., 'fail': -1.}
+    env = Shaping(stage=4, timing=timing, rewards=rewards)
     ngym.utils.plot_env(env, fig_kwargs={'figsize': (12, 12)}, num_steps=50,
-                        ob_traces=['Fixation cue', 'Stim 1', 'Stim 2'], def_act=1)    
+                        ob_traces=['Fixation cue', 'Stim 1', 'Stim 2']) # , def_act=1)    
