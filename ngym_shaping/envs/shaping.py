@@ -133,6 +133,9 @@ class Shaping(ngym.TrialEnv):
                 self.performance = 1
             elif action == 3 - gt and self.stage != 1:  # 3-action is the other act
                 reward = self.rewards['fail']
+        # if self.stage != 1:
+        #     self.real_performance = self.performance
+        # else:
 
         info = {'new_trial': new_trial, 'gt': gt, 'real_performance': self.real_performance}  # TODO: think!
         return self.ob_now, reward, False, info
