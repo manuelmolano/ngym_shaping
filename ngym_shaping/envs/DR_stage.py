@@ -9,6 +9,9 @@ import numpy as np
 
 import ngym_shaping as ngym
 from ngym_shaping import spaces
+from ngym_shaping.wrappers.block import ScheduleEnvs_condition as sch_cond
+from ngym_shaping.utils.scheduler import SequentialSchedule_condition as sq_sch_cnd
+from ngym_shaping.wrappers import mean_perf
 
 
 class DR_stage(ngym.TrialEnv):
@@ -73,6 +76,7 @@ class DR_stage(ngym.TrialEnv):
         self.action_space = spaces.Discrete(3)
         self.observation_space = spaces.Box(-np.inf, np.inf, shape=(3,),
                                             dtype=np.float32)
+        self.real_performance = False
 
     def _new_trial(self, **kwargs):
         # ---------------------------------------------------------------------
@@ -106,7 +110,6 @@ class DR_stage(ngym.TrialEnv):
         if self.stage == 1:
             self.first_action_flag = True
             self.real_performance = False
-            print('ooooooo')
         return trial
 
     def _step(self, action):
@@ -130,6 +133,7 @@ class DR_stage(ngym.TrialEnv):
                 # reward is 0 if it repeating more than it should
                 reward = 0 if abs(self.rep_counter) > self.max_num_rep\
                     else self.rewards['correct']
+                self.performance = reward == self.rewards['correct']
             elif action == gt:
                 reward = self.rewards['correct']
                 self.performance = 1
@@ -143,11 +147,6 @@ class DR_stage(ngym.TrialEnv):
                 if self.first_action_flag:
                     self.real_performance = action == gt
                     self.first_action_flag = False
-
-        # if self.stage != 1:
-        #     self.real_performance = self.performance
-        # else:
-
         info = {'new_trial': new_trial, 'gt': gt,
                 'real_performance': self.real_performance}  # TODO: think!
         return self.ob_now, reward, False, info
@@ -163,33 +162,58 @@ class DR_stage(ngym.TrialEnv):
             self.rep_counter = action_1_minus_1   # reset counter
 
 
+def shaping(stages=None, th=0.75):
+    def cond(action, obs, rew, info):
+        return info['mean_perf'] > th
+    if stages is None:
+        stages = np.arange(4)
+    envs = []
+    for stg in stages:
+        env = DR_stage(stage=stg)
+        env = mean_perf.MeanPerf(env)
+        envs.append(env)
+    schedule = sq_sch_cnd(n=len(envs), cond=cond)
+    env = sch_cond(envs, schedule, env_input=False)
+    return env
+
+
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     plt.close('all')
-    timing = {'decision': 1000}
-    rewards = {'abort': -0.1, 'correct': +1., 'fail': -1.}
-    env = Shaping(stage=1, timing=timing, rewards=rewards)
+    # timing = {'decision': 1000}
+    # rewards = {'abort': -0.1, 'correct': +1., 'fail': -1.}
+    # env = Shaping(stage=1, timing=timing, rewards=rewards)
+    env = shaping(stages=None, th=0.75)
     env.reset()
     real_perf = []
     perf = []
     rew = []
-    for ind in range(100):
-        action = np.random.randint(-1, 3)
+    act = []
+    gt = []
+    stg = []
+    for ind in range(1000):
+        action = env.gt_now  # correct action (gt means ground-truth)
         ob_now, reward, _, info = env.step(action)
-        # print(info['real_performance'])
         real_perf.append(info['real_performance'])
         rew.append(reward)
+        act.append(action)
+        gt.append(info['gt'])
+        stg.append(env.stage)
         if info['new_trial']:
             perf.append(info['performance'])
         else:
             perf.append(0)
-            # print('---------')
-            # print(info['real_performance'])
-            # print(info['gt'] == action)
     # ngym.utils.plot_env(env, fig_kwargs={'figsize': (12, 12)}, num_steps=50,
     #                     ob_traces=['Fixation cue', 'Stim 1', 'Stim 2'])
-    plt.figure()
-    plt.plot(rew)
-    plt.plot(np.array(perf)+1)
-    plt.plot(np.array(real_perf)+2)
-    # ,def_act=1)
+    f, ax = plt.subplots(nrows=5, ncols=1)
+    ax[0].plot(rew, label='reward')
+    ax[0].set_title('reward')
+    ax[1].plot(np.array(perf), label='perf')
+    ax[1].set_title('perf')
+    ax[2].plot(np.array(real_perf), label='real perf')
+    ax[2].set_title('real perf')
+    ax[3].plot(np.array(act), label='actions')
+    ax[3].set_title('actions')
+    ax[4].plot(np.array(stg), label='stages')
+    ax[4].set_title('stages')
+    plt.legend()

@@ -214,8 +214,9 @@ class ScheduleEnvs_condition(TrialWrapper):
 
     def step(self, action):
         obs, reward, done, info = self.env.step(action)
-        self.i_env = self.schedule(action=action, obs=obs, reward=reward,
-                                   info=info)
+        if info['new_trial']:
+            self.i_env = self.schedule(action=action, obs=obs, reward=reward,
+                                       info=info)
         return obs, reward, done, info
 
 

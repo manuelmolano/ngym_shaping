@@ -102,5 +102,17 @@ class RandomBlockSchedule(BaseSchedule):
         return self.i
 
 
+class SequentialSchedule_condition(BaseSchedule):
+    """Sequential schedules conditioned on the outputs of the step function"""
+
+    def __init__(self, n, cond):
+        super().__init__(n)
+        self.cond = cond
+
+    def __call__(self, action, obs, reward, info):
+        env_change = self.cond(action, obs, reward, info)
+        if env_change and self.i < self.n-1:
+            self.i += 1
+        return self.i
 
 
