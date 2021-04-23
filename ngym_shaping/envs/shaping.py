@@ -11,7 +11,7 @@ import ngym_shaping as ngym
 from ngym_shaping import spaces
 
 
-class Shaping(ngym.TrialEnv):
+class DR_stage(ngym.TrialEnv):
     """Perceptual decision-making with delayed responses.
 
     Agents have to integrate two stimuli and report which one is
