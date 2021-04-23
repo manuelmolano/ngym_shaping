@@ -103,7 +103,10 @@ class Shaping(ngym.TrialEnv):
         self.set_ob([1, 0, 0], 'delay')
 
         self.set_groundtruth(trial['ground_truth'], 'decision')
-
+        if self.stage == 1:
+            self.first_action_flag = True
+            self.real_performance = False
+            print('ooooooo')
         return trial
 
     def _step(self, action):
@@ -122,7 +125,6 @@ class Shaping(ngym.TrialEnv):
                 reward = self.rewards['abort']
         elif self.in_period('decision') and action != 0:
             # allow change of mind
-            new_trial = True if self.stage != 1 else action == gt
             if self.stage == 0:
                 self.count(action)
                 # reward is 0 if it repeating more than it should
@@ -133,11 +135,21 @@ class Shaping(ngym.TrialEnv):
                 self.performance = 1
             elif action == 3 - gt and self.stage != 1:  # 3-action is the other act
                 reward = self.rewards['fail']
+            if self.stage != 1:
+                new_trial = True
+                self.real_performance = self.performance
+            else:
+                new_trial = action == gt
+                if self.first_action_flag:
+                    self.real_performance = action == gt
+                    self.first_action_flag = False
+
         # if self.stage != 1:
         #     self.real_performance = self.performance
         # else:
 
-        info = {'new_trial': new_trial, 'gt': gt, 'real_performance': self.real_performance}  # TODO: think!
+        info = {'new_trial': new_trial, 'gt': gt,
+                'real_performance': self.real_performance}  # TODO: think!
         return self.ob_now, reward, False, info
 
     def count(self, action):
@@ -156,14 +168,28 @@ if __name__ == '__main__':
     plt.close('all')
     timing = {'decision': 1000}
     rewards = {'abort': -0.1, 'correct': +1., 'fail': -1.}
-    env = Shaping(stage=2, timing=timing, rewards=rewards)
+    env = Shaping(stage=1, timing=timing, rewards=rewards)
     env.reset()
+    real_perf = []
+    perf = []
+    rew = []
     for ind in range(100):
-        action = 1
+        action = np.random.randint(-1, 3)
         ob_now, reward, _, info = env.step(action)
+        # print(info['real_performance'])
+        real_perf.append(info['real_performance'])
+        rew.append(reward)
         if info['new_trial']:
-            print(info['gt'])
-            print(info['gt'] == action)
-    ngym.utils.plot_env(env, fig_kwargs={'figsize': (12, 12)}, num_steps=50,
-                        ob_traces=['Fixation cue', 'Stim 1', 'Stim 2'])
+            perf.append(info['performance'])
+        else:
+            perf.append(0)
+            # print('---------')
+            # print(info['real_performance'])
+            # print(info['gt'] == action)
+    # ngym.utils.plot_env(env, fig_kwargs={'figsize': (12, 12)}, num_steps=50,
+    #                     ob_traces=['Fixation cue', 'Stim 1', 'Stim 2'])
+    plt.figure()
+    plt.plot(rew)
+    plt.plot(np.array(perf)+1)
+    plt.plot(np.array(real_perf)+2)
     # ,def_act=1)
