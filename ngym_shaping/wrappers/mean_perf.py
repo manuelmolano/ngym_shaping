@@ -22,7 +22,7 @@ class MeanPerf(TrialWrapper):
         'paper_name': None
     }
 
-    def __init__(self, env, perf_th=0.75, perf_w=100, key='real_performance'):
+    def __init__(self, env, perf_w=100, key='real_performance'):
         """
         block_nch: duration of each block containing a specific number
         of active choices
@@ -33,7 +33,6 @@ class MeanPerf(TrialWrapper):
         self.max_nch = len(self.unwrapped.choices)  # Max number of choices
         self.perf_w = perf_w
         self.perf = deque(maxlen=perf_w)
-        self.perf_th = perf_th
         self.key = key
 
     def new_trial(self, **kwargs):

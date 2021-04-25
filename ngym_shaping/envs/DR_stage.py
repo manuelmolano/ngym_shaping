@@ -162,7 +162,7 @@ class DR_stage(ngym.TrialEnv):
             self.rep_counter = action_1_minus_1   # reset counter
 
 
-def shaping(stages=None, th=0.75):
+def shaping(stages=None, th=0.75, w=100):
     def cond(action, obs, rew, info):
         return info['mean_perf'] > th
     if stages is None:
@@ -170,9 +170,9 @@ def shaping(stages=None, th=0.75):
     envs = []
     for stg in stages:
         env = DR_stage(stage=stg)
-        env = mean_perf.MeanPerf(env)
+        env = mean_perf.MeanPerf(env, perf_w=w)
         envs.append(env)
-    schedule = sq_sch_cnd(n=len(envs), cond=cond)
+    schedule = sq_sch_cnd(n=len(envs), cond=cond, w=w)
     env = sch_cond(envs, schedule, env_input=False)
     return env
 
@@ -183,7 +183,7 @@ if __name__ == '__main__':
     # timing = {'decision': 1000}
     # rewards = {'abort': -0.1, 'correct': +1., 'fail': -1.}
     # env = Shaping(stage=1, timing=timing, rewards=rewards)
-    env = shaping(stages=None, th=0.75)
+    env = shaping(stages=None, th=0.75, w=20)
     env.reset()
     real_perf = []
     perf = []
@@ -205,7 +205,7 @@ if __name__ == '__main__':
             perf.append(0)
     # ngym.utils.plot_env(env, fig_kwargs={'figsize': (12, 12)}, num_steps=50,
     #                     ob_traces=['Fixation cue', 'Stim 1', 'Stim 2'])
-    f, ax = plt.subplots(nrows=5, ncols=1)
+    f, ax = plt.subplots(nrows=5, ncols=1, sharex=True)
     ax[0].plot(rew, label='reward')
     ax[0].set_title('reward')
     ax[1].plot(np.array(perf), label='perf')
