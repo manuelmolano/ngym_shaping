@@ -55,7 +55,7 @@ def _get_envs(foldername=None, env_prefix=None, allow_list=None):
     return env_dict
 
 
-NATIVE_ALLOW_LIST = ['Shaping']
+NATIVE_ALLOW_LIST = ['DR_stage']
 ALL_NATIVE_ENVS = _get_envs(foldername=None, env_prefix=None,
                             allow_list=NATIVE_ALLOW_LIST)
 
