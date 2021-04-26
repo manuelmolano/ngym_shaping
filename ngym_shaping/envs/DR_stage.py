@@ -109,7 +109,7 @@ class DR_stage(ngym.TrialEnv):
         self.set_groundtruth(trial['ground_truth'], 'decision')
         if self.stage == 1:
             self.first_action_flag = True
-            self.real_performance = False
+        self.real_performance = False
         return trial
 
     def _step(self, action):
@@ -213,7 +213,9 @@ if __name__ == '__main__':
     ax[2].plot(np.array(real_perf), label='real perf')
     ax[2].set_title('real perf')
     ax[3].plot(np.array(act), label='actions')
+    ax[3].plot(np.array(gt), '--', label='gt')
     ax[3].set_title('actions')
+    ax[3].legend()
     ax[4].plot(np.array(stg), label='stages')
     ax[4].set_title('stages')
     plt.legend()
