@@ -153,7 +153,7 @@ class DR_stage(ngym.TrialEnv):
 
     def count(self, action):
         '''
-        counts nubmer of repetitions of action.
+        counts number of repetitions of action.
         '''
         action_1_minus_1 = action - 2/action
         if np.sign(self.rep_counter) == np.sign(action_1_minus_1):
@@ -162,7 +162,7 @@ class DR_stage(ngym.TrialEnv):
             self.rep_counter = action_1_minus_1   # reset counter
 
 
-def shaping(stages=None, th=0.75, w=100):
+def shaping(stages=None, th=0.75, perf_w=20, stg_w=100):
     def cond(action, obs, rew, info):
         return info['mean_perf'] > th
     if stages is None:
@@ -170,9 +170,10 @@ def shaping(stages=None, th=0.75, w=100):
     envs = []
     for stg in stages:
         env = DR_stage(stage=stg)
-        env = mean_perf.MeanPerf(env, perf_w=w)
+        env = mean_perf.MeanPerf(env, perf_w=perf_w)
         envs.append(env)
-    schedule = sq_sch_cnd(n=len(envs), cond=cond, w=w)
+    # TODO: explain
+    schedule = sq_sch_cnd(n=len(envs), cond=cond, w=stg_w)
     env = sch_cond(envs, schedule, env_input=False)
     return env
 
