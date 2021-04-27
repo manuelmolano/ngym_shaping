@@ -114,7 +114,7 @@ class SequentialSchedule_condition(BaseSchedule):
         env_change = self.cond(action, obs, reward, info)
         self.count += 1
         if env_change and self.i < self.n-1 and self.count > self.w:
-            print('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+            print('---------')
             print(self.count)
             print(self.i)
             self.i += 1
