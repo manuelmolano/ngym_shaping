@@ -48,8 +48,7 @@ class DR_stage(ngym.TrialEnv):
         self.max_num_rep = max_num_rep
         self.rep_counter = 0
         # Rewards
-        self.rewards = {'abort': -0.1, 'correct': +1.,
-                        'fail': 0.}
+        self.rewards = {'abort': -0.1, 'correct': +1., 'fail': 0.}
 
         if stage == 0:
             self.rewards = {'abort': -0.1, 'correct': +1., 'fail': +1.}
@@ -58,7 +57,6 @@ class DR_stage(ngym.TrialEnv):
         elif stage == 1:
             self.first_counts = True
         elif stage == 3:
-            self.cohs = np.array([51.2])*stim_scale
             delays = (0, 300, 1000)  # delays are introduced
         elif stage == 4:
             self.cohs = np.array([0, 6.4, 12.8, 25.6, 51.2])*stim_scale
@@ -167,7 +165,7 @@ class DR_stage(ngym.TrialEnv):
             self.rep_counter = action_1_minus_1   # reset counter
 
 
-def shaping(stages=None, th=0.75, perf_w=20, stg_w=100):
+def shaping(stages=None, th=0.75, perf_w=20, stg_w=100, **env_kwargs):
     """
     Put environments together.
 
@@ -187,7 +185,7 @@ def shaping(stages=None, th=0.75, perf_w=20, stg_w=100):
         stages = np.arange(4)
     envs = []
     for stg in stages:
-        env = DR_stage(stage=stg)
+        env = DR_stage(stage=stg, **env_kwargs)
         env = mean_perf.MeanPerf(env, perf_w=perf_w)
         envs.append(env)
     schedule = sq_sch_cnd(n=len(envs), cond=cond, w=stg_w)
@@ -202,10 +200,11 @@ def shaping(stages=None, th=0.75, perf_w=20, stg_w=100):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     plt.close('all')
-    # timing = {'decision': 1000}
-    # rewards = {'abort': -0.1, 'correct': +1., 'fail': -1.}
+    timing = {'decision': 1000, 'stimulus': 100}
+    rewards = {'abort': -0.1, 'correct': +1., 'fail': -1.}
+    env_kwargs = {'timing': timing, 'rewards': rewards}
     # env = Shaping(stage=1, timing=timing, rewards=rewards)
-    env = shaping(stages=None, th=0.75, perf_w=20, stg_w=100)
+    env = shaping(stages=None, th=0.75, perf_w=20, stg_w=100, **env_kwargs)
     env.reset()
     real_perf = []
     perf = []
@@ -225,8 +224,8 @@ if __name__ == '__main__':
             perf.append(info['performance'])
         else:
             perf.append(0)
-    # ngym.utils.plot_env(env, fig_kwargs={'figsize': (12, 12)}, num_steps=50,
-    #                     ob_traces=['Fixation cue', 'Stim 1', 'Stim 2'])
+    ngym.utils.plot_env(env, fig_kwargs={'figsize': (12, 12)}, num_steps=50,
+                        ob_traces=['Fixation cue', 'Stim 1', 'Stim 2'])
     f, ax = plt.subplots(nrows=5, ncols=1, sharex=True)
     ax[0].plot(rew, label='reward')
     ax[0].set_title('reward')
