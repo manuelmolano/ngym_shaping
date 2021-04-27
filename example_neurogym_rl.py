@@ -33,7 +33,7 @@ for n_stps in num_steps:
         model = A2C(LstmPolicy, env, verbose=1,
                     policy_kwargs={'feature_extraction': "mlp"})
         # Train model
-        model.learn(total_timesteps=int(n_stps), log_interval=10000)
+        model.learn(total_timesteps=int(n_stps), log_interval=100000)
         data = ng_sh.utils.plotting.run_env(env, num_trials=1000, model=model)
         perf = np.array(data['perf'])
         mean_perf.append(np.mean(perf[perf != -1.]))
