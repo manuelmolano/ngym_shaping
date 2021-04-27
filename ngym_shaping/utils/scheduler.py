@@ -115,6 +115,7 @@ class SequentialSchedule_condition(BaseSchedule):
         self.count += 1
         if env_change and self.i < self.n-1 and self.count > self.w:
             print('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+            print(self.count)
             print(self.i)
             self.i += 1
             print(self.i)
