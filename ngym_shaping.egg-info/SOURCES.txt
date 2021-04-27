@@ -8,9 +8,9 @@ ngym_shaping.egg-info/SOURCES.txt
 ngym_shaping.egg-info/dependency_links.txt
 ngym_shaping.egg-info/requires.txt
 ngym_shaping.egg-info/top_level.txt
+ngym_shaping/envs/DR_stage.py
 ngym_shaping/envs/__init__.py
 ngym_shaping/envs/registration.py
-ngym_shaping/envs/shaping.py
 ngym_shaping/utils/__init__.py
 ngym_shaping/utils/data.py
 ngym_shaping/utils/info.py
@@ -24,6 +24,7 @@ ngym_shaping/utils/test_plotting.py
 ngym_shaping/utils/test_utils.py
 ngym_shaping/wrappers/__init__.py
 ngym_shaping/wrappers/block.py
+ngym_shaping/wrappers/mean_perf.py
 ngym_shaping/wrappers/monitor.py
 ngym_shaping/wrappers/noise.py
 ngym_shaping/wrappers/pass_action.py
