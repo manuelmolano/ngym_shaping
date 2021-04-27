@@ -59,7 +59,7 @@ class DR_stage(ngym.TrialEnv):
             self.first_counts = True
         elif stage == 3:
             self.cohs = np.array([51.2])*stim_scale
-            delays = (0, 300, 1000)
+            delays = (0, 300, 1000)  # delays are introduced
         elif stage == 4:
             self.cohs = np.array([0, 6.4, 12.8, 25.6, 51.2])*stim_scale
             delays = (0, 300, 1000)
@@ -135,9 +135,12 @@ class DR_stage(ngym.TrialEnv):
                     else self.rewards['correct']
                 self.performance = reward == self.rewards['correct']
             elif action == gt:
+                # correct behaviour: network action = gound truth
                 reward = self.rewards['correct']
                 self.performance = 1
-            elif action == 3 - gt and self.stage != 1:  # 3-action is the other act
+            elif action == 3 - gt and self.stage != 1:
+                # 3-action is the other act
+                # not correct behaviour
                 reward = self.rewards['fail']
             if self.stage != 1:
                 new_trial = True
@@ -148,7 +151,7 @@ class DR_stage(ngym.TrialEnv):
                     self.real_performance = action == gt
                     self.first_action_flag = False
         info = {'new_trial': new_trial, 'gt': gt,
-                'real_performance': self.real_performance}  # TODO: think!
+                'real_performance': self.real_performance}
         return self.ob_now, reward, False, info
 
     def count(self, action):
@@ -156,6 +159,7 @@ class DR_stage(ngym.TrialEnv):
         counts number of repetitions of action.
         '''
         action_1_minus_1 = action - 2/action
+        # XXX: do not understande action_1_minus_1
         if np.sign(self.rep_counter) == np.sign(action_1_minus_1):
             self.rep_counter += action_1_minus_1  # add to counter
         else:
@@ -163,6 +167,7 @@ class DR_stage(ngym.TrialEnv):
 
 
 def shaping(stages=None, th=0.75, perf_w=20, stg_w=100):
+    """Shaping function is able to put all environments togeher"""
     def cond(action, obs, rew, info):
         return info['mean_perf'] > th
     if stages is None:
@@ -172,8 +177,11 @@ def shaping(stages=None, th=0.75, perf_w=20, stg_w=100):
         env = DR_stage(stage=stg)
         env = mean_perf.MeanPerf(env, perf_w=perf_w)
         envs.append(env)
-    # TODO: explain
     schedule = sq_sch_cnd(n=len(envs), cond=cond, w=stg_w)
+    # schedule decides when to change stage:
+    # if the condition (mean_perf > threshold) is met, if stage 4 is not
+    # reached yet and if a certain number of trails have been passed in this
+    # step, then step increases.
     env = sch_cond(envs, schedule, env_input=False)
     return env
 
@@ -184,7 +192,7 @@ if __name__ == '__main__':
     # timing = {'decision': 1000}
     # rewards = {'abort': -0.1, 'correct': +1., 'fail': -1.}
     # env = Shaping(stage=1, timing=timing, rewards=rewards)
-    env = shaping(stages=None, th=0.75, w=20)
+    env = shaping(stages=None, th=0.75, perf_w=20, stg_w=100)
     env.reset()
     real_perf = []
     perf = []
