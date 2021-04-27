@@ -158,8 +158,9 @@ class DR_stage(ngym.TrialEnv):
         '''
         counts number of repetitions of action.
         '''
+        # action_1_minus_1 is juss just the original action expressed as -1 and 1
+        # instead of 1 and 2
         action_1_minus_1 = action - 2/action
-        # XXX: do not understande action_1_minus_1
         if np.sign(self.rep_counter) == np.sign(action_1_minus_1):
             self.rep_counter += action_1_minus_1  # add to counter
         else:
@@ -167,7 +168,19 @@ class DR_stage(ngym.TrialEnv):
 
 
 def shaping(stages=None, th=0.75, perf_w=20, stg_w=100):
-    """Shaping function is able to put all environments togeher"""
+    """
+    Put environments together.
+
+    stages : list, optional
+        list of stages to add to the shaping. If None stages=np.arange(4) (None)
+    th : float, optional
+        performance threshold to increase the stage (0.75)
+    perf_w : int, optional
+        window to compute performance (20)
+    stg_w: int, optional
+        minimum number of trials in each stage (100)
+
+    """
     def cond(action, obs, rew, info):
         return info['mean_perf'] > th
     if stages is None:
@@ -179,9 +192,9 @@ def shaping(stages=None, th=0.75, perf_w=20, stg_w=100):
         envs.append(env)
     schedule = sq_sch_cnd(n=len(envs), cond=cond, w=stg_w)
     # schedule decides when to change stage:
-    # if the condition (mean_perf > threshold) is met, if stage 4 is not
-    # reached yet and if a certain number of trails have been passed in this
-    # step, then step increases.
+    # if the condition (mean_perf > threshold) is met and last stage (4) has not
+    # been reached and a certain number of trials have been elapsed in this
+    # stage, then stage is increased.
     env = sch_cond(envs, schedule, env_input=False)
     return env
 
