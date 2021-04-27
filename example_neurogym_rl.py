@@ -19,7 +19,7 @@ stg_w = 100
 timing = {'fixation': ('constant', 0),
           'stimulus': ('constant', 300),
           'delay': (0, 100, 300),
-          'decision': ('constant', 300)}
+          'decision': ('constant', 200)}
 rewards = {'abort': -0.1, 'correct': +1., 'fail': 0.}  # no punishment
 env_kwargs = {'timing': timing, 'rewards': rewards}
 for ind in range(num_instances):
