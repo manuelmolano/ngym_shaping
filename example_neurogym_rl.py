@@ -10,18 +10,18 @@ from stable_baselines.common.vec_env import DummyVecEnv
 from stable_baselines import A2C  # ACER, PPO2
 warnings.filterwarnings('default')
 sv_f = '/home/molano/CV-learning/results_280421/'
-num_steps = 1e5*np.arange(10, 21, 2)
+num_steps = [500000]  # 1e5*np.arange(10, 21, 2)
 num_instances = 3
 mean_perf = []
-stages = None
+stages = np.arange(5)
 th = 0.75
-perf_w = 50
+perf_w = 100
 stg_w = 100
 timing = {'fixation': ('constant', 0),
           'stimulus': ('constant', 300),
           'delay': (0, 100, 300),
           'decision': ('constant', 200)}
-rewards = {'abort': -0.1, 'correct': +1., 'fail': 0.}  # no punishment
+rewards = {'abort': -0.1, 'correct': +1., 'fail': -0.1}  # no punishment
 env_kwargs = {'timing': timing, 'rewards': rewards}
 for n_stps in num_steps:
     print('xxxxxxxxxxxxxxxxxx')
@@ -35,7 +35,7 @@ for n_stps in num_steps:
         model = A2C(LstmPolicy, env, verbose=1,
                     policy_kwargs={'feature_extraction': "mlp"})
         # Train model
-        model.learn(total_timesteps=int(n_stps), log_interval=100000)
+        model.learn(total_timesteps=int(n_stps), log_interval=10e10)
         data = ng_sh.utils.plotting.run_env(env, num_trials=1000, model=model)
         perf = np.array(data['perf'])
         mean_perf.append(np.mean(perf[perf != -1.]))
