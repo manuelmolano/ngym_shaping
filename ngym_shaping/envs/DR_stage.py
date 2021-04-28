@@ -12,6 +12,7 @@ from ngym_shaping import spaces
 from ngym_shaping.wrappers.block import ScheduleEnvs_condition as sch_cond
 from ngym_shaping.utils.scheduler import SequentialSchedule_condition as sq_sch_cnd
 from ngym_shaping.wrappers import mean_perf
+from ngym_shaping.wrappers import monitor
 
 
 class DR_stage(ngym.TrialEnv):
@@ -165,7 +166,8 @@ class DR_stage(ngym.TrialEnv):
             self.rep_counter = action_1_minus_1   # reset counter
 
 
-def shaping(stages=None, th=0.75, perf_w=20, stg_w=100, **env_kwargs):
+def shaping(stages=None, th=0.75, perf_w=20, stg_w=100, sv_folder=None,
+            sv_per=10e5, **env_kwargs):
     """
     Put environments together.
 
@@ -182,11 +184,13 @@ def shaping(stages=None, th=0.75, perf_w=20, stg_w=100, **env_kwargs):
     def cond(action, obs, rew, info):
         return info['mean_perf'] > th
     if stages is None:
-        stages = np.arange(4)
+        stages = np.arange(5)
     envs = []
     for stg in stages:
         env = DR_stage(stage=stg, **env_kwargs)
         env = mean_perf.MeanPerf(env, perf_w=perf_w)
+        if sv_folder is not None:
+            env = monitor.Monitor(env, folder=sv_folder, sv_per=sv_per)
         envs.append(env)
     schedule = sq_sch_cnd(n=len(envs), cond=cond, w=stg_w)
     # schedule decides when to change stage:
@@ -212,8 +216,8 @@ if __name__ == '__main__':
     act = []
     gt = []
     stg = []
-    for ind in range(1000):
-        action = env.gt_now  # correct action (gt means ground-truth)
+    for ind in range(100):
+        action = 1  # env.gt_now  # correct action (gt means ground-truth)
         ob_now, reward, _, info = env.step(action)
         real_perf.append(info['real_performance'])
         rew.append(reward)

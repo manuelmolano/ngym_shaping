@@ -9,6 +9,7 @@ from stable_baselines.common.policies import LstmPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
 from stable_baselines import A2C  # ACER, PPO2
 warnings.filterwarnings('default')
+sv_f = '/home/molano/CV-learning/results_280421/'
 num_steps = 1e5*np.arange(10, 21, 2)
 num_instances = 3
 mean_perf = []
@@ -27,7 +28,8 @@ for n_stps in num_steps:
     print(n_stps)
     for ind in range(num_instances):
         env = ng_sh.envs.DR_stage.shaping(stages=stages, th=th, perf_w=perf_w,
-                                          stg_w=stg_w, **env_kwargs)
+                                          stg_w=stg_w, sv_folder=sv_f,
+                                          **env_kwargs)
         env = DummyVecEnv([lambda: env])
         # Define model
         model = A2C(LstmPolicy, env, verbose=1,
