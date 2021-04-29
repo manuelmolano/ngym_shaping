@@ -150,7 +150,7 @@ class DR_stage(ngym.TrialEnv):
                     self.real_performance = action == gt
                     self.first_action_flag = False
         info = {'new_trial': new_trial, 'gt': gt,
-                'real_performance': self.real_performance}
+                'real_performance': self.real_performance, 'stage': self.stage}
         return self.ob_now, reward, False, info
 
     def count(self, action):
@@ -190,7 +190,8 @@ def shaping(stages=None, th=0.75, perf_w=20, stg_w=100, sv_folder=None,
         env = DR_stage(stage=stg, **env_kwargs)
         env = mean_perf.MeanPerf(env, perf_w=perf_w)
         if sv_folder is not None:
-            env = monitor.Monitor(env, folder=sv_folder, sv_per=sv_per)
+            env = monitor.Monitor(env, folder=sv_folder, name='stg_'+str(stg),
+                                  sv_per=sv_per)
         envs.append(env)
     schedule = sq_sch_cnd(n=len(envs), cond=cond, w=stg_w)
     # schedule decides when to change stage:
@@ -216,8 +217,8 @@ if __name__ == '__main__':
     act = []
     gt = []
     stg = []
-    for ind in range(100):
-        action = 1  # env.gt_now  # correct action (gt means ground-truth)
+    for ind in range(1000):
+        action = env.gt_now  # correct action (gt means ground-truth)
         ob_now, reward, _, info = env.step(action)
         real_perf.append(info['real_performance'])
         rew.append(reward)
