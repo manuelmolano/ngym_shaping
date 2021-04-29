@@ -12,13 +12,13 @@ from stable_baselines import A2C  # ACER, PPO2
 warnings.filterwarnings('default')
 sv_f = '/home/molano/shaping/results_280421/'
 sv_f = '/home/manuel/shaping/results_280421/'
-num_steps = 100000  # 1e5*np.arange(10, 21, 2)
+num_steps = 200000  # 1e5*np.arange(10, 21, 2)
 num_instances = 3
 mean_perf = []
 stages = np.arange(5)
 th = 0.75
 perf_w = 100
-stg_w = 100
+stg_w = 1000
 timing = {'fixation': ('constant', 0),
           'stimulus': ('constant', 300),
           'delay': (0, 100, 300),
@@ -46,12 +46,21 @@ for ind in range(num_instances):
     # mean_perf.append(np.mean(perf[perf != -1.]))
 
     # print(mean_perf)
-    f, ax = plt.subplots()
-    ng_sh.utils.plotting.plot_rew_across_training(folder=sv_f_inst, ax=ax,
+    conv_w = 50
+    f, ax = plt.subplots(nrows=2, sharex=True)
+    ng_sh.utils.plotting.plot_rew_across_training(folder=sv_f_inst, ax=ax[0],
+                                                  fkwargs={'c': 'tab:red'},
+                                                  legend=False, zline=False,
+                                                  metric_name='performance',
+                                                  window=conv_w)
+    ng_sh.utils.plotting.plot_rew_across_training(folder=sv_f_inst, ax=ax[0],
                                                   fkwargs={'c': 'tab:blue'},
                                                   legend=False, zline=False,
-                                                  metric_name='performance')
-    ng_sh.utils.plotting.plot_rew_across_training(folder=sv_f_inst, ax=ax,
+                                                  metric_name='real_performance',
+                                                  window=conv_w)
+    ax[0].axhline(y=th)
+    ng_sh.utils.plotting.plot_rew_across_training(folder=sv_f_inst, ax=ax[1],
                                                   fkwargs={'c': 'tab:blue'},
                                                   legend=False, zline=False,
-                                                  metric_name='stage')
+                                                  metric_name='stage',
+                                                  window=conv_w)

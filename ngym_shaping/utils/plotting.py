@@ -405,11 +405,12 @@ def put_together_files(folder):
 
 
 def order_by_sufix(file_list):
-    sfx = [int(x[x.rfind('_')+1:x.rfind('.')]) for x in file_list]
+    sfx = [float(x[x.rfind('_')+1:x.rfind('.')]) for x in file_list]
     sorted_list = [x for _, x in sorted(zip(sfx, file_list))]
     return sorted_list
 
 
 if __name__ == '__main__':
     f = '/home/molano/res080220/SL_PerceptualDecisionMaking-v0_0/'
+    f = '/home/manuel/shaping/results_280421/instance_0/'
     plot_rew_across_training(folder=f)
