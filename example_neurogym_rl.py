@@ -10,6 +10,7 @@ from stable_baselines.common.policies import LstmPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
 from stable_baselines import A2C  # ACER, PPO2
 warnings.filterwarnings('default')
+learn = False
 sv_f = '/home/molano/shaping/results_280421/'
 sv_f = '/home/manuel/shaping/results_280421/'
 num_steps = 200000  # 1e5*np.arange(10, 21, 2)
@@ -28,14 +29,20 @@ env_kwargs = {'timing': timing, 'rewards': rewards}
 for ind in range(num_instances):
     sv_f_inst = sv_f+'/instance_'+str(ind)+'/'
     env = ng_sh.envs.DR_stage.shaping(stages=stages, th=th, perf_w=perf_w,
-                                      stg_w=stg_w, sv_folder=sv_f_inst, sv_per=100,
-                                      **env_kwargs)
-    env = DummyVecEnv([lambda: env])
-    # Define model
-    model = A2C(LstmPolicy, env, verbose=1,
-                policy_kwargs={'feature_extraction': "mlp"})
-    # Train model
-    model.learn(total_timesteps=num_steps, log_interval=10e10)
+                                      stg_w=stg_w, sv_folder=sv_f_inst,
+                                      sv_per=stg_w, **env_kwargs)
+    if learn:
+        env = DummyVecEnv([lambda: env])
+        # Define model
+        model = A2C(LstmPolicy, env, verbose=1,
+                    policy_kwargs={'feature_extraction': "mlp"})
+        # Train model
+        model.learn(total_timesteps=num_steps, log_interval=10e10)
+    else:
+        env.reset()
+        for ind in range(100000):
+            action = env.gt_now  # correct action (gt means ground-truth)
+            env.step(action)
     env.close()
     # env = ng_sh.envs.DR_stage.shaping(stages=[4], th=th, perf_w=perf_w,
     #                                   stg_w=stg_w, **env_kwargs)
@@ -47,6 +54,7 @@ for ind in range(num_instances):
 
     # print(mean_perf)
     conv_w = 50
+    plt.close('all')
     f, ax = plt.subplots(nrows=2, sharex=True)
     ng_sh.utils.plotting.plot_rew_across_training(folder=sv_f_inst, ax=ax[0],
                                                   fkwargs={'c': 'tab:red'},
@@ -58,9 +66,10 @@ for ind in range(num_instances):
                                                   legend=False, zline=False,
                                                   metric_name='real_performance',
                                                   window=conv_w)
-    ax[0].axhline(y=th)
+    ax[0].axhline(y=th, linestyle='--', color='k')
     ng_sh.utils.plotting.plot_rew_across_training(folder=sv_f_inst, ax=ax[1],
                                                   fkwargs={'c': 'tab:blue'},
                                                   legend=False, zline=False,
                                                   metric_name='stage',
                                                   window=conv_w)
+    f.savefig(sv_f_inst+'training.png', dpi=300)
