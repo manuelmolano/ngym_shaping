@@ -9,8 +9,9 @@ from stable_baselines.common.policies import LstmPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
 from stable_baselines import A2C  # ACER, PPO2
 warnings.filterwarnings('default')
-sv_f = '/home/molano/CV-learning/results_280421/'
-num_steps = [500000]  # 1e5*np.arange(10, 21, 2)
+sv_f = '/home/molano/shaping/results_280421/'
+# sv_f = '/home/manuel/CV-learning/results_280421/'
+num_steps = [2000000]  # 1e5*np.arange(10, 21, 2)
 num_instances = 3
 mean_perf = []
 stages = np.arange(5)
