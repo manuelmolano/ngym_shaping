@@ -26,7 +26,7 @@ timing = {'fixation': ('constant', 0),
 rewards = {'abort': -0.1, 'correct': +1., 'fail': -0.1}  # no punishment
 env_kwargs = {'timing': timing, 'rewards': rewards}
 for ind in range(num_instances):
-    sv_f_inst = sv_f+'/'+str(ind)+'/'
+    sv_f_inst = sv_f+'/instance_'+str(ind)+'/'
     env = ng_sh.envs.DR_stage.shaping(stages=stages, th=th, perf_w=perf_w,
                                       stg_w=stg_w, sv_folder=sv_f_inst, sv_per=100,
                                       **env_kwargs)
@@ -36,11 +36,16 @@ for ind in range(num_instances):
                 policy_kwargs={'feature_extraction': "mlp"})
     # Train model
     model.learn(total_timesteps=num_steps, log_interval=10e10)
-    data = ng_sh.utils.plotting.run_env(env, num_trials=1000, model=model)
-    perf = np.array(data['perf'])
-    mean_perf.append(np.mean(perf[perf != -1.]))
+    env.close()
+    # env = ng_sh.envs.DR_stage.shaping(stages=[4], th=th, perf_w=perf_w,
+    #                                   stg_w=stg_w, **env_kwargs)
+    # env = DummyVecEnv([lambda: env])
+    # ng_sh.utils.plotting.plot_env(env, num_trials=100, model=model)
+    # data = ng_sh.utils.plotting.run_env(env, num_trials=1000, model=model)
+    # perf = np.array(data['perf'])
+    # mean_perf.append(np.mean(perf[perf != -1.]))
 
-    print(mean_perf)
+    # print(mean_perf)
     f, ax = plt.subplots()
     ng_sh.utils.plotting.plot_rew_across_training(folder=sv_f_inst, ax=ax,
                                                   fkwargs={'c': 'tab:blue'},
