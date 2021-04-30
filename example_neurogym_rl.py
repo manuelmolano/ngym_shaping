@@ -36,6 +36,7 @@ def learning(num_instances, punish_3_vector, sv_f, stages, perf_w, stg_w,
                                 policy_kwargs={'feature_extraction': "mlp"})
                     # Train model
                     model.learn(total_timesteps=NUM_STEPS, log_interval=10e10)
+                    model.save(sv_f_inst+'model')
                 else:
                     env.reset()
                     for ind in range(NUM_RAND):
@@ -69,7 +70,7 @@ def plot_inst_punishment(num_instances, punish_3_vector, conv_w):
                                           legend=False, zline=False,
                                           metric_name='stage',
                                           window=conv_w)
-            f.savefig(sv_f_inst+'pun_'+str(round(pun, 2))+'.png', dpi=300)
+            f.savefig(sv_f_inst+'.png', dpi=300)
 
 
 def plot_figs(punish_6_vector, num_instances, conv_w):
@@ -93,7 +94,7 @@ def plot_figs(punish_6_vector, num_instances, conv_w):
                                           metric_name='stage')
     f.tight_layout()
     ax[0].legend()
-    f.savefig(sv_f+'/pun_'+pun_str+'_all_insts.png', dpi=300)
+    f.savefig(sv_f+'all_insts.png', dpi=300)
 
 
 if __name__ == '__main__':
@@ -107,7 +108,7 @@ if __name__ == '__main__':
     TH = 0.75
     NUM_RAND = 100000
 
-    plot_separate_figures = False
+    plot_separate_figures = True
     plot_all_figs = True
     num_instances = 3
     mean_perf = []
