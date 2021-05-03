@@ -20,7 +20,9 @@ def learning(num_instances, punish_3_vector, sv_f, stages, perf_w, stg_w,
     for i_i in range(num_instances):
         for pun in punish_3_vector:
             sv_f_inst = sv_f+'/pun_'+str(round(pun, 2))+'_inst_'+str(i_i)+'/'
+            print('---------')
             print(sv_f_inst)
+            print('---------')
             if not os.path.exists(sv_f_inst+'/bhvr_data_all.npz') or RERUN:
                 rewards = {'abort': -0.1, 'correct': +1., 'fail': pun}
                 env_kwargs['rewards'] = rewards
@@ -99,7 +101,7 @@ def plot_figs(punish_6_vector, num_instances, conv_w):
 
 if __name__ == '__main__':
     plt.close('all')
-    sv_f = '/home/molano/shaping/results_280421/'
+    sv_f = '/home/molano/shaping/results_280421/no_shaping/'
     # sv_f = '/home/manuel/shaping/results_280421/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/shaping/'
     RERUN = False
@@ -112,7 +114,7 @@ if __name__ == '__main__':
     plot_all_figs = True
     num_instances = 3
     mean_perf = []
-    stages = np.arange(5)
+    stages = [4]  # np.arange(5)
     perf_w = 100
     stg_w = 1000
     conv_w = 50
