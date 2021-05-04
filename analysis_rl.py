@@ -35,9 +35,12 @@ PRTCLS_IND_MAP = {'01234': -1, '1234': 0, '0234': 1, '0134': 2, '0134X': 3,
 THS_IND_MAP = {'full': 0.5, '0.6': 0.6, '0.65': 0.65, '0.7': 0.7,
                '0.75': 0.75, '0.8': 0.8, '0.85': 0.85, '0.9': 0.9}
 
+PUN_IND_MAP = {'0.0': 0, '-0.25': 1, '-0.5': 2}
+
 ALL_INDX = {}
 ALL_INDX.update(PRTCLS_IND_MAP)
 ALL_INDX.update(THS_IND_MAP)
+ALL_INDX.update(PUN_IND_MAP)
 
 
 def put_together_files(folder):
@@ -75,7 +78,7 @@ def get_tag(tag, file):
     return val
 
 def plot_rew_across_training(metric, index, ax, n_traces=20,
-                             selected_protocols=['01234', '4']):
+                             selected_protocols=['-0.25', '-0.5', '0.0']):
     """Plot traces across training, i.e. metric value per trial.
     """
     metric = np.array(metric)
@@ -271,7 +274,10 @@ def plt_perf_indicators(values, index_val, ax, f_props, ax_props, reached=None,
                 indx = np.logical_and(index_val == val, reached)
             else:
                 indx = index_val == val
-            values_temp = values[indx]
+            try:
+                values_temp = values[indx]
+            except:
+                print(1)
             n_vals = len(values_temp)
             if n_vals != 0:
                 # plot number of trials
@@ -429,7 +435,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
             # plot means
             for ind_met, met in enumerate(keys):
                 metric = metrics[met]
-                if ind == 0 and plt_ind_traces:
+                if ind == 0 and plt_ind_traces:  # TODO: why it's not plotting the performance and stage traces
                     plot_rew_across_training(metric=metric, index=val_index,
                                              ax=ax[ind_met])
                 plt_means(metric=metric, index=val_index,
@@ -541,10 +547,13 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
     elif tag == 'th_stage':
         ax_props['labels'] = list(THS_IND_MAP.keys())
         ax_props['ticks'] = list(THS_IND_MAP.values())
+    elif tag == 'pun':
+        ax_props['labels'] = list(PUN_IND_MAP.keys())
+        ax_props['ticks'] = list(PUN_IND_MAP.values())
 
     # plot results
     ax1 = ax_final[0]
-    ax2 = ax_final[1]
+    # ax2 = ax_final[1]
     ax3 = ax_final[2]
     # final figures
     # prop of instances reaching phase 4
@@ -566,22 +575,22 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
     ax1[1].set_yscale('log')
 
     # steps to reach phase 4
-    ax_props['ylabel'] = 'Number of steps to reach phase 4 (x1000)'
-    plt_perf_indicators(values=data['stps_to_ph'],
-                        f_props=f_final_prop, ax_props=ax_props,
-                        index_val=val_index, ax=ax2[0],
-                        reached=data['reached_ph'], discard=['full', '4'],
-                        plot_individual_values=plt_ind_vals)
+    # ax_props['ylabel'] = 'Number of steps to reach phase 4 (x1000)'
+    # plt_perf_indicators(values=data['stps_to_ph'],
+    #                     f_props=f_final_prop, ax_props=ax_props,
+    #                     index_val=val_index, ax=ax2[0],
+    #                     reached=data['reached_ph'], discard=['full', '4'],
+    #                     plot_individual_values=plt_ind_vals)
     # steps to reach final perf
-    ax_props['ylabel'] = 'Number of steps to reach final performance (x1000)'
-    plt_perf_indicators(values=data['stps_to_perf'],
-                        reached=data['reached_perf'],
-                        index_val=val_index, ax=ax2[1],
-                        f_props=f_final_prop, ax_props=ax_props,
-                        plot_individual_values=plt_ind_vals)
-    handles, labels = ax2[0].get_legend_handles_labels()
-    by_label = dict(zip(labels, handles))
-    ax2[0].legend(by_label.values(), by_label.keys())
+    # ax_props['ylabel'] = 'Number of steps to reach final performance (x1000)'
+    # plt_perf_indicators(values=data['stps_to_perf'],
+    #                     reached=data['reached_perf'],
+    #                     index_val=val_index, ax=ax2[1],
+    #                     f_props=f_final_prop, ax_props=ax_props,
+    #                     plot_individual_values=plt_ind_vals)
+    # handles, labels = ax2[0].get_legend_handles_labels()
+    # by_label = dict(zip(labels, handles))
+    # ax2[0].legend(by_label.values(), by_label.keys())
 
     # plot final performance
     ax_props['ylabel'] = 'Average performance'
@@ -620,13 +629,12 @@ if __name__ == '__main__':
     plt.close('all')
     # sv_f = '/home/molano/shaping/results_280421/no_shaping/'
     # sv_f = '/home/manuel/shaping/results_280421/'
-    sv_f = '/Users/leyreazcarate/Desktop/TFG/shaping/results_280421/'
-    # sv_f = '/home/molano/shaping/results_280421/shaping_diff_punishment/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/shaping/results_280421/'
+    sv_f = '/home/molano/shaping/results_280421/shaping_diff_punishment/'
     RERUN = False
     LEARN = True
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
     TH = 0.75
-    NUM_RAND = 100000
 
     plot_separate_figures = True
     plot_all_figs = True
@@ -637,37 +645,23 @@ if __name__ == '__main__':
     stg_w = 1000
     conv_w = 50
     rand_act_prob = 0.01
-    punish_3_vector = np.linspace(-0.5, 0, 3)
-    punish_6_vector = np.linspace(-0.5, 0, 3)
-    timing = {'fixation': ('constant', 0),
-              'stimulus': ('constant', 300),
-              'delay': (0, 100, 300),
-              'decision': ('constant', 200)}
-    rewards = {'abort': -0.1, 'correct': +1., 'fail': -0.1}
-    env_kwargs = {'timing': timing, 'rewards': rewards}
-    n_ch = ['2', '10', '20']
-    markers = ['+', 'x', '1']
-    setup_nm = 'n_ch'
-    tag = 'stages'
-    folder = sv_f+'/large_actObs_space/'
     # if plot_separate_figures:
     #     plot_inst_punishment(num_instances, punish_3_vector, conv_w)
     # if plot_all_figs:
     #     plot_figs(punish_6_vector, num_instances, conv_w)
     # print('separate code into functions')
-    setup_vals=n_ch
-    algs = ['A2C']
-    for alg in algs:
-        print(alg)
-        print('xxxxxxxxxxxxxxxxxxxxxx')
-        f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
-        f2, ax2 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
-        f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
-        ax = [ax1, ax2, ax3]
-        for ind_setup, setup in enumerate(setup_vals):
-            plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=500,
-                         keys=['performance', 'stage'], limit_ax=True,
-                         final_ph=4, perf_th=0.7, ax_final=ax,
-                         tag='pun', limit_tr=False, rerun=False,
-                     f_final_prop={'color': (0, 0, 0), 'label': ''},
-                     plt_ind_vals=True, plt_ind_traces=True)
+    f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
+    f2, ax2 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
+    f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
+    ax = [ax1, ax2, ax3]
+
+    plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
+                 keys=['performance', 'stage'], limit_ax=True,
+                 final_ph=4, perf_th=TH, ax_final=ax,
+                 tag='pun', limit_tr=False, rerun=True,
+                 f_final_prop={'color': (0, 0, 0), 'label': ''},
+                 plt_ind_vals=True, plt_ind_traces=True)
+    f1.savefig(sv_f + '/final_results_phase.svg', dpi=200)
+    f2.savefig(sv_f + '/final_results_steps.svg', dpi=200)
+    f3.savefig(sv_f + '/final_results_performance.svg', dpi=200)
+    
