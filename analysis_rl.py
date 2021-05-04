@@ -620,8 +620,8 @@ if __name__ == '__main__':
     plt.close('all')
     # sv_f = '/home/molano/shaping/results_280421/no_shaping/'
     # sv_f = '/home/manuel/shaping/results_280421/'
-    # sv_f = '/Users/leyreazcarate/Desktop/TFG/shaping/results_280421/'
-    sv_f = '/home/molano/shaping/results_280421/shaping_diff_punishment/'
+    sv_f = '/Users/leyreazcarate/Desktop/TFG/shaping/results_280421/'
+    # sv_f = '/home/molano/shaping/results_280421/shaping_diff_punishment/'
     RERUN = False
     LEARN = True
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
@@ -655,9 +655,19 @@ if __name__ == '__main__':
     # if plot_all_figs:
     #     plot_figs(punish_6_vector, num_instances, conv_w)
     # print('separate code into functions')
-    plot_results(folder=sv_f, setup_nm='pun',
-                 w_conv_perf=500, keys=['performance', 'stage'],
-                 limit_ax=True, final_ph=4, perf_th=0.7, ax_final=None,
-                 tag='pun', limit_tr=False, rerun=False,
-                 f_final_prop={'color': (0, 0, 0), 'label': ''},
-                 plt_ind_vals=True, plt_ind_traces=True)
+    setup_vals=n_ch
+    algs = ['A2C']
+    for alg in algs:
+        print(alg)
+        print('xxxxxxxxxxxxxxxxxxxxxx')
+        f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
+        f2, ax2 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
+        f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
+        ax = [ax1, ax2, ax3]
+        for ind_setup, setup in enumerate(setup_vals):
+            plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=500,
+                         keys=['performance', 'stage'], limit_ax=True,
+                         final_ph=4, perf_th=0.7, ax_final=ax,
+                         tag='pun', limit_tr=False, rerun=False,
+                     f_final_prop={'color': (0, 0, 0), 'label': ''},
+                     plt_ind_vals=True, plt_ind_traces=True)
