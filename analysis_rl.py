@@ -11,11 +11,14 @@ import numpy as np
 import os
 import gym
 import matplotlib.pyplot as plt
+import ngym_shaping as ng_sh
 from ngym_shaping.utils import plotting as plot
 import warnings
+import itertools
 from matplotlib import rcParams
 import seaborn as sns
 import glob
+import ntpath
 warnings.filterwarnings('default')
 
 rcParams['font.family'] = 'sans-serif'
@@ -37,41 +40,266 @@ ALL_INDX.update(PRTCLS_IND_MAP)
 ALL_INDX.update(THS_IND_MAP)
 
 
-# plot of each punishment and each instance
-def learning(num_instances, punish_3_vector, sv_f, stages, perf_w, stg_w,
-             env_kwargs):
-    for i_i in range(num_instances):
-        for pun in punish_3_vector:
-            sv_f_inst = sv_f+'/pun_'+str(round(pun, 2))+'_inst_'+str(i_i)+'/'
-            print('---------')
-            print(sv_f_inst)
-            print('---------')
-            if not os.path.exists(sv_f_inst+'/bhvr_data_all.npz') or RERUN:
-                rewards = {'abort': -0.1, 'correct': +1., 'fail': pun}
-                env_kwargs['rewards'] = rewards
-                env = ng_sh.envs.DR_stage.shaping(stages=stages, th=TH,
-                                                  perf_w=perf_w,
-                                                  stg_w=stg_w,
-                                                  sv_folder=sv_f_inst,
-                                                  sv_per=stg_w, **env_kwargs)
-                if LEARN:
-                    env = DummyVecEnv([lambda: env])
-                    # Define model
-                    model = A2C(LstmPolicy, env, verbose=1,
-                                policy_kwargs={'feature_extraction': "mlp"})
-                    # Train model
-                    model.learn(total_timesteps=NUM_STEPS, log_interval=10e10)
-                    model.save(sv_f_inst+'model')
-                else:
-                    env.reset()
-                    for ind in range(NUM_RAND):
-                        if np.random.rand() < (rand_act_prob-2*pun):
-                            action = np.random.randint(0, 3)
-                        else:
-                            action = env.gt_now  # correct action (groundtruth)
-                        env.step(action)
-                env.close()
+def put_together_files(folder):
+    """Load all training data."""
+    files = glob.glob(folder + '/*_bhvr_data*npz')
+    data = {}
+    if len(files) > 0:
+        files = order_by_sufix(files)
+        file_data = np.load(files[0], allow_pickle=True)
+        for key in file_data.keys():
+            data[key] = file_data[key]
 
+        for ind_f in range(1, len(files)):
+            file_data = np.load(files[ind_f], allow_pickle=True)
+            for key in file_data.keys():
+                data[key] = np.concatenate((data[key], file_data[key]))
+        np.savez(folder + '/bhvr_data_all.npz', **data)
+    return data
+
+
+def order_by_sufix(file_list):
+    sfx = [float(x[x.rfind('_')+1:x.rfind('.')]) for x in file_list]
+    sorted_list = [x for _, x in sorted(zip(sfx, file_list))]
+    return sorted_list
+
+
+def get_tag(tag, file):
+    # process name
+    f_name = ntpath.basename(file)
+    assert f_name.find(tag) != -1, 'Tag '+tag+' not found in '+f_name
+    val = f_name[f_name.find(tag)+len(tag)+1:]
+    val = val[:val.find('_')] if '_' in val else val
+    if val.find('-1') != -1:
+        val = 'full'
+    return val
+
+def plot_rew_across_training(metric, index, ax, n_traces=20,
+                             selected_protocols=['01234', '4']):
+    """Plot traces across training, i.e. metric value per trial.
+    """
+    metric = np.array(metric)
+    index = np.array(index)
+    unq_vals = np.unique(index)
+    for ind_val, val in enumerate(unq_vals):
+        if val in selected_protocols:
+            indx = index == val
+            traces_temp = metric[indx][:n_traces]
+            for trace in traces_temp:
+                ax.plot(trace, color=CLRS[ind_val], alpha=0.5, lw=0.5)
+
+
+def perf_hist(metric, ax, index, trials_day=300):
+    """Plot a normalized histogram of the number of days/sessions spent with
+    the same metric vale (e.g. performance).
+    trials_day: number of trials to include on a session/day."""
+    metric = np.array(metric)
+    index = np.array(index)
+    unq_vals = np.unique(index)
+    bins = np.linspace(0, 1, 20)
+    for ind_val, val in enumerate(unq_vals):
+        indx = index == val
+        traces_temp = metric[indx]
+        traces_temp = list(itertools.chain.from_iterable(traces_temp))
+        hist_, plt_bins = np.histogram(traces_temp, bins=bins)
+        hist_ = hist_/np.sum(hist_)
+        plt_bins = plt_bins[:-1] + (plt_bins[1]-plt_bins[0])/2
+        ax.plot(plt_bins, hist_, label=val, color=CLRS[ind_val])
+    ax.legend()
+    ax.set_xlabel('Performance')
+    ax.set_ylabel('Days')
+
+
+def plt_means(metric, index, ax, limit_mean=True, limit_ax=True,
+              selected_protocols=['01234', '4']):
+    """Plot mean traces across training.
+    """
+    if limit_mean:
+        min_dur = np.min([len(x) for x in metric])
+        metric = [x[:min_dur] for x in metric]
+    else:
+        max_dur = np.max([len(x) for x in metric])
+        metric = [np.concatenate((np.array(x),
+                                  np.nan*np.ones((int(max_dur-len(x)),))))
+                  for x in metric]
+
+    metric = np.array(metric)
+    index = np.array(index)
+    unq_vals = np.unique(index)
+    for ind_val, val in enumerate(unq_vals):
+        if val in selected_protocols:
+            indx = index == val
+            traces_temp = metric[indx, :]
+            if not (np.isnan(traces_temp)).all():
+                ax.plot(np.nanmean(traces_temp, axis=0), color=CLRS[ind_val],
+                        lw=1, label=val+' ('+str(np.sum(indx))+')')
+    if limit_ax:
+        assert limit_mean, 'limiting ax only works when mean is also limited'
+        ax.set_xlim([0, min_dur])
+
+
+def tr_to_final_ph(stage, tr_to_ph, wind_final_perf, final_ph):
+    """ Computes the number of trials required to reach the final phase.
+    """
+    time = np.where(stage == final_ph)[0]  # find those trials in phase 4
+    reached = False
+    if len(time) != 0:
+        first_tr = np.min(time)  # min trial is first trial in phase 4
+        if first_tr > len(stage) - wind_final_perf:
+            # if phase 4 is not reached, last trial is obtained
+            tr_to_ph.append(len(stage))
+        else:
+            tr_to_ph.append(first_tr)
+            reached = True
+    else:
+        tr_to_ph.append(len(stage))
+    return tr_to_ph, reached
+
+
+def tr_to_reach_perf(perf, tr_to_ph, reach_perf, tr_to_perf, final_ph):
+    """Computes the number of trials required to reach the final performance
+    from those traces that do reach the final phase.
+    """
+    reached = False
+    perf_in_final_ph = perf[tr_to_ph:]  # perf in the last phase
+    time_above_th = np.where(perf_in_final_ph > reach_perf)[0]
+    if len(time_above_th) == 0:
+        tr_to_perf.append(len(perf))
+    else:
+        reached = True
+        tr_to_perf.append(np.min(time_above_th) +
+                          np.min(tr_to_ph))
+    return tr_to_perf, reached
+
+
+def compute_stability(perf, tr_ab_th):
+    """Computes the performance stability after reaching the threshold
+    performance, i.e. the proportion of instances with a performance greater
+    than the chance level.
+    """
+    perf = np.array(perf)[tr_ab_th:]
+    if perf.shape[0] != 0:
+        forgetting_times = perf < 0.5
+        stability = 1 - np.sum(forgetting_times)/perf.shape[0]
+    else:
+        stability = np.nan
+    return stability
+
+
+def data_extraction(folder, metrics, w_conv_perf=500, conv=[1]):
+    """ Extract data saved during training.
+    metrics: dict containing the keys of the data to loaextractd.
+    conv: list of the indexes of the metrics to convolve."""
+    # load all data from the same folder
+    data = put_together_files(folder)
+    data_flag = True
+    if data:
+        # extract each of the metrics
+        for ind_k, k in enumerate(metrics.keys()):
+            if k in data.keys():
+                metric = data[k]
+                if conv[ind_k]:
+                    mean = np.convolve(metric,
+                                       np.ones((w_conv_perf,))/w_conv_perf,
+                                       mode='valid')
+                else:
+                    mean = metric
+            else:
+                mean = []
+            metrics[k].append(mean)
+    else:
+        print('No data in: ', folder)
+        data_flag = False
+
+    return metrics, data_flag
+
+
+def trials_per_stage(metric, ax, index):
+    """Plot the mean number of trials spent on each of the stages."""
+    bins = np.linspace(STAGES[0]-0.5, STAGES[-1]+.5, len(STAGES)+1)
+    metric = np.array(metric)
+    index = np.array(index)
+    unq_vals = np.unique(index)
+    # find all the trials spent on each stage
+    for ind_val, val in enumerate(unq_vals):
+        indx = index == val
+        traces_temp = metric[indx]
+        counts_mat = []
+        n_traces = len(traces_temp)
+        for ind_tr in range(n_traces):
+            # plot the individual values
+            counts = np.histogram(traces_temp[ind_tr], bins=bins)[0]
+            indx = counts != 0
+            noise = np.random.normal(0, 0.01, np.sum(indx))
+            ax.plot(np.array(STAGES)[indx]+noise, counts[indx], '+',
+                    color=CLRS[ind_val], alpha=0.5)
+            counts_mat.append(counts)
+        counts_mat = np.array(counts_mat)
+        mean_counts = np.mean(counts_mat, axis=0)
+        # (e.g. in protocol 0234, don't plot stage 1)
+        # ax.errorbar(np.array(STAGES), mean_counts, std_counts, marker='+',
+        #             color=CLRS[ind_val], label=val)
+        # std_counts = np.std(counts_mat, axis=0)/np.sqrt(n_traces)
+        indx = mean_counts != 0
+        # plot the mean values
+        ax.plot(np.array(STAGES)[indx], mean_counts[indx], marker='+',
+                linestyle='--', color=CLRS[ind_val], label=val)
+
+    handles, labels = ax.get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    plt.yscale('log')
+    ax.legend(by_label.values(), by_label.keys())
+    ax.set_xlabel('Stage')
+    ax.set_ylabel('Trials')
+
+
+def plt_perf_indicators(values, index_val, ax, f_props, ax_props, reached=None,
+                        discard=[], plot_individual_values=True,
+                        errorbars=True):
+    """Plot final results
+    """
+    values = np.array(values)
+    index_val = np.array(index_val)
+    unq_vals = np.unique(index_val)
+    if plot_individual_values:
+        std_noise = get_noise(unq_vals)
+    for ind_val, val in enumerate(unq_vals):
+        # only for those thresholds different than full task
+        if val not in discard:
+            # only those traces with same value that have reached last phase
+            if reached is not None:
+                indx = np.logical_and(index_val == val, reached)
+            else:
+                indx = index_val == val
+            values_temp = values[indx]
+            n_vals = len(values_temp)
+            if n_vals != 0:
+                # plot number of trials
+                f_props['markersize'] = 10
+                if errorbars:
+                    ax.errorbar([ALL_INDX[val]], np.nanmean(values_temp),
+                                (np.nanstd(values_temp)/np.sqrt(n_vals)),
+                                **f_props)
+                else:
+                    ax.plot(ALL_INDX[val], np.nanmean(values_temp), **f_props)
+            if plot_individual_values:
+                xs = np.random.normal(0, std_noise, ((np.sum(indx),))) +\
+                    ALL_INDX[val]
+                ax.plot(xs, values_temp, alpha=0.5, linestyle='None',
+                        **f_props)
+    ax.set_xlabel(ax_props['tag'])
+    ax.set_ylabel(ax_props['ylabel'])
+    ax.set_xticks(ax_props['ticks'])
+    ax.set_xticklabels(ax_props['labels'])
+
+
+def get_noise(unq_vals):
+    max_ = np.max([ALL_INDX[x] for x in unq_vals])
+    min_ = np.min([ALL_INDX[x] for x in unq_vals])
+    noise = (max_ - min_)/80
+    return noise
+
+# plot of each punishment and each instance
 
 def plot_inst_punishment(num_instances, punish_3_vector, conv_w):
     for i_i in range(num_instances):
@@ -122,8 +350,8 @@ def plot_figs(punish_6_vector, num_instances, conv_w):
     f.savefig(sv_f+'all_insts.png', dpi=300)
 
 
-def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
-                 keys=['performance', 'curr_ph', 'num_stps', 'curr_perf'],
+def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
+                 keys=['performance', 'stage', 'num_stps', 'curr_perf'],
                  limit_ax=True, final_ph=4, perf_th=0.7, ax_final=None,
                  tag='th_stage', limit_tr=False, rerun=False,
                  f_final_prop={'color': (0, 0, 0), 'label': ''},
@@ -154,16 +382,16 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
     final plot.
     plt_ind_traces: plot traces across training.
     """
-    assert ('performance' in keys) and ('curr_ph' in keys),\
-        'performance and curr_ph need to be included in the metrics (keys)'
+    assert ('performance' in keys) and ('stage' in keys),\
+        'performance and stage need to be included in the metrics (keys)'
     # PROCESS RAW DATA
-    if not os.path.exists(folder+'/data'+algorithm+'_'+setup_nm+'_'+setup +
+    if not os.path.exists(folder+'/data'+'_'+setup_nm+'_'+setup +
                           '.npz') or rerun:
         print('Pre-processing raw data')
-        files = glob.glob(folder+'alg_'+algorithm+'*'+setup_nm+'_'+setup+'_*')
-        assert len(files) > 0, 'No files of the form: '+folder+'*'+algorithm +\
-            '*'+setup_nm+'_'+setup+'_*'
-        files = sorted(files)
+        files = glob.glob(folder+'*'+setup_nm+'_'+setup+'*')
+        assert len(files) > 0, 'No files of the form: '+folder+'*'+setup_nm+\
+            '_'+setup+'_*'
+        # files = sorted(files)
         val_index = []  # stores values for each instance
         metrics = {k: [] for k in keys}
         keys = np.array(keys)
@@ -173,7 +401,7 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
             # get metrics
             metrics, flag = data_extraction(folder=file, metrics=metrics,
                                             w_conv_perf=w_conv_perf,
-                                            conv=[1, 0, 1, 0])
+                                            conv=[1, 0])
             # store values
             if flag:
                 val_index.append(val)
@@ -207,10 +435,10 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
                 plt_means(metric=metric, index=val_index,
                           ax=ax[ind_met], limit_ax=limit_ax)
                 ax[ind_met].set_ylabel(ylabels[ind_met])
-            ax[0].set_title(algorithm + ' ('+setup_nm+': ' + setup + ')')
+            ax[0].set_title('('+setup_nm+': ' + setup + ')')
             ax[len(keys)-1].set_xlabel('Trials')
             ax[len(keys)-1].legend()
-            f.savefig(folder+'/'+names[ind]+algorithm+'_'+setup_nm+'_'+setup +
+            f.savefig(folder+'/'+names[ind]+'_'+setup_nm+'_'+setup +
                       '_'+str(limit_tr)+'.svg', dpi=200)
             plt.close(f)
 
@@ -219,18 +447,18 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
             f, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 12))
             metric = metrics['curr_perf']
             perf_hist(metric, ax=ax, index=val_index, trials_day=300)
-            ax.set_title('Performance histogram ('+algorithm+')')
-            f.savefig(folder+'/perf_hist_'+algorithm+'_'+setup_nm+'_'+setup +
+            ax.set_title('Performance histogram ('+')')
+            f.savefig(folder+'/perf_hist_'+'_'+setup_nm+'_'+setup +
                       '.svg', dpi=200)
             plt.close(f)
 
         # plot trials per stage
-        if 'curr_ph' in keys:
+        if 'stage' in keys:  # TODO: change for 'stage' (?)
             f, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 8))
-            metric = metrics['curr_ph']
+            metric = metrics['stage']
             trials_per_stage(metric, ax=ax, index=val_index)
-            ax.set_title('Average number of trials per stage ('+algorithm+')')
-            f.savefig(folder+'/trials_stage_'+algorithm+'_'+setup_nm+'_' +
+            ax.set_title('Average number of trials per stage ('+')')
+            f.savefig(folder+'/trials_stage_'+'_'+setup_nm+'_' +
                       setup+'.svg', dpi=200)
             plt.close(f)
 
@@ -245,21 +473,21 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
         stps_to_perf = []  # stores steps to final performance
         stps_to_ph = []  # stores steps to final performance
         if limit_tr:
-            min_dur = np.min([len(x) for x in metrics['curr_ph']])
+            min_dur = np.min([len(x) for x in metrics['stage']])
         else:
-            min_dur = np.max([len(x) for x in metrics['curr_ph']])
+            min_dur = np.max([len(x) for x in metrics['stage']])
 
-        for ind_f in range(len(metrics['curr_ph'])):
+        for ind_f in range(len(metrics['stage'])):
             # store durations
-            exp_durations.append(len(metrics['curr_ph'][ind_f]))
+            exp_durations.append(len(metrics['stage'][ind_f]))
             for k in metrics.keys():
                 metrics[k][ind_f] = metrics[k][ind_f][:min_dur]
                 if len(metrics[k][ind_f]) == 0:
                     metrics[k][ind_f] = np.nan*np.ones((min_dur,))
             # phase analysis
-            curr_ph = metrics['curr_ph'][ind_f]
+            stage = metrics['stage'][ind_f]
             # number of trials until final phase
-            tr_to_ph, reached = tr_to_final_ph(curr_ph, tr_to_ph, w_conv_perf,
+            tr_to_ph, reached = tr_to_final_ph(stage, tr_to_ph, w_conv_perf,
                                                final_ph)
             reached_ph.append(reached)
             # performance analysis
@@ -278,26 +506,26 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
             tt_prf = tr_to_perf[-1]
             stability_mat.append(compute_stability(perf=perf.copy(),
                                                    tr_ab_th=tt_prf))
-            # # number of steps
-            if len(metrics['num_stps'][ind_f]) != 0:
-                num_steps = np.cumsum(metrics['num_stps'][ind_f])
-                stps_to_perf.append(num_steps[max(0, tt_prf-1)]/1000)
-                stps_to_ph.append(num_steps[min(max(0, tt_ph-1),
-                                                len(num_steps)-1)]/1000)
-            else:
-                stps_to_perf.append(np.nan)
-                stps_to_ph.append(np.nan)
+            # # # number of steps
+            # if len(metrics['num_stps'][ind_f]) != 0:
+            #     num_steps = np.cumsum(metrics['num_stps'][ind_f])
+            #     stps_to_perf.append(num_steps[max(0, tt_prf-1)]/1000)
+            #     stps_to_ph.append(num_steps[min(max(0, tt_ph-1),
+            #                                     len(num_steps)-1)]/1000)
+            # else:
+            #     stps_to_perf.append(np.nan)
+            #     stps_to_ph.append(np.nan)
         data = {'tr_to_perf': tr_to_perf, 'reached_ph': reached_ph,
                 'reached_perf': reached_perf, 'exp_durations': exp_durations,
                 'stability_mat': stability_mat, 'final_perf': final_perf,
                 'tr_to_ph': tr_to_ph, 'stps_to_perf': stps_to_perf,
                 'stps_to_ph': stps_to_ph, 'val_index': val_index}
-        np.savez(folder+'/data'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
+        np.savez(folder+'/data'+'_'+setup_nm+'_'+setup+'.npz',
                  **data)
     # LOAD AND (POST)PROCESS DATA
-    print('Loading data from: ', folder+'/data'+algorithm+'_'+setup_nm +
+    print('Loading data from: ', folder+'/data'+'_'+setup_nm +
           '_'+setup+'.npz')
-    tmp = np.load(folder+'/data'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
+    tmp = np.load(folder+'/data'+'_'+setup_nm+'_'+setup+'.npz',
                   allow_pickle=True)
     # the loaded file does not allow to modifying it
     data = {}
@@ -387,52 +615,13 @@ def plot_results(folder, algorithm, setup='', setup_nm='', w_conv_perf=500,
     ax3[0, 0].legend(by_label.values(), by_label.keys())
 
 
-def batch_results(algs, setup_vals, markers, tag, setup_nm, folder,
-                  limit_tr=True, rerun=False):
-    """Runs plot_results function for each of the used variables.
-    """
-    # Create figures for each of the used algorithms
-    for alg in algs:
-        print(alg)
-        print('xxxxxxxxxxxxxxxxxxxxxx')
-        f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
-        f2, ax2 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
-        f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
-        ax = [ax1, ax2, ax3]
-        # plot results obtained when training with different second level
-        # values (different window/n_ch)
-        for ind_setup, setup in enumerate(setup_vals):
-            plot_results(folder, alg, setup=setup, setup_nm=setup_nm,
-                         limit_ax=False, ax_final=ax, tag=tag,
-                         limit_tr=limit_tr,
-                         f_final_prop={'color': CLRS[ind_setup],
-                                       'label': setup,
-                                       'marker': markers[ind_setup]},
-                         rerun=rerun)
-            if ind_setup == 0:
-                f1.savefig(folder + '/final_results_phase_' +
-                           alg+'_'+str(limit_tr)+setup+'.svg', dpi=200)
-                f2.savefig(folder + '/final_results_steps_' +
-                           alg+'_'+str(limit_tr)+setup+'.svg', dpi=200)
-                f3.savefig(folder + '/final_results_performance_' +
-                           alg+'_'+str(limit_tr)+setup+'.svg', dpi=200)
-
-        f1.savefig(folder + '/final_results_phase_' +
-                   alg+'_'+str(limit_tr)+'.svg', dpi=200)
-        f2.savefig(folder + '/final_results_steps_' +
-                   alg+'_'+str(limit_tr)+'.svg', dpi=200)
-        f3.savefig(folder + '/final_results_performance_' +
-                   alg+'_'+str(limit_tr)+'.svg', dpi=200)
-        plt.close(f1)
-        plt.close(f2)
-        plt.close(f3)
-
 
 if __name__ == '__main__':
     plt.close('all')
     # sv_f = '/home/molano/shaping/results_280421/no_shaping/'
     # sv_f = '/home/manuel/shaping/results_280421/'
-    sv_f = '/Users/leyreazcarate/Desktop/TFG/shaping/results_280421/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/shaping/results_280421/'
+    sv_f = '/home/molano/shaping/results_280421/shaping_diff_punishment/'
     RERUN = False
     LEARN = True
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
@@ -456,19 +645,19 @@ if __name__ == '__main__':
               'decision': ('constant', 200)}
     rewards = {'abort': -0.1, 'correct': +1., 'fail': -0.1}
     env_kwargs = {'timing': timing, 'rewards': rewards}
-    learning(num_instances, punish_3_vector, sv_f, stages, perf_w, stg_w,
-             env_kwargs)
-    algs = ['A2C']
     n_ch = ['2', '10', '20']
     markers = ['+', 'x', '1']
     setup_nm = 'n_ch'
     tag = 'stages'
     folder = sv_f+'/large_actObs_space/'
-    batch_results(algs=algs, setup_vals=n_ch, markers=markers, tag=tag,
-                  setup_nm=setup_nm, folder=folder, limit_tr=False,
-                  rerun=RERUN)
     # if plot_separate_figures:
     #     plot_inst_punishment(num_instances, punish_3_vector, conv_w)
     # if plot_all_figs:
     #     plot_figs(punish_6_vector, num_instances, conv_w)
     # print('separate code into functions')
+    plot_results(folder=sv_f, setup_nm='pun',
+                 w_conv_perf=500, keys=['performance', 'stage'],
+                 limit_ax=True, final_ph=4, perf_th=0.7, ax_final=None,
+                 tag='pun', limit_tr=False, rerun=False,
+                 f_final_prop={'color': (0, 0, 0), 'label': ''},
+                 plt_ind_vals=True, plt_ind_traces=True)
