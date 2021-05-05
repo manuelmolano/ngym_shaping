@@ -5,12 +5,12 @@ import numpy as np
 import os
 import gym
 import matplotlib.pyplot as plt
-import ngym_shaping as ng_sh
+# import ngym_shaping as ng_sh
 from ngym_shaping.utils import plotting as plot
 import warnings
-from stable_baselines.common.policies import LstmPolicy
-from stable_baselines.common.vec_env import DummyVecEnv
-from stable_baselines import A2C  # ACER, PPO2
+# from stable_baselines.common.policies import LstmPolicy
+# from stable_baselines.common.vec_env import DummyVecEnv
+# from stable_baselines import A2C  # ACER, PPO2
 warnings.filterwarnings('default')
 
 
@@ -101,9 +101,9 @@ def plot_figs(punish_6_vector, num_instances, conv_w):
 
 if __name__ == '__main__':
     plt.close('all')
-    sv_f = '/home/molano/shaping/results_280421/no_shaping/'
+    # sv_f = '/home/molano/shaping/results_280421/no_shaping/'
     # sv_f = '/home/manuel/shaping/results_280421/'
-    # sv_f = '/Users/leyreazcarate/Desktop/TFG/shaping/'
+    sv_f = '/Users/leyreazcarate/Desktop/TFG/shaping/results_280421/'
     RERUN = False
     LEARN = True
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     plot_all_figs = True
     num_instances = 3
     mean_perf = []
-    stages = [4]  # np.arange(5)
+    stages = np.arange(5)
     perf_w = 100
     stg_w = 1000
     conv_w = 50
