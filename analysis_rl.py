@@ -46,6 +46,18 @@ ALL_INDX.update(PUN_IND_MAP)
 ### HINT: AUXILIAR FUNCTIONS TO LOAD DATA
 
 def put_together_files(folder):
+    def order_by_sufix(file_list):
+        sfx = [x[x.rfind('_')+1:x.rfind('.')].split('.') for x in file_list]
+        stgs = np.array([x[0] for x in sfx])
+        trs = np.array([x[1] for x in sfx])
+        sorted_list = []
+        for stg in np.unique(stgs):
+            trs_tmp = np.array(trs[stgs == stg]).astype(float)
+            f_lst_tmp = np.array(file_list)[stgs == stg]
+            srtd_lst_tmp = [x for _, x in sorted(zip(trs_tmp, f_lst_tmp))]
+            sorted_list += srtd_lst_tmp
+        return sorted_list
+
     """Load all training data."""
     files = glob.glob(folder + '/*_bhvr_data*npz')
     data = {}
@@ -90,8 +102,6 @@ def data_extraction(folder, metrics, w_conv_perf=500, conv=[1]):
     return metrics, data_flag
 
 
-### HINT: FUNCTIONS TO OBTAIN VARIABLES
-
 def get_tag(tag, file):
     # process name
     f_name = ntpath.basename(file)
@@ -101,6 +111,10 @@ def get_tag(tag, file):
     if val.find('-1') != -1:
         val = 'full'
     return val
+
+
+### HINT: FUNCTIONS TO OBTAIN VARIABLES
+
 
 
 def tr_to_final_ph(stage, tr_to_ph, wind_final_perf, final_ph):
@@ -151,12 +165,6 @@ def compute_stability(perf, tr_ab_th):
     return stability
 
 
-def order_by_sufix(file_list):
-    sfx = [float(x[x.rfind('_')+1:x.rfind('.')]) for x in file_list]
-    sorted_list = [x for _, x in sorted(zip(sfx, file_list))]
-    return sorted_list
-
-
 def get_noise(unq_vals):
     max_ = np.max([ALL_INDX[x] for x in unq_vals])
     min_ = np.min([ALL_INDX[x] for x in unq_vals])
@@ -203,7 +211,7 @@ def plot_rew_across_training(metric, index, ax, n_traces=20,
 
 
 def plt_means(metric, index, ax, limit_mean=True, limit_ax=True,
-              selected_protocols=['01234', '4']):
+              selected_protocols=['-0.25', '-0.5', '0.0']):
     """Plot mean traces across training.
     """
     if limit_mean:
@@ -394,8 +402,8 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
     final plot.
     plt_ind_traces: plot traces across training.
     """
-    assert ('performance' in keys) and ('stage' in keys),\
-        'performance and stage need to be included in the metrics (keys)'
+    # assert ('performance' in keys) and ('stage' in keys),\
+    #     'performance and stage need to be included in the metrics (keys)'
     # PROCESS RAW DATA
     if not os.path.exists(folder+'/data'+'_'+setup_nm+'_'+setup +
                           '.npz') or rerun:
@@ -450,6 +458,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
             ax[0].set_title('('+setup_nm+': ' + setup + ')')
             ax[len(keys)-1].set_xlabel('Trials')
             ax[len(keys)-1].legend()
+            asdasd
             f.savefig(folder+'/'+names[ind]+'_'+setup_nm+'_'+setup +
                       '_'+str(limit_tr)+'.svg', dpi=200)
             plt.close(f)
@@ -634,8 +643,8 @@ if __name__ == '__main__':
     plt.close('all')
     # sv_f = '/home/molano/shaping/results_280421/no_shaping/'
     # sv_f = '/home/manuel/shaping/results_280421/'
-    sv_f = '/Users/leyreazcarate/Desktop/TFG/shaping/results_280421/shaping_diff_punishment/'
-    # sv_f = '/home/molano/shaping/results_280421/shaping_diff_punishment/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/shaping/results_280421/shaping_diff_punishment/'
+    sv_f = '/home/molano/shaping/results_280421/shaping_diff_punishment/'
     RERUN = False
     LEARN = True
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
@@ -659,11 +668,11 @@ if __name__ == '__main__':
     f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
     ax = [ax1, ax2, ax3]
     plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
-                 keys=['performance', 'stage'], limit_ax=True,
+                 keys=['real_performance', 'stage'], limit_ax=True,
                  final_ph=4, perf_th=TH, ax_final=ax,
                  tag='pun', limit_tr=False, rerun=True,
                  f_final_prop={'color': (0, 0, 0), 'label': ''},
-                 plt_ind_vals=True, plt_ind_traces=True)
+                 plt_ind_vals=False, plt_ind_traces=True)
     f1.savefig(sv_f + '/final_results_phase.svg', dpi=200)
     f2.savefig(sv_f + '/final_results_steps.svg', dpi=200)
     f3.savefig(sv_f + '/final_results_performance.svg', dpi=200)
