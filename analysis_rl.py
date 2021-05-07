@@ -35,7 +35,8 @@ PRTCLS_IND_MAP = {'01234': -1, '1234': 0, '0234': 1, '0134': 2, '0134X': 3,
 THS_IND_MAP = {'full': 0.5, '0.6': 0.6, '0.65': 0.65, '0.7': 0.7,
                '0.75': 0.75, '0.8': 0.8, '0.85': 0.85, '0.9': 0.9}
 
-PUN_IND_MAP = {'0.0': 0, '-0.25': 1, '-0.5': 2}
+# PUN_IND_MAP = {'0.0': 0, '-0.25': 1, '-0.5': 2}
+PUN_IND_MAP = {'0.0': 0, '-0.25': 1, '-0.5': 2, '-0.75': 3, '-1.0': 4}
 
 ALL_INDX = {}
 ALL_INDX.update(PRTCLS_IND_MAP)
@@ -108,13 +109,10 @@ def get_tag(tag, file):
     assert f_name.find(tag) != -1, 'Tag '+tag+' not found in '+f_name
     val = f_name[f_name.find(tag)+len(tag)+1:]
     val = val[:val.find('_')] if '_' in val else val
-    if val.find('-1') != -1:
-        val = 'full'
     return val
 
 
 ### HINT: FUNCTIONS TO OBTAIN VARIABLES
-
 
 
 def tr_to_final_ph(stage, tr_to_ph, wind_final_perf, final_ph):
@@ -196,7 +194,7 @@ def perf_hist(metric, ax, index, trials_day=300):
 
 
 def plot_rew_across_training(metric, index, ax, n_traces=20,
-                             selected_protocols=['-0.25', '-0.5', '0.0']):
+                             selected_protocols=['-1.0', '-0.75', '-0.5', '-0.25', '0.0']):
     """Plot traces across training, i.e. metric value per trial.
     """
     metric = np.array(metric)
@@ -211,7 +209,7 @@ def plot_rew_across_training(metric, index, ax, n_traces=20,
 
 
 def plt_means(metric, index, ax, limit_mean=True, limit_ax=True,
-              selected_protocols=['-0.25', '-0.5', '0.0']):
+              selected_protocols=['-1.0', '-0.75', '-0.5', '-0.25', '0.0']):
     """Plot mean traces across training.
     """
     if limit_mean:
@@ -256,10 +254,7 @@ def plt_perf_indicators(values, index_val, ax, f_props, ax_props, reached=None,
                 indx = np.logical_and(index_val == val, reached)
             else:
                 indx = index_val == val
-            try:
-                values_temp = values[indx]
-            except:
-                print(1)
+            values_temp = values[indx]
             n_vals = len(values_temp)
             if n_vals != 0:
                 # plot number of trials
@@ -374,7 +369,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
                  keys=['performance', 'stage', 'num_stps', 'curr_perf'],
                  limit_ax=True, final_ph=4, perf_th=0.7, ax_final=None,
                  tag='th_stage', limit_tr=False, rerun=False,
-                 f_final_prop={'color': (0, 0, 0), 'label': ''},
+                 f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
                  plt_ind_vals=True, plt_ind_traces=True):
     """This function uses the data generated during training to analyze it
     and generate figures showing the results in function of the different
@@ -449,16 +444,15 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
             # plot means
             for ind_met, met in enumerate(keys):
                 metric = metrics[met]
-                if ind == 0 and plt_ind_traces:  # TODO: why it's not plotting the performance and stage traces
+                if plt_ind_traces:
                     plot_rew_across_training(metric=metric, index=val_index,
-                                             ax=ax[ind_met])
+                                             ax=ax[ind_met], n_traces=1)
                 plt_means(metric=metric, index=val_index,
                           ax=ax[ind_met], limit_ax=limit_ax)
                 ax[ind_met].set_ylabel(ylabels[ind_met])
             ax[0].set_title('('+setup_nm+': ' + setup + ')')
             ax[len(keys)-1].set_xlabel('Trials')
             ax[len(keys)-1].legend()
-            asdasd
             f.savefig(folder+'/'+names[ind]+'_'+setup_nm+'_'+setup +
                       '_'+str(limit_tr)+'.svg', dpi=200)
             plt.close(f)
@@ -512,7 +506,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
                                                final_ph)
             reached_ph.append(reached)
             # performance analysis
-            perf = np.array(metrics['performance'][ind_f])
+            perf = np.array(metrics['real_performance'][ind_f])
             # get final performance
             final_perf.append(perf[-1])
             # get trials to reach specified performance
@@ -565,6 +559,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
     elif tag == 'pun':
         ax_props['labels'] = list(PUN_IND_MAP.keys())
         ax_props['ticks'] = list(PUN_IND_MAP.values())
+    
 
     # plot results
     ax1 = ax_final[0]
@@ -643,9 +638,12 @@ if __name__ == '__main__':
     plt.close('all')
     # sv_f = '/home/molano/shaping/results_280421/no_shaping/'
     # sv_f = '/home/manuel/shaping/results_280421/'
-    # sv_f = '/Users/leyreazcarate/Desktop/TFG/shaping/results_280421/shaping_diff_punishment/'
-    sv_f = '/home/molano/shaping/results_280421/shaping_diff_punishment/'
-    RERUN = False
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/'
+    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/no_shaping/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
+    #     'shaping_diff_punishment/'
+    # sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
+    RERUN = True
     LEARN = True
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
     TH = 0.75
@@ -671,8 +669,8 @@ if __name__ == '__main__':
                  keys=['real_performance', 'stage'], limit_ax=True,
                  final_ph=4, perf_th=TH, ax_final=ax,
                  tag='pun', limit_tr=False, rerun=True,
-                 f_final_prop={'color': (0, 0, 0), 'label': ''},
-                 plt_ind_vals=False, plt_ind_traces=True)
+                 f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
+                 plt_ind_vals=True, plt_ind_traces=True)
     f1.savefig(sv_f + '/final_results_phase.svg', dpi=200)
     f2.savefig(sv_f + '/final_results_steps.svg', dpi=200)
     f3.savefig(sv_f + '/final_results_performance.svg', dpi=200)

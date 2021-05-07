@@ -206,7 +206,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     plt.close('all')
     timing = {'decision': 1000, 'stimulus': 100}
-    rewards = {'abort': -0.1, 'correct': +1., 'fail': -1.}
+    rewards = {'abort': -0.1, 'correct': +1., 'fail': -0.1}
     env_kwargs = {'timing': timing, 'rewards': rewards}
     # env = Shaping(stage=1, timing=timing, rewards=rewards)
     env = shaping(stages=None, th=0.75, perf_w=20, stg_w=100, **env_kwargs)
