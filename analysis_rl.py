@@ -641,7 +641,9 @@ if __name__ == '__main__':
     plt.close('all')
     # sv_f = '/home/molano/shaping/results_280421/no_shaping/'
     # sv_f = '/home/manuel/shaping/results_280421/'
-    sv_f = '/Users/leyreazcarate/Desktop/TFG/shaping/results_280421/shaping_diff_punishment/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/shaping_diff_punishment/'
+    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/no_shaping/'
     # sv_f = '/home/molano/shaping/results_280421/shaping_diff_punishment/'
     RERUN = False
     LEARN = True
