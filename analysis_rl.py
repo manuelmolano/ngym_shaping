@@ -36,7 +36,7 @@ THS_IND_MAP = {'full': 0.5, '0.6': 0.6, '0.65': 0.65, '0.7': 0.7,
                '0.75': 0.75, '0.8': 0.8, '0.85': 0.85, '0.9': 0.9}
 
 # PUN_IND_MAP = {'0.0': 0, '-0.25': 1, '-0.5': 2}
-PUN_IND_MAP = {'0.0': 0, '-0.25': 1, '-0.5': 2, '-0.75': 3, '-1': 4}
+PUN_IND_MAP = {'0.0': 0, '-0.25': 1, '-0.5': 2, '-0.75': 3, '-1.0': 4}
 
 ALL_INDX = {}
 ALL_INDX.update(PRTCLS_IND_MAP)
@@ -109,8 +109,6 @@ def get_tag(tag, file):
     assert f_name.find(tag) != -1, 'Tag '+tag+' not found in '+f_name
     val = f_name[f_name.find(tag)+len(tag)+1:]
     val = val[:val.find('_')] if '_' in val else val
-    if val.find('-1') != -1:
-        val = 'full'
     return val
 
 
@@ -641,9 +639,9 @@ if __name__ == '__main__':
     # sv_f = '/home/molano/shaping/results_280421/no_shaping/'
     # sv_f = '/home/manuel/shaping/results_280421/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/'
-    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/no_shaping/'
-    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
-        'shaping_diff_punishment/'
+    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/no_shaping/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
+    #     'shaping_diff_punishment/'
     # sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
     RERUN = True
     LEARN = True
