@@ -5,12 +5,12 @@ import numpy as np
 import os
 import gym
 import matplotlib.pyplot as plt
-# import ngym_shaping as ng_sh
+import ngym_shaping as ng_sh
 from ngym_shaping.utils import plotting as plot
 import warnings
-# from stable_baselines.common.policies import LstmPolicy
-# from stable_baselines.common.vec_env import DummyVecEnv
-# from stable_baselines import A2C  # ACER, PPO2
+from stable_baselines.common.policies import LstmPolicy
+from stable_baselines.common.vec_env import DummyVecEnv
+from stable_baselines import A2C  # ACER, PPO2
 warnings.filterwarnings('default')
 
 
@@ -101,9 +101,9 @@ def plot_figs(punish_6_vector, num_instances, conv_w):
 
 if __name__ == '__main__':
     plt.close('all')
-    # sv_f = '/home/molano/shaping/results_280421/no_shaping/'
+    sv_f = '/home/molano/shaping/results_280421/no_shaping/'
     # sv_f = '/home/manuel/shaping/results_280421/'
-    sv_f = '/Users/leyreazcarate/Desktop/TFG/shaping/results_280421/'
+    # sv_f = '/home/molano/shaping/results_280421/shaping_diff_punishment/'
     RERUN = False
     LEARN = True
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
@@ -114,13 +114,12 @@ if __name__ == '__main__':
     plot_all_figs = True
     num_instances = 3
     mean_perf = []
-    stages = np.arange(5)
+    stages = np.array([4])  # np.arange(5)
     perf_w = 100
     stg_w = 1000
     conv_w = 50
     rand_act_prob = 0.01
-    punish_3_vector = np.linspace(-0.5, 0, 3)
-    punish_6_vector = np.linspace(-0.5, 0, 3)
+    punish_3_vector = np.linspace(-1.0, 0., 5)  # np.linspace(-0.5, 0, 3)
     timing = {'fixation': ('constant', 0),
               'stimulus': ('constant', 300),
               'delay': (0, 100, 300),
@@ -132,5 +131,5 @@ if __name__ == '__main__':
     if plot_separate_figures:
         plot_inst_punishment(num_instances, punish_3_vector, conv_w)
     if plot_all_figs:
-        plot_figs(punish_6_vector, num_instances, conv_w)
+        plot_figs(punish_3_vector, num_instances, conv_w)
     print('separate code into functions')
