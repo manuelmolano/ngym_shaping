@@ -116,7 +116,6 @@ def get_tag(tag, file):
 ### HINT: FUNCTIONS TO OBTAIN VARIABLES
 
 
-
 def tr_to_final_ph(stage, tr_to_ph, wind_final_perf, final_ph):
     """ Computes the number of trials required to reach the final phase.
     """
@@ -458,7 +457,6 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
             ax[0].set_title('('+setup_nm+': ' + setup + ')')
             ax[len(keys)-1].set_xlabel('Trials')
             ax[len(keys)-1].legend()
-            asdasd
             f.savefig(folder+'/'+names[ind]+'_'+setup_nm+'_'+setup +
                       '_'+str(limit_tr)+'.svg', dpi=200)
             plt.close(f)
@@ -512,7 +510,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
                                                final_ph)
             reached_ph.append(reached)
             # performance analysis
-            perf = np.array(metrics['performance'][ind_f])
+            perf = np.array(metrics['real_performance'][ind_f])
             # get final performance
             final_perf.append(perf[-1])
             # get trials to reach specified performance
@@ -643,8 +641,8 @@ if __name__ == '__main__':
     plt.close('all')
     # sv_f = '/home/molano/shaping/results_280421/no_shaping/'
     # sv_f = '/home/manuel/shaping/results_280421/'
-    # sv_f = '/Users/leyreazcarate/Desktop/TFG/shaping/results_280421/shaping_diff_punishment/'
-    sv_f = '/home/molano/shaping/results_280421/shaping_diff_punishment/'
+    sv_f = '/Users/leyreazcarate/Desktop/TFG/shaping/results_280421/shaping_diff_punishment/'
+    # sv_f = '/home/molano/shaping/results_280421/shaping_diff_punishment/'
     RERUN = False
     LEARN = True
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
