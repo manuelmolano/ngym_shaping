@@ -35,7 +35,8 @@ PRTCLS_IND_MAP = {'01234': -1, '1234': 0, '0234': 1, '0134': 2, '0134X': 3,
 THS_IND_MAP = {'full': 0.5, '0.6': 0.6, '0.65': 0.65, '0.7': 0.7,
                '0.75': 0.75, '0.8': 0.8, '0.85': 0.85, '0.9': 0.9}
 
-PUN_IND_MAP = {'0.0': 0, '-0.25': 1, '-0.5': 2}
+# PUN_IND_MAP = {'0.0': 0, '-0.25': 1, '-0.5': 2}
+PUN_IND_MAP = {'0.0': 0, '-0.25': 1, '-0.5': 2, '-0.75': 3, '-1': 4}
 
 ALL_INDX = {}
 ALL_INDX.update(PRTCLS_IND_MAP)
@@ -560,6 +561,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
     elif tag == 'pun':
         ax_props['labels'] = list(PUN_IND_MAP.keys())
         ax_props['ticks'] = list(PUN_IND_MAP.values())
+    
 
     # plot results
     ax1 = ax_final[0]
@@ -638,8 +640,10 @@ if __name__ == '__main__':
     plt.close('all')
     # sv_f = '/home/molano/shaping/results_280421/no_shaping/'
     # sv_f = '/home/manuel/shaping/results_280421/'
-    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
-        'shaping_diff_punishment/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/'
+    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/no_shaping/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
+    #     'shaping_diff_punishment/'
     # sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
     RERUN = True
     LEARN = True
