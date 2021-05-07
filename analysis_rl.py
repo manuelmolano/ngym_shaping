@@ -196,7 +196,7 @@ def perf_hist(metric, ax, index, trials_day=300):
 
 
 def plot_rew_across_training(metric, index, ax, n_traces=20,
-                             selected_protocols=['-0.25', '-0.5', '0.0']):
+                             selected_protocols=['-1.0', '-0.75', '-0.5', '-0.25', '0.0']):
     """Plot traces across training, i.e. metric value per trial.
     """
     metric = np.array(metric)
@@ -211,7 +211,7 @@ def plot_rew_across_training(metric, index, ax, n_traces=20,
 
 
 def plt_means(metric, index, ax, limit_mean=True, limit_ax=True,
-              selected_protocols=['-0.25', '-0.5', '0.0']):
+              selected_protocols=['-1.0', '-0.75', '-0.5', '-0.25', '0.0']):
     """Plot mean traces across training.
     """
     if limit_mean:
@@ -641,9 +641,9 @@ if __name__ == '__main__':
     # sv_f = '/home/molano/shaping/results_280421/no_shaping/'
     # sv_f = '/home/manuel/shaping/results_280421/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/'
-    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/no_shaping/'
-    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
-    #     'shaping_diff_punishment/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/no_shaping/'
+    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
+        'shaping_diff_punishment/'
     # sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
     RERUN = True
     LEARN = True
