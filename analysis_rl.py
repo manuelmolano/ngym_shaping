@@ -655,6 +655,7 @@ if __name__ == '__main__':
     perf_w = 100
     stg_w = 1000
     conv_w = 50
+    final_ph = 3
     # if plot_separate_figures:
     #     plot_inst_punishment(num_instances, punish_3_vector, conv_w)
     # if plot_all_figs:
@@ -666,7 +667,7 @@ if __name__ == '__main__':
     ax = [ax1, ax2, ax3]
     plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
                  keys=['real_performance', 'stage'], limit_ax=True,
-                 final_ph=4, perf_th=TH, ax_final=ax,
+                 final_ph=final_ph, perf_th=TH, ax_final=ax,
                  tag='pun', limit_tr=False, rerun=True,
                  f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
                  plt_ind_vals=True, plt_ind_traces=True)
