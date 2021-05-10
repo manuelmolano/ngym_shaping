@@ -35,7 +35,8 @@ PRTCLS_IND_MAP = {'01234': -1, '1234': 0, '0234': 1, '0134': 2, '0134X': 3,
 THS_IND_MAP = {'full': 0.5, '0.6': 0.6, '0.65': 0.65, '0.7': 0.7,
                '0.75': 0.75, '0.8': 0.8, '0.85': 0.85, '0.9': 0.9}
 
-PUN_IND_MAP = {'0.0': 0, '-0.25': 1, '-0.5': 2}
+# PUN_IND_MAP = {'0.0': 0, '-0.25': 1, '-0.5': 2}
+PUN_IND_MAP = {'0.0': 0, '-0.25': 1, '-0.5': 2, '-0.75': 3, '-1.0': 4}
 
 ALL_INDX = {}
 ALL_INDX.update(PRTCLS_IND_MAP)
@@ -108,8 +109,6 @@ def get_tag(tag, file):
     assert f_name.find(tag) != -1, 'Tag '+tag+' not found in '+f_name
     val = f_name[f_name.find(tag)+len(tag)+1:]
     val = val[:val.find('_')] if '_' in val else val
-    if val.find('-1') != -1:
-        val = 'full'
     return val
 
 
@@ -195,7 +194,7 @@ def perf_hist(metric, ax, index, trials_day=300):
 
 
 def plot_rew_across_training(metric, index, ax, n_traces=20,
-                             selected_protocols=['-0.25', '-0.5', '0.0']):
+                             selected_protocols=['-1.0', '-0.75', '-0.5', '-0.25', '0.0']):
     """Plot traces across training, i.e. metric value per trial.
     """
     metric = np.array(metric)
@@ -210,7 +209,7 @@ def plot_rew_across_training(metric, index, ax, n_traces=20,
 
 
 def plt_means(metric, index, ax, limit_mean=True, limit_ax=True,
-              selected_protocols=['-0.25', '-0.5', '0.0']):
+              selected_protocols=['-1.0', '-0.75', '-0.5', '-0.25', '0.0']):
     """Plot mean traces across training.
     """
     if limit_mean:
@@ -560,6 +559,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
     elif tag == 'pun':
         ax_props['labels'] = list(PUN_IND_MAP.keys())
         ax_props['ticks'] = list(PUN_IND_MAP.values())
+    
 
     # plot results
     ax1 = ax_final[0]
@@ -638,10 +638,11 @@ if __name__ == '__main__':
     plt.close('all')
     # sv_f = '/home/molano/shaping/results_280421/no_shaping/'
     # sv_f = '/home/manuel/shaping/results_280421/'
-    # sv_f = '/Users/leyreazcarate/Desktop/TFG/shaping/results_280421/' +\
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/'
+    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/no_shaping/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'shaping_diff_punishment/'
-    # sv_f = '/home/molano/shaping/results_280421/shaping_diff_punishment/'
-    sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
+    # sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
     RERUN = True
     LEARN = True
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)

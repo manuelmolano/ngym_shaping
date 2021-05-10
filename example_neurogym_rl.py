@@ -34,7 +34,7 @@ def learning(num_instances, punish_3_vector, sv_f, stages, perf_w, stg_w,
                 if LEARN:
                     env = DummyVecEnv([lambda: env])
                     # Define model
-                    model = A2C(LstmPolicy, env, verbose=1,
+                    model = A2C(LstmPolicy, env, verbose=1, n_cpu_tf_sess=1,
                                 policy_kwargs={'feature_extraction': "mlp"})
                     # Train model
                     model.learn(total_timesteps=NUM_STEPS, log_interval=10e10)
@@ -101,8 +101,8 @@ def plot_figs(punish_6_vector, num_instances, conv_w):
 
 if __name__ == '__main__':
     plt.close('all')
-    sv_f = '/home/molano/shaping/results_280421/no_shaping/'
-    # sv_f = '/home/manuel/shaping/results_280421/'
+    # sv_f = '/home/molano/shaping/results_280421/no_shaping/'
+    sv_f = '/home/molano/shaping/results_280421/shaping_long_tr_one_agent/'
     # sv_f = '/home/molano/shaping/results_280421/shaping_diff_punishment/'
     RERUN = False
     LEARN = True
@@ -114,16 +114,16 @@ if __name__ == '__main__':
     plot_all_figs = True
     num_instances = 3
     mean_perf = []
-    stages = np.array([4])  # np.arange(5)
+    stages = np.arange(4)  #np.array([4])  # np.arange(5)
     perf_w = 100
     stg_w = 1000
     conv_w = 50
     rand_act_prob = 0.01
     punish_3_vector = np.linspace(-1.0, 0., 5)  # np.linspace(-0.5, 0, 3)
-    timing = {'fixation': ('constant', 0),
-              'stimulus': ('constant', 300),
-              'delay': (0, 100, 300),
-              'decision': ('constant', 200)}
+    timing = {'fixation': ('constant', 300),
+              'stimulus': ('constant', 500),
+              'delay': (0, 1000, 3000),
+              'decision': ('constant', 300)}
     rewards = {'abort': -0.1, 'correct': +1., 'fail': -0.1}
     env_kwargs = {'timing': timing, 'rewards': rewards}
     learning(num_instances, punish_3_vector, sv_f, stages, perf_w, stg_w,
