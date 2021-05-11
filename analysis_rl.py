@@ -104,7 +104,7 @@ def data_extraction(folder, metrics, w_conv_perf=500, conv=[1]):
 
 
 def aha_moment(folder, metrics, w_ahas=5, w_perf=20, perf_bef_aft=[0.55, 0.65],
-               conv=[1]):
+                conv=[1]):
     """ Extract data saved during training.
     metrics: dict containing the keys of the data to loaextractd.
     conv: list of the indexes of the metrics to convolve."""
@@ -120,7 +120,15 @@ def aha_moment(folder, metrics, w_ahas=5, w_perf=20, perf_bef_aft=[0.55, 0.65],
                     mean_ahas = np.convolve(metric, np.ones((w_ahas,))/w_ahas,
                                             mode='valid')
                     # TODO: for loop across ahas and split into before and after
-
+                    for i in mean_ahas:
+                        if mean_ahas == 1:
+                            # XXX: como coger los 20 anteriores y los 20 posteriores
+                            prev_mean = np.convolve(metric[], 
+                                                    np.ones((w_perf,))/w_perf,
+                                                    mode='valid')
+                            post_mean = np.convolve(metric, 
+                                                    np.ones((w_perf,))/w_perf,
+                                                    mode='valid')
                 else:
                     mean = metric
             else:
@@ -446,7 +454,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
             # get metrics
             metrics, flag = data_extraction(folder=file, metrics=['real_performance'],
                                             w_conv_perf=w_conv_perf,
-                                            conv=[1, 0])
+                                            conv=[1, 0]) # metrics=['real_performance']
             # store values
             if flag:
                 val_index.append(val)
@@ -676,9 +684,10 @@ if __name__ == '__main__':
     #     'no_shaping_long_tr_one_agent/'
     # sv_f = '/home/molano/shaping/results_280421/' +\
     #     'shaping_long_tr_one_agent/'
-    sv_f = '/home/molano/shaping/results_280421/' +\
-        'no_shaping_long_tr_one_agent/'
-
+    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
+        'no_shaping_long_tr_one_agent_stg_4/'
+    # sv_f = '/home/molano/shaping/results_280421/' +\
+    #     'no_shaping_long_tr_one_agent/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'shaping_diff_punishment/'
     # sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
@@ -695,7 +704,7 @@ if __name__ == '__main__':
     perf_w = 100
     stg_w = 1000
     conv_w = 50
-    final_ph = 3
+    final_ph = 4
     # if plot_separate_figures:
     #     plot_inst_punishment(num_instances, punish_3_vector, conv_w)
     # if plot_all_figs:
