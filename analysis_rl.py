@@ -103,6 +103,35 @@ def data_extraction(folder, metrics, w_conv_perf=500, conv=[1]):
     return metrics, data_flag
 
 
+def aha_moment(folder, metrics, w_ahas=5, w_perf=20, perf_bef_aft=[0.55, 0.65],
+               conv=[1]):
+    """ Extract data saved during training.
+    metrics: dict containing the keys of the data to loaextractd.
+    conv: list of the indexes of the metrics to convolve."""
+    # load all data from the same folder
+    data = put_together_files(folder)
+    data_flag = True
+    if data:
+        # extract each of the metrics
+        for ind_k, k in enumerate(metrics.keys()):
+            if k in data.keys():
+                metric = data[k]
+                if conv[ind_k]:
+                    mean_ahas = np.convolve(metric, np.ones((w_ahas,))/w_ahas,
+                                            mode='valid')
+                    # TODO: for loop across ahas and split into before and after
+
+                else:
+                    mean = metric
+            else:
+                mean = []
+            metrics[k].append(mean)
+    else:
+        print('No data in: ', folder)
+        data_flag = False
+    return metrics, data_flag
+
+
 def get_tag(tag, file):
     # process name
     f_name = ntpath.basename(file)
@@ -415,7 +444,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
             print(file)
             val = get_tag(tag, file)
             # get metrics
-            metrics, flag = data_extraction(folder=file, metrics=metrics,
+            metrics, flag = data_extraction(folder=file, metrics=['real_performance'],
                                             w_conv_perf=w_conv_perf,
                                             conv=[1, 0])
             # store values
