@@ -102,11 +102,12 @@ def plot_figs(punish_6_vector, num_instances, conv_w):
 if __name__ == '__main__':
     plt.close('all')
     # sv_f = '/home/molano/shaping/results_280421/no_shaping/'
-    sv_f = '/home/molano/shaping/results_280421/shaping_long_tr_one_agent/'
+    # sv_f = '/home/molano/shaping/results_280421/shaping_long_tr_one_agent/'
+    sv_f = '/home/molano/shaping/results_280421/no_shaping_long_tr_one_agent_stg_4/'
     # sv_f = '/home/molano/shaping/results_280421/shaping_diff_punishment/'
-    RERUN = False
+    RERUN = True
     LEARN = True
-    NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
+    NUM_STEPS = 300000  # 1e5*np.arange(10, 21, 2)
     TH = 0.75
     NUM_RAND = 100000
 
@@ -114,16 +115,16 @@ if __name__ == '__main__':
     plot_all_figs = True
     num_instances = 3
     mean_perf = []
-    stages = np.arange(4)  #np.array([4])  # np.arange(5)
+    stages = [4]  # np.arange(4)  #np.array([4])  # np.arange(5)
     perf_w = 100
     stg_w = 1000
     conv_w = 50
     rand_act_prob = 0.01
     punish_3_vector = np.linspace(-1.0, 0., 5)  # np.linspace(-0.5, 0, 3)
-    timing = {'fixation': ('constant', 300),
-              'stimulus': ('constant', 500),
+    timing = {'fixation': ('constant', 200),
+              'stimulus': ('constant', 400),
               'delay': (0, 1000, 3000),
-              'decision': ('constant', 300)}
+              'decision': ('constant', 200)}
     rewards = {'abort': -0.1, 'correct': +1., 'fail': -0.1}
     env_kwargs = {'timing': timing, 'rewards': rewards}
     learning(num_instances, punish_3_vector, sv_f, stages, perf_w, stg_w,

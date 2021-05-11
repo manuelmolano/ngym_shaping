@@ -190,7 +190,7 @@ def shaping(stages=None, th=0.75, perf_w=20, stg_w=100, sv_folder=None,
         env = DR_stage(stage=stg, **env_kwargs)
         env = mean_perf.MeanPerf(env, perf_w=perf_w)
         if sv_folder is not None:
-            env = monitor.Monitor(env, folder=sv_folder,
+            env = monitor.Monitor(env, folder=sv_folder, sv_fig=False, fig_type='',
                                   name='stg_'+str(float(stg)), sv_per=sv_per)
         envs.append(env)
     schedule = sq_sch_cnd(n=len(envs), cond=cond, w=stg_w)

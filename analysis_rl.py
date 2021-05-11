@@ -139,6 +139,7 @@ def tr_to_reach_perf(perf, tr_to_ph, reach_perf, tr_to_perf, final_ph):
     """
     reached = False
     perf_in_final_ph = perf[tr_to_ph:]  # perf in the last phase
+    # TODO: require a minimum number of trials over the threshold
     time_above_th = np.where(perf_in_final_ph > reach_perf)[0]
     if len(time_above_th) == 0:
         tr_to_perf.append(len(perf))
@@ -435,10 +436,10 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
         # for k in tmp.keys():
         #     metrics[k] = list(tmp[k])
 
-        names = ['values_across_training_', 'mean_values_across_training_']
+        names = ['values_across_training_']  # , 'mean_values_across_training_']
         ylabels = ['Performance', 'Phase', 'Number of steps',
                    'Session performance']
-        for ind in range(2):
+        for ind in range(len(names)):
             f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
                                  figsize=(12, 12))
             # plot means
@@ -446,7 +447,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
                 metric = metrics[met]
                 if plt_ind_traces:
                     plot_rew_across_training(metric=metric, index=val_index,
-                                             ax=ax[ind_met], n_traces=1)
+                                             ax=ax[ind_met], n_traces=3)
                 plt_means(metric=metric, index=val_index,
                           ax=ax[ind_met], limit_ax=limit_ax)
                 ax[ind_met].set_ylabel(ylabels[ind_met])
@@ -455,7 +456,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
             ax[len(keys)-1].legend()
             f.savefig(folder+'/'+names[ind]+'_'+setup_nm+'_'+setup +
                       '_'+str(limit_tr)+'.svg', dpi=200)
-            plt.close(f)
+            # plt.close(f)
 
         # plot days under perf
         if 'curr_perf' in keys:
@@ -465,7 +466,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
             ax.set_title('Performance histogram ('+')')
             f.savefig(folder+'/perf_hist_'+'_'+setup_nm+'_'+setup +
                       '.svg', dpi=200)
-            plt.close(f)
+            # plt.close(f)
 
         # plot trials per stage
         if 'stage' in keys:
@@ -564,16 +565,16 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
     # plot results
     ax1 = ax_final[0]
     # ax2 = ax_final[1]
-    ax3 = ax_final[2]
+    ax3 = ax_final[1]
     # final figures
     # prop of instances reaching phase 4
-    ax_props['ylabel'] = 'Proportion of instances reaching phase 4'
+    ax_props['ylabel'] = 'Proportion of instances reaching phase '+str(final_ph)
     plt_perf_indicators(values=data['reached_ph'], index_val=val_index,
                         ax=ax1[0], f_props=f_final_prop,
                         ax_props=ax_props, discard=['full', '4'],
                         errorbars=False, plot_individual_values=False)
     # trials to reach phase 4
-    ax_props['ylabel'] = 'Number of trials to reach phase 4'
+    ax_props['ylabel'] = 'Number of trials to reach phase '+str(final_ph)
     plt_perf_indicators(values=data['tr_to_ph'],
                         f_props=f_final_prop, ax_props=ax_props,
                         index_val=val_index, ax=ax1[1],
@@ -640,8 +641,15 @@ if __name__ == '__main__':
     # sv_f = '/home/manuel/shaping/results_280421/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/no_shaping/'
-    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/shaping_long_tr_one_agent/'
-    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/no_shaping_long_tr_one_agent/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
+    #     'shaping_long_tr_one_agent/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
+    #     'no_shaping_long_tr_one_agent/'
+    # sv_f = '/home/molano/shaping/results_280421/' +\
+    #     'shaping_long_tr_one_agent/'
+    sv_f = '/home/molano/shaping/results_280421/' +\
+        'no_shaping_long_tr_one_agent/'
+
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'shaping_diff_punishment/'
     # sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
@@ -665,9 +673,8 @@ if __name__ == '__main__':
     #     plot_figs(punish_6_vector, num_instances, conv_w)
     # print('separate code into functions')
     f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
-    f2, ax2 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
     f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
-    ax = [ax1, ax2, ax3]
+    ax = [ax1, ax3]
     plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
                  keys=['real_performance', 'stage'], limit_ax=True,
                  final_ph=final_ph, perf_th=TH, ax_final=ax,
@@ -675,5 +682,5 @@ if __name__ == '__main__':
                  f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
                  plt_ind_vals=True, plt_ind_traces=True)
     f1.savefig(sv_f + '/final_results_phase.svg', dpi=200)
-    f2.savefig(sv_f + '/final_results_steps.svg', dpi=200)
+    # f2.savefig(sv_f + '/final_results_steps.svg', dpi=200)
     f3.savefig(sv_f + '/final_results_performance.svg', dpi=200)
