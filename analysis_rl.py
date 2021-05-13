@@ -103,8 +103,8 @@ def data_extraction(folder, metrics, w_conv_perf=500, conv=[1]):
     return metrics, data_flag
 
 
-def aha_moment(folder, metrics, w_ahas=5, w_perf=20, perf_bef_aft=[0.55, 0.65],
-                conv=[1]):
+def aha_moment(folder, aha_mmts, w_ahas=5, w_perf=20,
+               perf_bef_aft=[0.55, 0.65], conv=[1]):
     """ Extract data saved during training.
     metrics: dict containing the keys of the data to loaextractd.
     conv: list of the indexes of the metrics to convolve."""
@@ -113,27 +113,35 @@ def aha_moment(folder, metrics, w_ahas=5, w_perf=20, perf_bef_aft=[0.55, 0.65],
     data_flag = True
     if data:
         # extract each of the metrics
-        for ind_k, k in enumerate(metrics.keys()):
-            if k in data.keys():
-                metric = data[k]
-                if conv[ind_k]:
-                    mean_ahas = np.convolve(metric, np.ones((w_ahas,))/w_ahas,
-                                            mode='valid')
-                    # TODO: for loop across ahas and split into before and after
-                    for i in mean_ahas:
-                        if mean_ahas == 1:
-                            # XXX: como coger los 20 anteriores y los 20 posteriores
-                            prev_mean = np.convolve(metric[], 
-                                                    np.ones((w_perf,))/w_perf,
-                                                    mode='valid')
-                            post_mean = np.convolve(metric, 
-                                                    np.ones((w_perf,))/w_perf,
-                                                    mode='valid')
+        if 'real_performance' in data.keys():
+            perf = data['real_performance']
+            stage = data['stage']
+            perf_stg_1 = perf[stage == 1]
+            ahas = np.convolve(perf_stg_1, np.ones((10,))/10,
+                               mode='valid')
+            perf = np.convolve(perf_stg_1, np.ones((100,))/100,
+                               mode='valid')
+            plt.figure()
+            plt.plot(perf_stg_1, '-+')
+            plt.plot(ahas, '-+')
+            plt.plot(perf)
+            aha_indx = np.where(np.abs(ahas - 1.) < 10e-5)[0]
+            # TODO: for loop across ahas and split into before and after
+            aha_mmnts = []
+            for a_i in aha_indx:
+                prev_perf = np.mean(perf_stg_1[a_i-w_perf:a_i])
+                post_perf = np.mean(perf_stg_1[a_i+w_ahas:a_i+w_ahas+w_perf])
+                if prev_perf <= perf_bef_aft[0] and post_perf >= perf_bef_aft[1]:
+                    aha_mmnts.append(a_i)
+                    plt.plot([a_i, a_i], [0, 1], '--k')
                 else:
-                    mean = metric
-            else:
-                mean = []
-            metrics[k].append(mean)
+                    print(prev_perf)
+                    print(post_perf)
+                    print('-----------')
+            asdsad
+        else:
+            mean = []
+        metrics[k].append(mean)
     else:
         print('No data in: ', folder)
         data_flag = False
@@ -408,7 +416,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
                  limit_ax=True, final_ph=4, perf_th=0.7, ax_final=None,
                  tag='th_stage', limit_tr=False, rerun=False,
                  f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
-                 plt_ind_vals=True, plt_ind_traces=True):
+                 plt_ind_vals=True, plt_ind_traces=True):  # TODO: clean up
     """This function uses the data generated during training to analyze it
     and generate figures showing the results in function of the different
     values used for the third level variable (i.e. differen threshold values
@@ -447,14 +455,18 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
         # files = sorted(files)
         val_index = []  # stores values for each instance
         metrics = {k: [] for k in keys}
+        aha_mmts = []
         keys = np.array(keys)
         for ind_f, file in enumerate(files):
             print(file)
             val = get_tag(tag, file)
             # get metrics
-            metrics, flag = data_extraction(folder=file, metrics=['real_performance'],
+            metrics, flag = data_extraction(folder=file, metrics=metrics,
                                             w_conv_perf=w_conv_perf,
-                                            conv=[1, 0]) # metrics=['real_performance']
+                                            conv=[1, 0])
+            aha_mmts, flag = aha_moment(folder=file, aha_mmts=aha_mmts, w_ahas=5,
+                                        w_perf=20)  # TODO: make these vals params
+
             # store values
             if flag:
                 val_index.append(val)
@@ -684,13 +696,13 @@ if __name__ == '__main__':
     #     'no_shaping_long_tr_one_agent/'
     # sv_f = '/home/molano/shaping/results_280421/' +\
     #     'shaping_long_tr_one_agent/'
-    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
-        'no_shaping_long_tr_one_agent_stg_4/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
+    #     'no_shaping_long_tr_one_agent_stg_4/'
     # sv_f = '/home/molano/shaping/results_280421/' +\
     #     'no_shaping_long_tr_one_agent/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'shaping_diff_punishment/'
-    # sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
+    sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
     RERUN = True
     LEARN = True
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
