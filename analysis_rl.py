@@ -132,8 +132,9 @@ def aha_moment(folder, aha_mmts, w_ahas=5, w_perf=30,
                 plt.plot(perf)
                 aha_indx = np.where(np.abs(ahas - 1.) < 10e-5)[0]
                 # TODO: remove near aha moments
-                # aha_diff = np.diff(aha_indx)
-                # aha_indx = aha_indx[aha_diff > w_ahas]
+                aha_diff = np.diff(aha_indx)
+                aha_diff = np.insert(aha_diff, 0, w_ahas+1)
+                aha_indx = aha_indx[aha_diff > w_ahas]
                 aha_mmnts = []
                 for a_i in aha_indx:
                     prev_perf = np.mean(perf_stg_1[a_i-w_perf:a_i])
@@ -145,6 +146,7 @@ def aha_moment(folder, aha_mmts, w_ahas=5, w_perf=30,
                         print(prev_perf)
                         print(post_perf)
                         print('-----------')
+                asdsad
     else:
         print('No data in: ', folder)
         data_flag = False
@@ -687,6 +689,8 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
     ax3[0, 0].legend(by_label.values(), by_label.keys())
 
 
+### XXX: MAIN
+
 if __name__ == '__main__':
     plt.close('all')
     # sv_f = '/home/molano/shaping/results_280421/no_shaping/'
@@ -703,9 +707,9 @@ if __name__ == '__main__':
     #     'no_shaping_long_tr_one_agent_stg_4/'
     # sv_f = '/home/molano/shaping/results_280421/' +\
     #     'no_shaping_long_tr_one_agent/'
-    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
-        'shaping_diff_punishment/'
-    # sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
+    #     'shaping_diff_punishment/'
+    sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
     TH = 0.75
 
