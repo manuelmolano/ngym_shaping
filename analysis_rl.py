@@ -44,7 +44,7 @@ ALL_INDX.update(THS_IND_MAP)
 ALL_INDX.update(PUN_IND_MAP)
 
 
-### HINT: AUXILIAR FUNCTIONS TO LOAD DATA
+### AUXILIAR FUNCTIONS TO LOAD DATA
 
 def put_together_files(folder):
     def order_by_sufix(file_list):
@@ -104,7 +104,7 @@ def data_extraction(folder, metrics, w_conv_perf=500, conv=[1]):
 
 
 def aha_moment(folder, aha_mmts, w_ahas=5, w_perf=30,
-               perf_bef_aft=[0.55, 0.7], conv=[1]):
+                perf_bef_aft=[0.55, 0.7], conv=[1]):
     """ Extract data saved during training.
     metrics: dict containing the keys of the data to loaextractd.
     conv: list of the indexes of the metrics to convolve."""
@@ -120,18 +120,15 @@ def aha_moment(folder, aha_mmts, w_ahas=5, w_perf=30,
             if 2 in stage:
                 perf_stg_1 = perf[stage == 1]
                 ahas = np.convolve(perf_stg_1, np.ones((w_ahas,))/w_ahas,
-                                   mode='valid')
+                                    mode='valid')
                 perf = np.convolve(perf_stg_1, np.ones((w_perf,))/w_perf,
-                                   mode='valid')
+                                    mode='valid')
                 plt.figure()
                 plt.title(folder)
-                # TODO : put all plots in the same figure
-                # fig, ax = plt.subplots(2, 9) 
                 plt.plot(perf_stg_1, '-+')
                 plt.plot(ahas, '-+')
                 plt.plot(perf)
                 aha_indx = np.where(np.abs(ahas - 1.) < 10e-5)[0]
-                # TODO: remove near aha moments
                 aha_diff = np.diff(aha_indx)
                 aha_diff = np.insert(aha_diff, 0, w_ahas+1)
                 aha_indx = aha_indx[aha_diff > w_ahas]
@@ -146,11 +143,53 @@ def aha_moment(folder, aha_mmts, w_ahas=5, w_perf=30,
                         print(prev_perf)
                         print(post_perf)
                         print('-----------')
-                asdsad
     else:
         print('No data in: ', folder)
         data_flag = False
     return aha_mmts, data_flag
+
+# def aha_moment(folder, aha_mmts, ax, w_ahas=5, w_perf=30,
+#                 perf_bef_aft=[0.55, 0.7], conv=[1]):
+#     """ Extract data saved during training.
+#     metrics: dict containing the keys of the data to loaextractd.
+#     conv: list of the indexes of the metrics to convolve."""
+#     # load all data from the same folder
+#     data = put_together_files(folder)
+#     data_flag = True
+#     if data:
+#         # extract each of the metrics
+#         if 'real_performance' in data.keys():
+#             perf = data['real_performance']
+#             stage = data['stage']
+#             # TODO: remove aha_moments that to not reach stage 2
+#             if 2 in stage:
+#                 perf_stg_1 = perf[stage == 1]
+#                 ahas = np.convolve(perf_stg_1, np.ones((w_ahas,))/w_ahas,
+#                                    mode='valid')
+#                 perf = np.convolve(perf_stg_1, np.ones((w_perf,))/w_perf,
+#                                    mode='valid')
+#                 ax.plot(perf_stg_1, '-+')
+#                 ax.plot(ahas, '-+')
+#                 ax.plot(perf)
+#                 aha_indx = np.where(np.abs(ahas - 1.) < 10e-5)[0]
+#                 aha_diff = np.diff(aha_indx)
+#                 aha_diff = np.insert(aha_diff, 0, w_ahas+1)
+#                 aha_indx = aha_indx[aha_diff > w_ahas]
+#                 aha_mmnts = []
+#                 for a_i in aha_indx:
+#                     prev_perf = np.mean(perf_stg_1[a_i-w_perf:a_i])
+#                     post_perf = np.mean(perf_stg_1[a_i+w_ahas:a_i+w_ahas+w_perf])
+#                     if prev_perf <= perf_bef_aft[0] and post_perf >= perf_bef_aft[1]:
+#                         aha_mmnts.append(a_i)
+#                         ax.plot([a_i, a_i], [0, 1], '--k')
+#                     else:
+#                         print(prev_perf)
+#                         print(post_perf)
+#                         print('-----------')
+#     else:
+#         print('No data in: ', folder)
+#         data_flag = False
+#     return aha_mmts, data_flag
 
 
 def get_tag(tag, file):
@@ -162,7 +201,7 @@ def get_tag(tag, file):
     return val
 
 
-### HINT: FUNCTIONS TO OBTAIN VARIABLES
+### FUNCTIONS TO OBTAIN VARIABLES
 
 
 def tr_to_final_ph(stage, tr_to_ph, wind_final_perf, final_ph):
@@ -221,7 +260,7 @@ def get_noise(unq_vals):
     return noise
 
 
-### HINT: FUNCTIONS TO PLOT
+### FUNCTIONS TO PLOT
 
 def perf_hist(metric, ax, index, trials_day=300):
     """Plot a normalized histogram of the number of days/sessions spent with
@@ -462,6 +501,8 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
         metrics = {k: [] for k in keys}
         aha_mmts = []
         keys = np.array(keys)
+        # TODO : put all plots in the same figure
+        # fig, ax = plt.subplots(2, 9)
         for ind_f, file in enumerate(files):
             print(file)
             val = get_tag(tag, file)
@@ -505,11 +546,12 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
                 plt_means(metric=metric, index=val_index,
                           ax=ax[ind_met], limit_ax=limit_ax)
                 ax[ind_met].set_ylabel(ylabels[ind_met])
-            ax[0].set_title('('+setup_nm+': ' + setup + ')')
+            ax[0].set_title('Roll_out = 40')
+            ax[0].axhline(y=0.55, linestyle='--', color='k')
             ax[len(keys)-1].set_xlabel('Trials')
             ax[len(keys)-1].legend()
             f.savefig(folder+'/'+names[ind]+'_'+setup_nm+'_'+setup +
-                      '_'+str(limit_tr)+'.svg', dpi=200)
+                      '_'+str(limit_tr)+'.png', dpi=200)
             # plt.close(f)
 
         # plot days under perf
@@ -689,7 +731,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
     ax3[0, 0].legend(by_label.values(), by_label.keys())
 
 
-### XXX: MAIN
+### MAIN
 
 if __name__ == '__main__':
     plt.close('all')
@@ -697,8 +739,8 @@ if __name__ == '__main__':
     # sv_f = '/home/manuel/shaping/results_280421/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/results_280421/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/no_shaping/'
-    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
-    #     'shaping_long_tr_one_agent/'
+    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
+        'shaping_long_tr_one_agent/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'no_shaping_long_tr_one_agent/'
     # sv_f = '/home/molano/shaping/results_280421/' +\
@@ -709,7 +751,9 @@ if __name__ == '__main__':
     #     'no_shaping_long_tr_one_agent/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'shaping_diff_punishment/'
-    sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
+    # sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
+    #     'no_shaping_long_tr_one_agent_stg_4_nsteps_40/'
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
     TH = 0.75
 
