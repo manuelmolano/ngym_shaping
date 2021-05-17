@@ -116,7 +116,6 @@ def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, w_ahas=5, w_perf=30,
         if 'real_performance' in data.keys():
             perf = data['real_performance']
             stage = data['stage']
-            # TODO: remove aha_moments that to not reach stage 2
             if 2 in stage:
                 perf_stg_1 = perf[stage == 1]
                 ahas = np.convolve(perf_stg_1, np.ones((w_ahas,))/w_ahas,
@@ -151,49 +150,6 @@ def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, w_ahas=5, w_perf=30,
         print('No data in: ', folder)
         data_flag = False
     return aha_mmts, post_prfs, prev_prfs, data_flag
-
-# def aha_moment(folder, aha_mmts, ax, w_ahas=5, w_perf=30,
-#                 perf_bef_aft=[0.55, 0.7], conv=[1]):
-#     """ Extract data saved during training.
-#     metrics: dict containing the keys of the data to loaextractd.
-#     conv: list of the indexes of the metrics to convolve."""
-#     # load all data from the same folder
-#     data = put_together_files(folder)
-#     data_flag = True
-#     if data:
-#         # extract each of the metrics
-#         if 'real_performance' in data.keys():
-#             perf = data['real_performance']
-#             stage = data['stage']
-#             # TODO: remove aha_moments that to not reach stage 2
-#             if 2 in stage:
-#                 perf_stg_1 = perf[stage == 1]
-#                 ahas = np.convolve(perf_stg_1, np.ones((w_ahas,))/w_ahas,
-#                                    mode='valid')
-#                 perf = np.convolve(perf_stg_1, np.ones((w_perf,))/w_perf,
-#                                    mode='valid')
-#                 ax.plot(perf_stg_1, '-+')
-#                 ax.plot(ahas, '-+')
-#                 ax.plot(perf)
-#                 aha_indx = np.where(np.abs(ahas - 1.) < 10e-5)[0]
-#                 aha_diff = np.diff(aha_indx)
-#                 aha_diff = np.insert(aha_diff, 0, w_ahas+1)
-#                 aha_indx = aha_indx[aha_diff > w_ahas]
-#                 aha_mmnts = []
-#                 for a_i in aha_indx:
-#                     prev_perf = np.mean(perf_stg_1[a_i-w_perf:a_i])
-#                     post_perf = np.mean(perf_stg_1[a_i+w_ahas:a_i+w_ahas+w_perf])
-#                     if prev_perf <= perf_bef_aft[0] and post_perf >= perf_bef_aft[1]:
-#                         aha_mmnts.append(a_i)
-#                         ax.plot([a_i, a_i], [0, 1], '--k')
-#                     else:
-#                         print(prev_perf)
-#                         print(post_perf)
-#                         print('-----------')
-#     else:
-#         print('No data in: ', folder)
-#         data_flag = False
-#     return aha_mmts, data_flag
 
 
 def get_tag(tag, file):
@@ -232,7 +188,6 @@ def tr_to_reach_perf(perf, tr_to_ph, reach_perf, tr_to_perf, final_ph):
     """
     reached = False
     perf_in_final_ph = perf[tr_to_ph:]  # perf in the last phase
-    # TODO: require a minimum number of trials over the threshold
     time_above_th = np.where(perf_in_final_ph > reach_perf)[0]
     if len(time_above_th) == 0:
         tr_to_perf.append(len(perf))
@@ -508,8 +463,6 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
         prev_prfs = []
         post_prfs = []
         keys = np.array(keys)
-        # TODO : put all plots in the same figure
-        # fig, ax = plt.subplots(2, 9)
         for ind_f, file in enumerate(files):
             print(file)
             val = get_tag(tag, file)
@@ -526,8 +479,15 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
             if flag:
                 val_index.append(val)
         val_index = np.array(val_index)
-        # TODO: histogram of prev and post performances (separate subplots)
-        # plot threshold
+        # TODO: histogram of prev and post performances (separate subplots) 
+        fig, ax1 = plt.subplots()
+        colors = ['b','g']
+        labels = ['prev_prfs','post_prfs']
+        ax1.hist([prev_prfs,post_prfs], bins=10, color=colors, label=labels)
+        ax1.legend()
+        plt.tight_layout()
+        plt.show()
+        # TODO: plot threshold
         # np.savez(folder+'/metrics'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
         #          **metrics)
 
@@ -759,9 +719,9 @@ if __name__ == '__main__':
     #     'no_shaping_long_tr_one_agent_stg_4/'
     # sv_f = '/home/molano/shaping/results_280421/' +\
     #     'no_shaping_long_tr_one_agent/'
-    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
-    #     'shaping_diff_punishment/'
-    sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
+    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
+        'shaping_diff_punishment/'
+    # sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_40/'
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
@@ -770,7 +730,6 @@ if __name__ == '__main__':
     plot_separate_figures = True
     plot_all_figs = True
     num_instances = 3
-    mean_perf = []
     stages = np.arange(5)
     perf_w = 100
     stg_w = 1000
