@@ -103,7 +103,7 @@ def data_extraction(folder, metrics, w_conv_perf=500, conv=[1]):
     return metrics, data_flag
 
 
-def aha_moment(folder, aha_mmts, w_ahas=5, w_perf=30,
+def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, w_ahas=5, w_perf=30,
                 perf_bef_aft=[0.55, 0.7], conv=[1]):
     """ Extract data saved during training.
     metrics: dict containing the keys of the data to loaextractd.
@@ -120,9 +120,9 @@ def aha_moment(folder, aha_mmts, w_ahas=5, w_perf=30,
             if 2 in stage:
                 perf_stg_1 = perf[stage == 1]
                 ahas = np.convolve(perf_stg_1, np.ones((w_ahas,))/w_ahas,
-                                    mode='valid')
+                                   mode='valid')
                 perf = np.convolve(perf_stg_1, np.ones((w_perf,))/w_perf,
-                                    mode='valid')
+                                   mode='valid')
                 plt.figure()
                 plt.title(folder)
                 plt.plot(perf_stg_1, '-+')
@@ -132,21 +132,25 @@ def aha_moment(folder, aha_mmts, w_ahas=5, w_perf=30,
                 aha_diff = np.diff(aha_indx)
                 aha_diff = np.insert(aha_diff, 0, w_ahas+1)
                 aha_indx = aha_indx[aha_diff > w_ahas]
-                aha_mmnts = []
                 for a_i in aha_indx:
                     prev_perf = np.mean(perf_stg_1[a_i-w_perf:a_i])
                     post_perf = np.mean(perf_stg_1[a_i+w_ahas:a_i+w_ahas+w_perf])
-                    if prev_perf <= perf_bef_aft[0] and post_perf >= perf_bef_aft[1]:
-                        aha_mmnts.append(a_i)
+                    prev_prfs.append(prev_perf)
+                    post_prfs.append(post_perf)
+                    if prev_perf <= perf_bef_aft[0] and\
+                       post_perf >= perf_bef_aft[1]:
+                        aha_mmts.append(a_i)
                         plt.plot([a_i, a_i], [0, 1], '--k')
                     else:
                         print(prev_perf)
                         print(post_perf)
                         print('-----------')
+            else:
+                print('NO STAGE 2')
     else:
         print('No data in: ', folder)
         data_flag = False
-    return aha_mmts, data_flag
+    return aha_mmts, post_prfs, prev_prfs, data_flag
 
 # def aha_moment(folder, aha_mmts, ax, w_ahas=5, w_perf=30,
 #                 perf_bef_aft=[0.55, 0.7], conv=[1]):
@@ -460,7 +464,8 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
                  limit_ax=True, final_ph=4, perf_th=0.7, ax_final=None,
                  tag='th_stage', limit_tr=False, rerun=False,
                  f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
-                 plt_ind_vals=True, plt_ind_traces=True, w_ahas=7, w_perf=50):  
+                 plt_ind_vals=True, plt_ind_traces=True, w_ahas=7, w_perf=50,
+                 perf_bef_aft=[.55, .7]):  
     """This function uses the data generated during training to analyze it
     and generate figures showing the results in function of the different
     values used for the third level variable (i.e. differen threshold values
@@ -500,6 +505,8 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
         val_index = []  # stores values for each instance
         metrics = {k: [] for k in keys}
         aha_mmts = []
+        prev_prfs = []
+        post_prfs = []
         keys = np.array(keys)
         # TODO : put all plots in the same figure
         # fig, ax = plt.subplots(2, 9)
@@ -510,14 +517,17 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
             metrics, flag = data_extraction(folder=file, metrics=metrics,
                                             w_conv_perf=w_conv_perf,
                                             conv=[1, 0])
-            aha_mmts, flag = aha_moment(folder=file, aha_mmts=aha_mmts,
-                                        w_ahas=w_ahas, w_perf=w_perf)
+            aha_mmts, prev_prfs, post_prfs, flag =\
+                aha_moment(folder=file, aha_mmts=aha_mmts, prev_prfs=prev_prfs,
+                           post_prfs=post_prfs, w_ahas=w_ahas, w_perf=w_perf,
+                           perf_bef_aft=perf_bef_aft)
 
             # store values
             if flag:
                 val_index.append(val)
         val_index = np.array(val_index)
-
+        # TODO: histogram of prev and post performances (separate subplots)
+        # plot threshold
         # np.savez(folder+'/metrics'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
         #          **metrics)
 
@@ -739,8 +749,8 @@ if __name__ == '__main__':
     # sv_f = '/home/manuel/shaping/results_280421/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/results_280421/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/no_shaping/'
-    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
-        'shaping_long_tr_one_agent/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
+    #     'shaping_long_tr_one_agent/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'no_shaping_long_tr_one_agent/'
     # sv_f = '/home/molano/shaping/results_280421/' +\
@@ -751,7 +761,7 @@ if __name__ == '__main__':
     #     'no_shaping_long_tr_one_agent/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'shaping_diff_punishment/'
-    # sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
+    sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_40/'
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
