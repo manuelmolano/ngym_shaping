@@ -117,6 +117,7 @@ def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, w_ahas=5, w_perf=30,
             perf = data['real_performance']
             stage = data['stage']
             gt = data['gt']
+            gt_storage = []
             if 2 in stage:
                 perf_stg_1 = perf[stage == 1]
                 gt = gt[stage == 1]
@@ -144,6 +145,9 @@ def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, w_ahas=5, w_perf=30,
                         plt.plot([a_i, a_i], [0, 1], '--k')
                         print('AHA MOMENT')
                         print(gt[a_i-w_perf:a_i+w_ahas+w_perf])  # TODO: store
+                        print('**')
+                        gt_storage.append(gt[a_i-w_perf:a_i+w_ahas+w_perf])
+                print(gt_storage)
                     # else:
                         # print(prev_perf)
                         # print(post_perf)
@@ -417,8 +421,8 @@ def plot_figs(punish_6_vector, num_instances, conv_w):
     ax[0].legend()
     f.savefig(sv_f+'all_insts.png', dpi=300)
 
-# ahas_dic={'w_ahas': 7, 'w_perf': 50, 'perf_bef_aft': [.55, .7],
-#           'perf_th': 0.9}):  
+ahas_dic={'w_ahas': 7, 'w_perf': 50, 'perf_bef_aft': [.55, .7],
+          'perf_th': 0.9}):  
 
 
 def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
@@ -527,7 +531,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
                 plt_means(metric=metric, index=val_index,
                           ax=ax[ind_met], limit_ax=limit_ax)
                 ax[ind_met].set_ylabel(ylabels[ind_met])
-            ax[0].set_title('Roll_out = 40')
+            ax[0].set_title('Roll_out = 20')
             ax[0].axhline(y=0.55, linestyle='--', color='k')
             ax[len(keys)-1].set_xlabel('Trials')
             ax[len(keys)-1].legend()
@@ -732,9 +736,11 @@ if __name__ == '__main__':
     #     'no_shaping_long_tr_one_agent/'
     sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
         'shaping_diff_punishment/'
-    sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
+    # sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_40/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
+    #     'no_shaping_long_tr_one_agent_stg_4_nsteps_20/'
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
     TH = 0.75
 
