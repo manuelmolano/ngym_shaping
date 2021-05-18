@@ -104,7 +104,7 @@ def data_extraction(folder, metrics, w_conv_perf=500, conv=[1]):
 
 
 def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, w_ahas=5, w_perf=30,
-                perf_bef_aft=[0.55, 0.7], conv=[1]):
+                perf_bef_aft=[0.55, 0.7], conv=[1], perf_th=0.9):
     """ Extract data saved during training.
     metrics: dict containing the keys of the data to loaextractd.
     conv: list of the indexes of the metrics to convolve."""
@@ -116,8 +116,10 @@ def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, w_ahas=5, w_perf=30,
         if 'real_performance' in data.keys():
             perf = data['real_performance']
             stage = data['stage']
+            gt = data['gt']
             if 2 in stage:
                 perf_stg_1 = perf[stage == 1]
+                gt = gt[stage == 1]
                 ahas = np.convolve(perf_stg_1, np.ones((w_ahas,))/w_ahas,
                                    mode='valid')
                 perf = np.convolve(perf_stg_1, np.ones((w_perf,))/w_perf,
@@ -127,7 +129,7 @@ def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, w_ahas=5, w_perf=30,
                 plt.plot(perf_stg_1, '-+')
                 plt.plot(ahas, '-+')
                 plt.plot(perf)
-                aha_indx = np.where(np.abs(ahas - 1.) < 10e-5)[0]
+                aha_indx = np.where(ahas > perf_th)[0]
                 aha_diff = np.diff(aha_indx)
                 aha_diff = np.insert(aha_diff, 0, w_ahas+1)
                 aha_indx = aha_indx[aha_diff > w_ahas]
@@ -140,10 +142,12 @@ def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, w_ahas=5, w_perf=30,
                        post_perf >= perf_bef_aft[1]:
                         aha_mmts.append(a_i)
                         plt.plot([a_i, a_i], [0, 1], '--k')
-                    else:
-                        print(prev_perf)
-                        print(post_perf)
-                        print('-----------')
+                        print('AHA MOMENT')
+                        print(gt[a_i-w_perf:a_i+w_ahas+w_perf])  # TODO: store
+                    # else:
+                        # print(prev_perf)
+                        # print(post_perf)
+                        # print('-----------')
             else:
                 print('NO STAGE 2')
     else:
@@ -413,14 +417,17 @@ def plot_figs(punish_6_vector, num_instances, conv_w):
     ax[0].legend()
     f.savefig(sv_f+'all_insts.png', dpi=300)
 
+# ahas_dic={'w_ahas': 7, 'w_perf': 50, 'perf_bef_aft': [.55, .7],
+#           'perf_th': 0.9}):  
+
 
 def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
                  keys=['performance', 'stage', 'num_stps', 'curr_perf'],
                  limit_ax=True, final_ph=4, perf_th=0.7, ax_final=None,
                  tag='th_stage', limit_tr=False, rerun=False,
                  f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
-                 plt_ind_vals=True, plt_ind_traces=True, w_ahas=7, w_perf=50,
-                 perf_bef_aft=[.55, .7]):  
+                 plt_ind_vals=True, plt_ind_traces=True, w_ahas=10, w_perf=50,
+                 perf_bef_aft=[.55, .7], perf_aha=0.8):  # TODO: test diff vals
     """This function uses the data generated during training to analyze it
     and generate figures showing the results in function of the different
     values used for the third level variable (i.e. differen threshold values
@@ -447,6 +454,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
     final plot.
     plt_ind_traces: plot traces across training.
     """
+    # TODO: put all ahas variables in a dict struct
     # assert ('performance' in keys) and ('stage' in keys),\
     #     'performance and stage need to be included in the metrics (keys)'
     # PROCESS RAW DATA
@@ -462,6 +470,8 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
         aha_mmts = []
         prev_prfs = []
         post_prfs = []
+        gt_patterns = []
+        perf_ = []
         keys = np.array(keys)
         for ind_f, file in enumerate(files):
             print(file)
@@ -473,7 +483,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
             aha_mmts, prev_prfs, post_prfs, flag =\
                 aha_moment(folder=file, aha_mmts=aha_mmts, prev_prfs=prev_prfs,
                            post_prfs=post_prfs, w_ahas=w_ahas, w_perf=w_perf,
-                           perf_bef_aft=perf_bef_aft)
+                           perf_bef_aft=perf_bef_aft, perf_th=perf_aha)  #**ahas_dic
 
             # store values
             if flag:
@@ -488,6 +498,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
         plt.tight_layout()
         plt.show()
         # TODO: plot threshold
+        # TODO: plot gt_patterns
         # np.savez(folder+'/metrics'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
         #          **metrics)
 
@@ -721,7 +732,7 @@ if __name__ == '__main__':
     #     'no_shaping_long_tr_one_agent/'
     sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
         'shaping_diff_punishment/'
-    # sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
+    sv_f = '/home/manuel/shaping/results_280421/shaping_diff_punishment/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_40/'
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
