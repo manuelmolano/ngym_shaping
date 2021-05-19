@@ -499,10 +499,11 @@ def plot_results(folder, w_ahas, w_perf,
         plt.show()
         
         fig2, ax2 = plt.subplots()
-        ax2.plot(gt_patterns)
-        ax2.legend()
-        plt.tight_layout()
-        plt.show()
+        plt.imshow(np.array(gt_patterns))
+        # ax2.plot(gt_patterns)
+        # ax2.legend()
+        # plt.tight_layout()
+        # plt.show()
         # TODO: plot threshold
         # TODO: plot gt_patterns
         # np.savez(folder+'/metrics'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
