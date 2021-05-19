@@ -103,7 +103,7 @@ def data_extraction(folder, metrics, w_conv_perf=500, conv=[1]):
     return metrics, data_flag
 
 
-def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, w_ahas=5, w_perf=30,
+def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, gt_patterns, w_ahas=5, w_perf=30,
                 perf_bef_aft=[0.55, 0.7], conv=[1], perf_th=0.9):
     """ Extract data saved during training.
     metrics: dict containing the keys of the data to loaextractd.
@@ -117,7 +117,6 @@ def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, w_ahas=5, w_perf=30,
             perf = data['real_performance']
             stage = data['stage']
             gt = data['gt']
-            gt_storage = []
             if 2 in stage:
                 perf_stg_1 = perf[stage == 1]
                 gt = gt[stage == 1]
@@ -146,8 +145,8 @@ def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, w_ahas=5, w_perf=30,
                         print('AHA MOMENT')
                         print(gt[a_i-w_perf:a_i+w_ahas+w_perf])  # TODO: store
                         print('**')
-                        gt_storage.append(gt[a_i-w_perf:a_i+w_ahas+w_perf])
-                print(gt_storage)
+                        gt_patterns.append(gt[a_i-w_perf:a_i+w_ahas+w_perf])
+                print(gt_patterns)
                     # else:
                         # print(prev_perf)
                         # print(post_perf)
@@ -157,7 +156,7 @@ def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, w_ahas=5, w_perf=30,
     else:
         print('No data in: ', folder)
         data_flag = False
-    return aha_mmts, post_prfs, prev_prfs, data_flag
+    return aha_mmts, post_prfs, prev_prfs, data_flag, gt_patterns
 
 
 def get_tag(tag, file):
@@ -421,17 +420,14 @@ def plot_figs(punish_6_vector, num_instances, conv_w):
     ax[0].legend()
     f.savefig(sv_f+'all_insts.png', dpi=300)
 
-ahas_dic={'w_ahas': 7, 'w_perf': 50, 'perf_bef_aft': [.55, .7],
-          'perf_th': 0.9}):  
 
-
-def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
+def plot_results(folder, w_ahas, w_perf,
+                 perf_bef_aft, perf_th, setup='', setup_nm='', w_conv_perf=500,
                  keys=['performance', 'stage', 'num_stps', 'curr_perf'],
-                 limit_ax=True, final_ph=4, perf_th=0.7, ax_final=None,
+                 limit_ax=True, final_ph=4, ax_final=None,
                  tag='th_stage', limit_tr=False, rerun=False,
                  f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
-                 plt_ind_vals=True, plt_ind_traces=True, w_ahas=10, w_perf=50,
-                 perf_bef_aft=[.55, .7], perf_aha=0.8):  # TODO: test diff vals
+                 plt_ind_vals=True, plt_ind_traces=True):  # TODO: test diff vals
     """This function uses the data generated during training to analyze it
     and generate figures showing the results in function of the different
     values used for the third level variable (i.e. differen threshold values
@@ -484,10 +480,10 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
             metrics, flag = data_extraction(folder=file, metrics=metrics,
                                             w_conv_perf=w_conv_perf,
                                             conv=[1, 0])
-            aha_mmts, prev_prfs, post_prfs, flag =\
-                aha_moment(folder=file, aha_mmts=aha_mmts, prev_prfs=prev_prfs,
-                           post_prfs=post_prfs, w_ahas=w_ahas, w_perf=w_perf,
-                           perf_bef_aft=perf_bef_aft, perf_th=perf_aha)  #**ahas_dic
+            aha_mmts, prev_prfs, post_prfs, flag, gt_patterns =\
+                aha_moment(folder=file, aha_mmts=aha_mmts,
+                           prev_prfs=prev_prfs, post_prfs=post_prfs,
+                           gt_patterns=gt_patterns, **ahas_dic)  #**ahas_dic
 
             # store values
             if flag:
@@ -499,6 +495,12 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
         labels = ['prev_prfs','post_prfs']
         ax1.hist([prev_prfs,post_prfs], bins=10, color=colors, label=labels)
         ax1.legend()
+        plt.tight_layout()
+        plt.show()
+        
+        fig2, ax2 = plt.subplots()
+        ax2.plot(gt_patterns)
+        ax2.legend()
         plt.tight_layout()
         plt.show()
         # TODO: plot threshold
@@ -760,12 +762,14 @@ if __name__ == '__main__':
     f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
     f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
     ax = [ax1, ax3]
+    ahas_dic={'w_ahas': 7, 'w_perf': 50, 'perf_bef_aft': [.55, .7],
+          'perf_th': 0.9}
     plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
                  keys=['real_performance', 'stage'], limit_ax=True,
-                 final_ph=final_ph, perf_th=TH, ax_final=ax,
+                 final_ph=final_ph, ax_final=ax,
                  tag='pun', limit_tr=False, rerun=True,
                  f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
-                 plt_ind_vals=True, plt_ind_traces=True)
+                 plt_ind_vals=True, plt_ind_traces=True, **ahas_dic)
     f1.savefig(sv_f + '/final_results_phase.svg', dpi=200)
     # f2.savefig(sv_f + '/final_results_steps.svg', dpi=200)
     f3.savefig(sv_f + '/final_results_performance.svg', dpi=200)
