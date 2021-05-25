@@ -422,7 +422,7 @@ def plot_results(folder, w_ahas, w_perf, w_before_ahas, perf_bef_aft,
                  keys=['real_performance', 'stage'], limit_ax=True, final_ph=4,
                  ax_final=None, tag='th_stage', limit_tr=False, rerun=False,
                  f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
-                 plt_ind_vals=True, plt_ind_traces=True, name='',x=0):  # TODO: pass name for titles and figs name
+                 plt_ind_vals=True, plt_ind_traces=True,  n_roll=5, name='',x=0):  # TODO: pass name for titles and figs name
     """This function uses the data generated during training to analyze it
     and generate figures showing the results in function of the different
     values used for the third level variable (i.e. differen threshold values
@@ -550,7 +550,7 @@ def plot_results(folder, w_ahas, w_perf, w_before_ahas, perf_bef_aft,
                 plt_means(metric=metric, index=val_index,
                           ax=ax[ind_met], limit_ax=limit_ax)
                 ax[ind_met].set_ylabel(ylabels[ind_met])
-            ax[0].set_title('Roll_out = 20')
+            ax[0].set_title('Roll_out = '+ str(n_roll))
             ax[0].axhline(y=0.55, linestyle='--', color='k')
             ax[len(keys)-1].set_xlabel('Trials')
             ax[len(keys)-1].legend()
@@ -762,15 +762,16 @@ if __name__ == '__main__':
     stg_w = 1000
     conv_w = 50
     final_ph = 4
-    f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
-    f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
-    ax = [ax1, ax2, ax3]
-    plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
-                 keys=['real_performance', 'stage'], limit_ax=True,
-                 final_ph=final_ph, ax_final=ax,
-                 tag='pun', limit_tr=False, rerun=True,
-                 f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
-                 plt_ind_vals=True, plt_ind_traces=True, **ahas_dic)
+    # f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
+    # f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
+    # f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
+    # ax = [ax1, ax2, ax3]
+    # plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
+    #              keys=['real_performance', 'stage'], limit_ax=True,
+    #              final_ph=final_ph, ax_final=ax,
+    #              tag='pun', limit_tr=False, rerun=True,
+    #              f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
+    #              plt_ind_vals=True, plt_ind_traces=True, **ahas_dic)
     
 
     # f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
@@ -785,13 +786,13 @@ if __name__ == '__main__':
     #              plt_ind_vals=True, plt_ind_traces=True, **ahas_dic)
 
     # PLOT FIGURES NO-SHAPING DIFFERENT ROLLOUTS
-    main_folder = '/home/manuel/shaping/results_280421/'
+    main_folder = '/Users/leyreazcarate/Desktop/TFG/results_280421/'
     rollouts = [5, 10, 20, 40]
-    f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
     for i_ro, ro in enumerate(rollouts):
         sv_f = main_folder+'no_shaping_long_tr_one_agent_stg_4_nsteps_'+str(ro)+'/'
 
         f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
+        f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
         f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
         ax = [ax1, ax2, ax3]
         plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
@@ -799,7 +800,8 @@ if __name__ == '__main__':
                      final_ph=final_ph, ax_final=ax, x=i_ro,
                      tag='pun', limit_tr=False, rerun=True,
                      f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
-                     plt_ind_vals=True, plt_ind_traces=True, **ahas_dic)
+                     plt_ind_vals=True, plt_ind_traces=True, n_roll=ro,
+                     **ahas_dic)
         f1.savefig(sv_f + '/final_results_phase.svg', dpi=200)
         f3.savefig(sv_f + '/final_results_performance.svg', dpi=200)
         plt.close(f1)
