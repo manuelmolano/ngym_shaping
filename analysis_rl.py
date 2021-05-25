@@ -794,3 +794,6 @@ if __name__ == '__main__':
         plt.close(f1)
         plt.close(f3)
     f2.savefig(sv_f + '/final_results_steps.svg', dpi=200)
+    # TODO: close figs after saving
+    # TODO: boxplots for all rollouts
+    # TODO: boxplots for shaping/no-shaping (rollout = 5)
