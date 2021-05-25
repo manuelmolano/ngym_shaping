@@ -190,7 +190,15 @@ def box_plot(data, ax, x, lw=.5, fliersize=4, color='k', widths=0.15):
             bpp.set(color=color, linewidth=lw)
     bp['fliers'][0].set(markeredgecolor=color, markerfacecolor=color, alpha=0.5,
                         marker='x', markersize=fliersize)
-    ax.set_xticks([])
+    rollout_names = ('5', '10', '20', '40')
+    y_pos = np.arange(len(rollout_names))
+    ax.set_xticks(y_pos)
+    ax.set_xticklabels(rollout_names)
+    ax.set_xlabel('Rollout')
+    ax.set_ylabel('Performance')
+    ax.set_title('Perfomance for different rollout values')
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
 
 
 ### FUNCTIONS TO OBTAIN VARIABLES
@@ -699,8 +707,8 @@ if __name__ == '__main__':
     # sv_f = '/home/manuel/shaping/results_280421/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/results_280421/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/no_shaping/'
-    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
-        'shaping_long_tr_one_agent/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
+    #     'shaping_long_tr_one_agent/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'no_shaping_long_tr_one_agent/'
     # sv_f = '/home/molano/shaping/results_280421/' +\
@@ -734,11 +742,11 @@ if __name__ == '__main__':
     # f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
     # ax = [ax1, ax2, ax3]
     # plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
-    #              keys=['real_performance', 'stage'], limit_ax=True,
-    #              final_ph=final_ph, ax_final=ax,
-    #              tag='pun', limit_tr=False, rerun=True,
-    #              f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
-    #              plt_ind_vals=True, plt_ind_traces=True, **ahas_dic)
+    #               keys=['real_performance', 'stage'], limit_ax=True,
+    #               final_ph=final_ph, ax_final=ax,
+    #               tag='pun', limit_tr=False, rerun=True,
+    #               f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
+    #               plt_ind_vals=True, plt_ind_traces=True, **ahas_dic)
     
 
     # f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
@@ -754,9 +762,9 @@ if __name__ == '__main__':
 
     # PLOT FIGURES NO-SHAPING DIFFERENT ROLLOUTS
     main_folder = '/Users/leyreazcarate/Desktop/TFG/results_280421/'
-    main_folder = '/home/manuel/shaping/results_280421/'
+    # main_folder = '/home/manuel/shaping/results_280421/'
     rollouts = [5, 10, 20, 40]
-    f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
+    f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(3, 3))
     for i_ro, ro in enumerate(rollouts):
         sv_f = main_folder+'no_shaping_long_tr_one_agent_stg_4_nsteps_'+str(ro)+'/'
 
@@ -764,12 +772,12 @@ if __name__ == '__main__':
         f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
         ax = [ax1, ax2, ax3]
         plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
-                     keys=['real_performance', 'stage'], limit_ax=True,
-                     final_ph=final_ph, ax_final=ax, x=i_ro,
-                     tag='pun', limit_tr=False, rerun=True,
-                     f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
-                     plt_ind_vals=True, plt_ind_traces=True, n_roll=ro,
-                     **ahas_dic)
+                      keys=['real_performance', 'stage'], limit_ax=True,
+                      final_ph=final_ph, ax_final=ax, x=i_ro,
+                      tag='pun', limit_tr=False, rerun=True,
+                      f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
+                      plt_ind_vals=True, plt_ind_traces=True, n_roll=ro,
+                      **ahas_dic)
         f1.savefig(sv_f + '/final_results_phase.svg', dpi=200)
         f3.savefig(sv_f + '/final_results_performance.svg', dpi=200)
         plt.close(f1)
