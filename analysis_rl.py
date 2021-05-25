@@ -106,8 +106,9 @@ def data_extraction(folder, metrics, w_conv_perf=500, conv=[1]):
 def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, gt_patterns,
                perf_patterns, right, w_ahas=5, w_perf=30,
                w_before_ahas=5, perf_bef_aft=[0.55, 0.7], conv=[1],
-               perf_th=0.9, w_explore=50):
-    """ Extract data saved during training. metrics: dict containing the keys of the data to loaextractd.
+               perf_th=0.9, w_explore=50, verbose=False):
+    """ Extract data saved during training. metrics: dict containing
+    the keys of the data to loaextractd.
     conv: list of the indexes of the metrics to convolve."""
     data = put_together_files(folder) # load all data from the same folder
     data_flag = True
@@ -117,7 +118,6 @@ def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, gt_patterns,
             perf = data['real_performance']
             stage = data['stage']
             gt = data['gt']
-            prob_left = 0
             prob_right = 0
             no_shaping = len(np.unique(stage)) == 1 and 4 in stage
             if 2 in stage or no_shaping:
@@ -128,42 +128,47 @@ def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, gt_patterns,
                                    mode='valid')
                 perf = np.convolve(perf_stg_1, np.ones((w_perf,))/w_perf,
                                    mode='valid')
-                plt.figure()
-                plt.title(folder)
-                plt.plot(perf_stg_1, '-+')
-                plt.plot(ahas, '-+')
-                plt.plot(perf)
+                if verbose:
+                    plt.figure()
+                    plt.title(folder)
+                    plt.plot(perf_stg_1, '-+')
+                    plt.plot(ahas, '-+')
+                    plt.plot(perf)
                 aha_indx = np.where(ahas > perf_th)[0]
-                aha_diff = np.diff(aha_indx)
-                aha_diff = np.insert(aha_diff, 0, w_ahas+1)
-                aha_indx = aha_indx[aha_diff > w_ahas]
-                for a_i in aha_indx:
-                    prev_perf = np.mean(perf_stg_1[a_i-w_perf:a_i])
-                    post_perf = np.mean(perf_stg_1[a_i+w_ahas:a_i+w_ahas+w_perf])
-                    prev_prfs.append(prev_perf)
-                    post_prfs.append(post_perf)
-                    if prev_perf <= perf_bef_aft[0] and\
-                       post_perf >= perf_bef_aft[1]:
-                        aha_mmts.append(a_i)
-                        plt.plot([a_i, a_i], [0, 1], '--k')
-                        print('AHA MOMENT')
-                        print(gt[a_i-w_perf:a_i+w_ahas+w_perf])  # TODO: store
-                        print('**')
-                        gt_patterns.append(gt[a_i-w_perf:a_i+w_ahas+w_perf])
-                        perf_patterns.append(perf_stg_1[a_i-w_perf:
-                                                        a_i+w_ahas+w_perf])
-                        # find probabilities of right before the aha window
-                        right_number = np.sum(gt[a_i-w_explore:a_i] == 1)
-                        prob_right = right_number/len(gt[a_i-w_explore:a_i])
-                        prob_right = 1-prob_left
-                        right.append(prob_right)
-                print('gt', gt_patterns)
-                print('perf', perf_patterns)
-                print('prob_right: ', right)
-            else:
+                if len(aha_indx) > 0:
+                    aha_diff = np.diff(aha_indx)
+                    aha_diff = np.insert(aha_diff, 0, w_ahas+1)
+                    aha_indx = aha_indx[aha_diff > w_ahas]
+                    for a_i in aha_indx:
+                        prev_perf = np.mean(perf_stg_1[a_i-w_perf:a_i])
+                        post_perf = np.mean(perf_stg_1[a_i+w_ahas:
+                                                       a_i+w_ahas+w_perf])
+                        prev_prfs.append(prev_perf)
+                        post_prfs.append(post_perf)
+                        if prev_perf <= perf_bef_aft[0] and\
+                           post_perf >= perf_bef_aft[1]:
+                            aha_mmts.append(a_i)
+                            if verbose:
+                                plt.plot([a_i, a_i], [0, 1], '--k')
+                                print('AHA MOMENT')
+                                print(gt[a_i-w_perf:a_i+w_ahas+w_perf])
+                                print('**')
+                            gt_patterns.append(gt[a_i-w_perf:a_i+w_ahas+w_perf])
+                            perf_patterns.append(perf_stg_1[a_i-w_perf:
+                                                            a_i+w_ahas+w_perf])
+                            # find probabilities of right before the aha window
+                            right_number = np.sum(gt[a_i-w_explore:a_i] == 1)
+                            prob_right = right_number/len(gt[a_i-w_explore:a_i])
+                            right.append(prob_right)
+                    if verbose:
+                        print('gt', gt_patterns)
+                        print('perf', perf_patterns)
+                        print('prob_right: ', right)
+            elif verbose:
                 print('NO STAGE 2')
     else:
-        print('No data in: ', folder)
+        if verbose:
+            print('No data in: ', folder)
         data_flag = False
     return (aha_mmts, post_prfs, prev_prfs, data_flag, gt_patterns,
             perf_patterns, right)
@@ -270,7 +275,8 @@ def perf_hist(metric, ax, index, trials_day=300):
 
 
 def plot_rew_across_training(metric, index, ax, n_traces=20,
-                             selected_protocols=['-1.0', '-0.75', '-0.5', '-0.25', '0.0']):
+                             selected_protocols=['-1.0', '-0.75', '-0.5',
+                                                 '-0.25', '0.0']):
     """Plot traces across training, i.e. metric value per trial.
     """
     metric = np.array(metric)
@@ -486,48 +492,27 @@ def plot_results(folder, w_ahas, w_perf, w_before_ahas, perf_bef_aft,
             if flag:
                 val_index.append(val)
         val_index = np.array(val_index)
-        # TODO: histogram of prev and post performances (separate subplots)
-        fig, ax1 = plt.subplots()
-        colors = ['b', 'g']
-        labels = ['prev_prfs', 'post_prfs']
-        ax1.hist([prev_prfs, post_prfs], bins=10, color=colors, label=labels)
-        ax1.legend()
-        plt.tight_layout()
-        plt.show()
 
-        fig2, ax2 = plt.subplots(2, 1)
-        ax2[0].imshow(np.array(gt_patterns))
-        ax2[0].set_title('ground truth')
-        ax2[1].imshow(np.array(perf_patterns))
-        ax2[1].set_title('performance')
-        fig3, ax3 = plt.subplots(2, 1)
-        ax3[0].set_title('prob_left')
-        ax3[1].plot(np.array(right))
-        ax3[1].set_title('prob_right')
+        # AHA-MOMENT
+        if len(aha_mmts) > 0:
+            fig, ax1 = plt.subplots()
+            colors = ['b', 'g']
+            labels = ['prev_prfs', 'post_prfs']
+            ax1.hist([prev_prfs, post_prfs], bins=10, color=colors, label=labels)
+            ax1.legend()
+            plt.tight_layout()
+            plt.show()
 
-        # plt.imshow(np.array(gt_patterns))
-        # fig3, ax3 = plt.subplots()
-        # plt.imshow(np.array(perf_patterns))
-        # plt.plot(perf_patterns)
-        # plt.show()
-        # ax2.plot(gt_patterns)
-        # ax2.legend()
-        # plt.tight_layout()
-        # plt.show()
-        # TODO: plot threshold
-        # TODO: plot gt_patterns
-        # np.savez(folder+'/metrics'+algorithm+'_'+setup_nm+'_'+setup+'.npz',
-        #          **metrics)
-
-        # LOAD AND (POST)PROCESS DATA
-        # print('Loading data from: ', folder+'/metrics'+algorithm+'_'+setup_nm
-        #       +'_'+setup+'.npz')
-        # tmp = np.load(folder+'/metrics'+algorithm+'_'+setup_nm+'_'+setup
-        #               +'.npz', allow_pickle=True)
-        # the loaded file does not allow to modifying it
-        # metrics = {}
-        # for k in tmp.keys():
-        #     metrics[k] = list(tmp[k])
+            fig2, ax2 = plt.subplots(1, 1)
+            # TODO: define twin axis
+            ax_twin = ax2.twinx()
+            ax2.imshow(np.array(gt_patterns), aspect='auto')
+            ax2.set_title('ground truth')
+            ax_twin.plot(np.mean(np.array(perf_patterns), axis=0))
+            ax2.set_title('performance')
+            fig3, ax3 = plt.subplots(1, 1)
+            ax3.set_title('Prob. Right')
+            ax3.hist(np.array(right))
 
         names = ['values_across_training_']  # , 'mean_values_across_training_']
         ylabels = ['Performance', 'Phase', 'Number of steps',
@@ -535,7 +520,7 @@ def plot_results(folder, w_ahas, w_perf, w_before_ahas, perf_bef_aft,
         ax_final_perfs = ax_final[1]
         metrics['real_performance']
         final_wind = 100
-        final_perfs = [np.mean(p[-final_wind:])\
+        final_perfs = [np.mean(p[-final_wind:])
                        for p in metrics['real_performance']]
         box_plot(data=final_perfs, ax=ax_final_perfs, x=x)
         for ind in range(len(names)):
@@ -674,24 +659,6 @@ def plot_results(folder, w_ahas, w_perf, w_before_ahas, perf_bef_aft,
     ax1[0].legend(by_label.values(), by_label.keys())
     ax1[1].set_yscale('log')
 
-    # steps to reach phase 4
-    # ax_props['ylabel'] = 'Number of steps to reach phase 4 (x1000)'
-    # plt_perf_indicators(values=data['stps_to_ph'],
-    #                     f_props=f_final_prop, ax_props=ax_props,
-    #                     index_val=val_index, ax=ax2[0],
-    #                     reached=data['reached_ph'], discard=['full', '4'],
-    #                     plot_individual_values=plt_ind_vals)
-    # steps to reach final perf
-    # ax_props['ylabel'] = 'Number of steps to reach final performance (x1000)'
-    # plt_perf_indicators(values=data['stps_to_perf'],
-    #                     reached=data['reached_perf'],
-    #                     index_val=val_index, ax=ax2[1],
-    #                     f_props=f_final_prop, ax_props=ax_props,
-    #                     plot_individual_values=plt_ind_vals)
-    # handles, labels = ax2[0].get_legend_handles_labels()
-    # by_label = dict(zip(labels, handles))
-    # ax2[0].legend(by_label.values(), by_label.keys())
-
     # plot final performance
     ax_props['ylabel'] = 'Average performance'
     plt_perf_indicators(values=data['final_perf'],
@@ -750,7 +717,7 @@ if __name__ == '__main__':
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_20/'
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
-    TH = 0.75
+    TH = 0.6
     ahas_dic = {'w_ahas': 10, 'w_perf': 50, 'w_before_ahas': 10,
                 'perf_bef_aft': [.55, .7], 'perf_th': 0.9, 'w_explore': 100}
 
@@ -787,12 +754,13 @@ if __name__ == '__main__':
 
     # PLOT FIGURES NO-SHAPING DIFFERENT ROLLOUTS
     main_folder = '/Users/leyreazcarate/Desktop/TFG/results_280421/'
+    main_folder = '/home/manuel/shaping/results_280421/'
     rollouts = [5, 10, 20, 40]
+    f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
     for i_ro, ro in enumerate(rollouts):
         sv_f = main_folder+'no_shaping_long_tr_one_agent_stg_4_nsteps_'+str(ro)+'/'
 
         f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
-        f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
         f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
         ax = [ax1, ax2, ax3]
         plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
@@ -806,7 +774,7 @@ if __name__ == '__main__':
         f3.savefig(sv_f + '/final_results_performance.svg', dpi=200)
         plt.close(f1)
         plt.close(f3)
-    f2.savefig(sv_f + '/final_results_steps.svg', dpi=200)
+    f2.savefig(main_folder + '/final_results_steps.svg', dpi=200)
     # TODO: close figs after saving
     # TODO: boxplots for all rollouts
     # TODO: boxplots for shaping/no-shaping (rollout = 5)
