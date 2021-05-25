@@ -740,8 +740,8 @@ if __name__ == '__main__':
     # sv_f = '/home/manuel/shaping/results_280421/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/results_280421/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/no_shaping/'
-    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
-    #     'shaping_long_tr_one_agent/'
+    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
+        'shaping_long_tr_one_agent/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'no_shaping_long_tr_one_agent/'
     # sv_f = '/home/molano/shaping/results_280421/' +\
@@ -752,7 +752,7 @@ if __name__ == '__main__':
     #     'no_shaping_long_tr_one_agent/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'shaping_diff_punishment/'
-    sv_f = '/home/manuel/shaping/results_280421/shaping_long_tr_one_agent/'
+    # sv_f = '/home/manuel/shaping/results_280421/shaping_long_tr_one_agent/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_40/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
@@ -771,6 +771,7 @@ if __name__ == '__main__':
     conv_w = 50
     final_ph = 4
     f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
+    f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
     f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
     ax = [ax1, ax2, ax3]
     plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
@@ -782,7 +783,6 @@ if __name__ == '__main__':
     
     # PLOT FIGURES NO-SHAPING DIFFERENT ROLLOUTS
     rollouts = [5, 10, 20, 40]
-    f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
     for ro in rollouts:
         sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
             'no_shaping_long_tr_one_agent_stg_4_nsteps_'+str(ro)+'/'
