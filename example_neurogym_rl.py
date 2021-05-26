@@ -44,7 +44,8 @@ def learning(sv_f, pun_vector, stages, perf_w=100, stg_w=1000, rollout=5,
                     model.learn(total_timesteps=NUM_STEPS, log_interval=10e10)
                     model.save(sv_f_inst+'model')
                     metrics, flag = arl.data_extraction(folder=sv_f_inst,
-                                                        metrics=metrics)
+                                                        metrics=metrics,
+                                                        conv=[1, 0])
                     if flag:
                         f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
                                              figsize=(6, 6))

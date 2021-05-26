@@ -76,7 +76,7 @@ def put_together_files(folder):
     return data
 
 
-def data_extraction(folder, metrics, w_conv_perf=500, conv=[1]):
+def data_extraction(folder, metrics, w_conv_perf=500, conv=[1, 0]):
     """ Extract data saved during training.
     metrics: dict containing the keys of the data to loaextractd.
     conv: list of the indexes of the metrics to convolve."""
