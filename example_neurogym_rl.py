@@ -35,7 +35,8 @@ def learning(num_instances, punish_3_vector, sv_f, stages, perf_w, stg_w,
                     env = DummyVecEnv([lambda: env])
                     # Define model
                     model = A2C(LstmPolicy, env, verbose=1, n_cpu_tf_sess=1,
-                                policy_kwargs={'feature_extraction': "mlp"})
+                                policy_kwargs={'feature_extraction': "mlp"},
+                                **{'n_steps': 10})
                     # Train model
                     model.learn(total_timesteps=NUM_STEPS, log_interval=10e10)
                     model.save(sv_f_inst+'model')
@@ -103,7 +104,8 @@ if __name__ == '__main__':
     plt.close('all')
     # sv_f = '/home/molano/shaping/results_280421/no_shaping/'
     # sv_f = '/home/molano/shaping/results_280421/shaping_long_tr_one_agent/'
-    sv_f = '/home/molano/shaping/results_280421/no_shaping_long_tr_one_agent_stg_4/'
+    sv_f = '/home/molano/shaping/results_280421/' +\
+        'no_shaping_long_tr_one_agent_stg_4_nsteps_10/'
     # sv_f = '/home/molano/shaping/results_280421/shaping_diff_punishment/'
     RERUN = True
     LEARN = True
