@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import ngym_shaping as ng_sh
 from ngym_shaping.utils import plotting as plot
 import warnings
+import analysis_rl as arl
 from stable_baselines.common.policies import LstmPolicy
 from stable_baselines.common.vec_env import DummyVecEnv
 from stable_baselines import A2C  # ACER, PPO2
@@ -17,6 +18,7 @@ warnings.filterwarnings('default')
 # plot of each punishment and each instance
 def learning(sv_f, pun_vector, stages, perf_w=100, stg_w=1000, rollout=5,
              gamma=0.5, num_instances=3, env_kwargs={}):
+    keys = ['real_performance', 'stage']
     for i_i in range(num_instances):
         for pun in pun_vector:
             sv_f_inst = sv_f+'/pun_'+str(round(pun, 2))+'_inst_'+str(i_i)+'/'
@@ -24,6 +26,7 @@ def learning(sv_f, pun_vector, stages, perf_w=100, stg_w=1000, rollout=5,
             print(sv_f_inst)
             print('---------')
             if not os.path.exists(sv_f_inst+'/bhvr_data_all.npz') or RERUN:
+                metrics = {k: [] for k in keys}
                 rewards = {'abort': -0.1, 'correct': +1., 'fail': pun}
                 env_kwargs['rewards'] = rewards
                 env = ng_sh.envs.DR_stage.shaping(stages=stages, th=TH,
@@ -40,6 +43,19 @@ def learning(sv_f, pun_vector, stages, perf_w=100, stg_w=1000, rollout=5,
                     # Train model
                     model.learn(total_timesteps=NUM_STEPS, log_interval=10e10)
                     model.save(sv_f_inst+'model')
+                    metrics, flag = arl.data_extraction(folder=sv_f_inst,
+                                                        metrics=metrics)
+                    if flag:
+                        f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
+                                             figsize=(6, 6))
+                        # plot means
+                        for ind_met, met in enumerate(keys):
+                            metric = metrics[met]
+                            arl.plot_rew_across_training(metric=metric,
+                                                         index=[pun],
+                                                         ax=ax[ind_met])
+                        f.savefig(sv_f_inst+'perf_and_stage.png', dpi=200)
+                        plt.close(f)
                 else:
                     env.reset()
                     for ind in range(NUM_RAND):
