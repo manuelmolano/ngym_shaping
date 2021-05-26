@@ -71,7 +71,7 @@ def learning(sv_f, pun_vector, stages, perf_w=100, stg_w=1000, rollout=5,
 if __name__ == '__main__':
     plt.close('all')
     rollout = 5
-    gamma = 0.5
+    gamma = 0.1
     # sv_f = '/home/molano/shaping/results_280421/no_shaping/'
     # sv_f = '/home/molano/shaping/results_280421/shaping_long_tr_one_agent/'
     # sv_f = '/home/molano/shaping/results_280421/' +\
@@ -93,7 +93,7 @@ if __name__ == '__main__':
     stg_w = 1000
     conv_w = 50
     rand_act_prob = 0.01
-    pun_vector = [0]  # np.linspace(-1.0, 0., 5)  # np.linspace(-0.5, 0, 3)
+    pun_vector = [0.0]  # np.linspace(-1.0, 0., 5)  # np.linspace(-0.5, 0, 3)
     timing = {'fixation': ('constant', 200),
               'stimulus': ('constant', 400),
               'delay': (0, 1000, 3000),
