@@ -69,18 +69,18 @@ if __name__ == '__main__':
     TH = 0.75
     NUM_RAND = 100000
 
-    num_instances = 10
+    num_instances = 20
     mean_perf = []
     stages = np.arange(2)  # np.array([4])  # np.arange(5)
     perf_w = 100
     stg_w = 1000
     conv_w = 50
     rand_act_prob = 0.01
-    pun_vector = np.linspace(-1.0, 0., 5)  # np.linspace(-0.5, 0, 3)
+    pun_vector = [0]  # np.linspace(-1.0, 0., 5)  # np.linspace(-0.5, 0, 3)
     timing = {'fixation': ('constant', 200),
               'stimulus': ('constant', 400),
               'delay': (0, 1000, 3000),
-              'decision': ('constant', 300)}
+              'decision': ('constant', 200)}
     env_kwargs = {'timing': timing}
     learning(sv_f=sv_f, num_instances=num_instances, pun_vector=pun_vector,
              stages=stages, perf_w=perf_w, stg_w=stg_w, rollout=rollout,
