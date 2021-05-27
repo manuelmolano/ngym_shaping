@@ -106,7 +106,7 @@ def data_extraction(folder, metrics, w_conv_perf=500, conv=[1]):
 def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, gt_patterns,
                perf_patterns, right, w_ahas=5, w_perf=30,
                w_before_ahas=5, perf_bef_aft=[0.55, 0.7], conv=[1],
-               perf_th=0.9, w_explore=50, verbose=False):
+               perf_th=0.9, w_explore=50, verbose=True):
     """ Extract data saved during training. metrics: dict containing
     the keys of the data to loaextractd.
     conv: list of the indexes of the metrics to convolve."""
@@ -120,7 +120,7 @@ def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, gt_patterns,
             gt = data['gt']
             prob_right = 0
             no_shaping = len(np.unique(stage)) == 1 and 4 in stage
-            if 2 in stage or no_shaping:
+            if 1 in stage or no_shaping:
                 indx = stage == 4 if no_shaping else stage == 1
                 perf_stg_1 = perf[indx]
                 gt = gt[indx]
@@ -725,8 +725,8 @@ if __name__ == '__main__':
     sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/shaping_5_0/'
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
     TH = 0.6
-    ahas_dic = {'w_ahas': 10, 'w_perf': 50, 'w_before_ahas': 10,
-                'perf_bef_aft': [.55, .7], 'perf_th': 0.9, 'w_explore': 100}
+    ahas_dic = {'w_ahas': 10, 'w_perf': 100, 'w_before_ahas': 10,
+                'perf_bef_aft': [.51, .61], 'perf_th': 0.9, 'w_explore': 100}
 
     plot_separate_figures = True
     plot_all_figs = True
@@ -736,53 +736,53 @@ if __name__ == '__main__':
     stg_w = 1000
     conv_w = 50
     final_ph = 4
-    # f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
-    # f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
-    # f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
-    # ax = [ax1, ax2, ax3]
-    # plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
-    #               keys=['real_performance', 'stage'], limit_ax=True,
-    #               final_ph=final_ph, ax_final=ax,
-    #               tag='pun', limit_tr=False, rerun=True,
-    #               f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
-    #               plt_ind_vals=True, plt_ind_traces=True, **ahas_dic)
+    f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
+    f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
+    f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
+    ax = [ax1, ax2, ax3]
+    plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
+                  keys=['real_performance', 'stage'], limit_ax=True,
+                  final_ph=final_ph, ax_final=ax,
+                  tag='pun', limit_tr=False, rerun=True,
+                  f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
+                  plt_ind_vals=True, plt_ind_traces=True, **ahas_dic)
     
 
-    # f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
-    # f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
-    # f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
-    # ax = [ax1, ax2, ax3]
-    # plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
-    #              keys=['real_performance', 'stage'], limit_ax=True,
-    #              final_ph=final_ph, ax_final=ax,
-    #              tag='pun', limit_tr=False, rerun=True,
-    #              f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
-    #              plt_ind_vals=True, plt_ind_traces=True, **ahas_dic)
+    f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
+    f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
+    f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
+    ax = [ax1, ax2, ax3]
+    plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
+                  keys=['real_performance', 'stage'], limit_ax=True,
+                  final_ph=final_ph, ax_final=ax,
+                  tag='pun', limit_tr=False, rerun=True,
+                  f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
+                  plt_ind_vals=True, plt_ind_traces=True, **ahas_dic)
 
     # PLOT FIGURES NO-SHAPING DIFFERENT ROLLOUTS
-    main_folder = '/Users/leyreazcarate/Desktop/TFG/results_280421/'
-    # main_folder = '/home/manuel/shaping/results_280421/'
-    rollouts = [5, 10, 20, 40]
-    f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(3, 3))
-    for i_ro, ro in enumerate(rollouts):
-        sv_f = main_folder+'no_shaping_long_tr_one_agent_stg_4_nsteps_' + \
-            str(ro)+'/'
+    # main_folder = '/Users/leyreazcarate/Desktop/TFG/results_280421/'
+    # # main_folder = '/home/manuel/shaping/results_280421/'
+    # rollouts = [5, 10, 20, 40]
+    # f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(3, 3))
+    # for i_ro, ro in enumerate(rollouts):
+    #     sv_f = main_folder+'no_shaping_long_tr_one_agent_stg_4_nsteps_' + \
+    #         str(ro)+'/'
 
-        f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
-        f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
-        ax = [ax1, ax2, ax3]
-        plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
-                     keys=['real_performance', 'stage'], limit_ax=True,
-                     final_ph=final_ph, ax_final=ax, x=i_ro,
-                     tag='pun', limit_tr=False, rerun=True,
-                     f_final_prop={'color': (0, 0, 0), 'label': '',
-                                   'marker': '.'},
-                     plt_ind_vals=True, plt_ind_traces=True, n_roll=ro,
-                     **ahas_dic)
-        f1.savefig(sv_f + '/final_results_phase.svg', dpi=200)
-        f3.savefig(sv_f + '/final_results_performance.svg', dpi=200)
-        plt.close(f1)
-        plt.close(f3)
-    f2.savefig(main_folder + '/final_results_steps.svg', dpi=200)
+    #     f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
+    #     f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
+    #     ax = [ax1, ax2, ax3]
+    #     plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
+    #                  keys=['real_performance', 'stage'], limit_ax=True,
+    #                  final_ph=final_ph, ax_final=ax, x=i_ro,
+    #                  tag='pun', limit_tr=False, rerun=True,
+    #                  f_final_prop={'color': (0, 0, 0), 'label': '',
+    #                                'marker': '.'},
+    #                  plt_ind_vals=True, plt_ind_traces=True, n_roll=ro,
+    #                  **ahas_dic)
+    #     f1.savefig(sv_f + '/final_results_phase.svg', dpi=200)
+    #     f3.savefig(sv_f + '/final_results_performance.svg', dpi=200)
+    #     plt.close(f1)
+    #     plt.close(f3)
+    # f2.savefig(main_folder + '/final_results_steps.svg', dpi=200)
     # TODO: close figs after saving
     # TODO: boxplots for shaping/no-shaping (rollout = 5)
