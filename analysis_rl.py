@@ -725,7 +725,7 @@ if __name__ == '__main__':
     sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/shaping_5_0/'
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
     TH = 0.6
-    ahas_dic = {'w_ahas': 10, 'w_perf': 100, 'w_before_ahas': 10,
+    ahas_dic = {'w_ahas': 10, 'w_perf': 500, 'w_before_ahas': 10,
                 'perf_bef_aft': [.51, .61], 'perf_th': 0.9, 'w_explore': 100}
 
     plot_separate_figures = True
