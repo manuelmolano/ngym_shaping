@@ -515,11 +515,20 @@ def plot_results(folder, w_ahas, w_perf, w_before_ahas, perf_bef_aft,
             ax_twin = ax2.twinx()
             ax2.imshow(np.array(gt_patterns), aspect='auto')
             ax2.set_title('ground truth')
-            ax_twin.plot(np.mean(np.array(perf_patterns), axis=0)) # TODO: np.convolve(perf_patterns)
-            ax2.set_title('Aha moment')
+            ax_twin.plot(np.mean(np.array(perf_patterns), axis=0), color='red') # TODO: np.convolve(perf_patterns)
+            ax2.set_title('Aha moment with mean performance')
             fig3, ax3 = plt.subplots(1, 1)
-            ax3.set_title('Prob. Right')
-            ax3.hist(np.array(right))
+            ax_twin = ax3.twinx()
+            ax3.imshow(np.array(gt_patterns), aspect='auto')
+            ax3.set_title('ground truth')
+            mean_perf = np.mean(np.array(perf_patterns), axis=0)
+            w_conv=25
+            ax_twin.plot(np.convolve(mean_perf, np.ones((w_conv,))/w_conv,
+                                     mode='valid'), color='red')  # TODO: np.convolve(perf_patterns)
+            ax3.set_title('Aha moment with convolved mean performance')
+            fig4, ax4 = plt.subplots(1, 1)
+            ax4.set_title('Prob. Right')
+            ax4.hist(np.array(right))
         names = ['values_across_training_']  # 'mean_values_across_training_']
         ylabels = ['Performance', 'Phase', 'Number of steps',
                    'Session performance']
@@ -723,12 +732,12 @@ if __name__ == '__main__':
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_40/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_20/'
-    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/shaping_5_0/'
-    sv_f = '/home/manuel/shaping/results_280421/shaping_5_0.1/'
+    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/shaping_5_0.1/'
+    # sv_f = '/home/manuel/shaping/results_280421/shaping_5_0.1/'
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
     TH = 0.6
     ahas_dic = {'w_ahas': 10, 'w_perf': 500, 'w_before_ahas': 10,
-                'perf_bef_aft': [.55, .6], 'perf_th': 0.89, 'w_explore': 100}
+                'perf_bef_aft': [.55, .6], 'perf_th': 0.69, 'w_explore': 100}
 
     plot_separate_figures = True
     plot_all_figs = True
