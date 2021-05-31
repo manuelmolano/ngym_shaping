@@ -103,10 +103,67 @@ def data_extraction(folder, metrics, w_conv_perf=500, conv=[1, 0]):
     return metrics, data_flag
 
 
+def get_ahas(stage, perf, gt, verbose=False, **aha_dic):
+    ahas_dic_def = {'w_ahas': 10, 'w_perf': 500,
+                    'perf_bef_aft': [.55, .6], 'perf_th': 0.69, 'w_explore': 100}
+    ahas_dic_def.update(aha_dic)
+    prob_right = 0
+    w_ahas = ahas_dic_def['w_ahas']
+    w_perf = ahas_dic_def['w_perf']
+    perf_th = ahas_dic_def['perf_th']
+    perf_bef_aft = ahas_dic_def['perf_bef_aft']
+    w_explore = ahas_dic_def['w_explore']
+    no_shaping = len(np.unique(stage)) == 1 and 4 in stage
+    if 1 in stage or no_shaping:
+        indx = stage == 4 if no_shaping else stage == 1
+        perf_stg_1 = perf[indx]
+        gt = gt[indx]
+        ahas = np.convolve(perf_stg_1, np.ones((w_ahas,))/w_ahas,
+                           mode='valid')
+        perf = np.convolve(perf_stg_1, np.ones((w_perf,))/w_perf,
+                           mode='valid')
+        if verbose:
+            plt.figure()
+            # plt.title(folder)
+            # plt.plot(perf_stg_1, '-+')
+            plt.plot(ahas, '-+')
+            plt.plot(perf)
+            plt.plot(np.convolve(perf_stg_1, np.ones((500,))/500,
+                     mode='valid'))
+        aha_indx = np.where(ahas > perf_th)[0]
+        if len(aha_indx) > 0:
+            aha_diff = np.diff(aha_indx)
+            aha_diff = np.insert(aha_diff, 0, w_ahas+1)
+            aha_indx = aha_indx[aha_diff > w_ahas]
+            for a_i in aha_indx:
+                prev_perf = np.mean(perf_stg_1[a_i-w_perf:a_i])
+                post_perf = np.mean(perf_stg_1[a_i+w_ahas:
+                                               a_i+w_ahas+w_perf])
+                prev_prfs.append(prev_perf)
+                post_prfs.append(post_perf)
+                plt.plot([a_i, a_i], [0, 1], '--m')
+                if prev_perf <= perf_bef_aft[0] and\
+                   post_perf >= perf_bef_aft[1]:
+                    aha_mmts.append(a_i)
+                    if verbose:
+                        plt.plot([a_i, a_i], [0, 1], '--k')
+                        print('AHA MOMENT')
+                        print(gt[a_i-w_perf:a_i+w_ahas+w_perf])
+                        print('**')
+                    gt_patterns.append(gt[a_i-w_perf:a_i+w_ahas+w_perf])
+                    perf_patterns.append(perf_stg_1[a_i-w_perf:
+                                                    a_i+w_ahas+w_perf])
+                    # find probabilities of right before the aha window
+                    right_number = np.sum(gt[a_i-w_explore:a_i] == 1)
+                    prob_right = right_number/len(gt[a_i-w_explore:a_i])
+                    right.append(prob_right)
+            if verbose:
+                print('gt', gt_patterns)
+                print('perf', perf_patterns)
+                print('prob_right: ', right)    
+
 def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, gt_patterns,
-               perf_patterns, right, w_ahas=5, w_perf=30,
-               w_before_ahas=5, perf_bef_aft=[0.55, 0.7], conv=[1],
-               perf_th=0.9, w_explore=50, verbose=True):
+               perf_patterns, right, verbose=True, conv=[1], **aha_dic):
     """ Extract data saved during training. metrics: dict containing
     the keys of the data to loaextractd.
     conv: list of the indexes of the metrics to convolve."""
@@ -118,57 +175,7 @@ def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, gt_patterns,
             perf = data['real_performance']
             stage = data['stage']
             gt = data['gt']
-            prob_right = 0
-            no_shaping = len(np.unique(stage)) == 1 and 4 in stage
-            if 1 in stage or no_shaping:
-                indx = stage == 4 if no_shaping else stage == 1
-                perf_stg_1 = perf[indx]
-                gt = gt[indx]
-                ahas = np.convolve(perf_stg_1, np.ones((w_ahas,))/w_ahas,
-                                   mode='valid')
-                perf = np.convolve(perf_stg_1, np.ones((w_perf,))/w_perf,
-                                   mode='valid')
-                if verbose:
-                    plt.figure()
-                    plt.title(folder)
-                    # plt.plot(perf_stg_1, '-+')
-                    plt.plot(ahas, '-+')
-                    plt.plot(perf)
-                    plt.plot(np.convolve(perf_stg_1, np.ones((500,))/500,
-                             mode='valid'))
-                aha_indx = np.where(ahas > perf_th)[0]
-                if len(aha_indx) > 0:
-                    aha_diff = np.diff(aha_indx)
-                    aha_diff = np.insert(aha_diff, 0, w_ahas+1)
-                    aha_indx = aha_indx[aha_diff > w_ahas]
-                    for a_i in aha_indx:
-                        prev_perf = np.mean(perf_stg_1[a_i-w_perf:a_i])
-                        post_perf = np.mean(perf_stg_1[a_i+w_ahas:
-                                                       a_i+w_ahas+w_perf])
-                        prev_prfs.append(prev_perf)
-                        post_prfs.append(post_perf)
-                        plt.plot([a_i, a_i], [0, 1], '--m')
-                        if prev_perf <= perf_bef_aft[0] and\
-                           post_perf >= perf_bef_aft[1]:
-                            aha_mmts.append(a_i)
-                            if verbose:
-                                plt.plot([a_i, a_i], [0, 1], '--k')
-                                print('AHA MOMENT')
-                                print(gt[a_i-w_perf:a_i+w_ahas+w_perf])
-                                print('**')
-                            gt_patterns.append(gt[a_i-w_perf:a_i+w_ahas+w_perf])
-                            perf_patterns.append(perf_stg_1[a_i-w_perf:
-                                                            a_i+w_ahas+w_perf])
-                            # find probabilities of right before the aha window
-                            right_number = np.sum(gt[a_i-w_explore:a_i] == 1)
-                            prob_right = right_number/len(gt[a_i-w_explore:a_i])
-                            right.append(prob_right)
-                    if verbose:
-                        print('gt', gt_patterns)
-                        print('perf', perf_patterns)
-                        print('prob_right: ', right)
-            elif verbose:
-                print('NO STAGE 2')
+            get_ahas(stage=stage, perf=perf, gt=gt, **aha_dic)
     else:
         if verbose:
             print('No data in: ', folder)
@@ -476,12 +483,8 @@ def plot_results(folder, w_ahas, w_perf, w_before_ahas, perf_bef_aft,
         # files = sorted(files)
         val_index = []  # stores values for each instance
         metrics = {k: [] for k in keys}
-        aha_mmts = []
-        prev_prfs = []
-        post_prfs = []
-        gt_patterns = []
-        perf_patterns = []
-        right = []
+        aha_data = {'aha_mmts': [], 'prev_prfs': [], 'post_prfs': [],
+                    'gt_patterns': [], 'perf_patterns': [], 'prob_right': []}
         keys = np.array(keys)
         for ind_f, file in enumerate(files):
             print(file)
@@ -490,17 +493,14 @@ def plot_results(folder, w_ahas, w_perf, w_before_ahas, perf_bef_aft,
             metrics, flag = data_extraction(folder=file, metrics=metrics,
                                             w_conv_perf=w_conv_perf,
                                             conv=[1, 0])
-            aha_mmts, prev_prfs, post_prfs, flag, gt_patterns, perf_patterns,\
-                right = aha_moment(folder=file, aha_mmts=aha_mmts,
-                                   prev_prfs=prev_prfs, post_prfs=post_prfs,
-                                   gt_patterns=gt_patterns, right=right,
-                                   perf_patterns=perf_patterns, **ahas_dic)
+            aha_data, flag = aha_moment(folder=file, aha_data=aha_data, **ahas_dic)
 
             # store values
             if flag:
                 val_index.append(val)
         val_index = np.array(val_index)
         # AHA-MOMENT
+        aha_mmts = aha_data['aha_mmts']
         if len(aha_mmts) > 0:
             fig, ax1 = plt.subplots()
             colors = ['b', 'g']
@@ -732,11 +732,11 @@ if __name__ == '__main__':
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_40/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_20/'
-    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/shaping_5_0.1/'
-    # sv_f = '/home/manuel/shaping/results_280421/shaping_5_0.1/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/shaping_5_0.1/'
+    sv_f = '/home/manuel/shaping/results_280421/shaping_5_0.1/'
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
     TH = 0.6
-    ahas_dic = {'w_ahas': 10, 'w_perf': 500, 'w_before_ahas': 10,
+    ahas_dic = {'w_ahas': 10, 'w_perf': 500,
                 'perf_bef_aft': [.55, .6], 'perf_th': 0.69, 'w_explore': 100}
 
     plot_separate_figures = True
@@ -752,23 +752,22 @@ if __name__ == '__main__':
     f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
     ax = [ax1, ax2, ax3]
     plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
-                  keys=['real_performance', 'stage'], limit_ax=True,
-                  final_ph=final_ph, ax_final=ax,
-                  tag='pun', limit_tr=False, rerun=True,
-                  f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
-                  plt_ind_vals=True, plt_ind_traces=True, **ahas_dic)
-    
+                 keys=['real_performance', 'stage'], limit_ax=True,
+                 final_ph=final_ph, ax_final=ax,
+                 tag='pun', limit_tr=False, rerun=True,
+                 f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
+                 plt_ind_vals=True, plt_ind_traces=True, **ahas_dic)
 
-    f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
-    f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
-    f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
-    ax = [ax1, ax2, ax3]
-    plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
-                  keys=['real_performance', 'stage'], limit_ax=True,
-                  final_ph=final_ph, ax_final=ax,
-                  tag='pun', limit_tr=False, rerun=True,
-                  f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
-                  plt_ind_vals=True, plt_ind_traces=True, **ahas_dic)
+    # f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
+    # f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
+    # f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
+    # ax = [ax1, ax2, ax3]
+    # plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
+    #              keys=['real_performance', 'stage'], limit_ax=True,
+    #              final_ph=final_ph, ax_final=ax, tag='pun', limit_tr=False,
+    #              rerun=True, plt_ind_vals=True, plt_ind_traces=True,
+    #              f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
+    #              **ahas_dic)
 
     # PLOT FIGURES NO-SHAPING DIFFERENT ROLLOUTS
     # main_folder = '/Users/leyreazcarate/Desktop/TFG/results_280421/'
