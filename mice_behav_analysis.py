@@ -34,7 +34,7 @@ def set_paths(path_ops):
 
     global PATH, SV_FOLDER
     if path_ops == 'Leyre':
-        PATH = '/Users/leyreazcarate/Dropbox/mice_data/standard_training_2020'
+        PATH = '/Users/leyreazcarate/Dropbox/Leyre Azcarate/mice_data/standard_training_2020'
         SV_FOLDER = '/Users/leyreazcarate/Dropbox/mice_data/standard_training_2020'
     elif path_ops == 'Manuel':
         PATH = '/home/manuel/mice_data/standard_training_2020'
@@ -1243,7 +1243,7 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 ### HINT: MAIN
 if __name__ == '__main__':
     plt.close('all')
-    set_paths('molano')
+    set_paths('Leyre')  #molano #Leyre
     # set_paths('Manuel')
     plt_stg_vars = False
     plt_stg_with_fourth = False
@@ -1258,7 +1258,7 @@ if __name__ == '__main__':
     # 'dataset_N01' (subject from N01 to N18)
     # 'dataset_N19' (subject from N19 to N28)
     # 'dataset_C17' (subject from C17 to C22)
-    df_trials, df_params, subj_unq = load_data(dataset='C17')  # N01 N19 C17
+    df_trials, df_params, subj_unq = load_data(dataset='N01')  # N01 N19 C17
     if plt_stg_vars:
         # PLOT MOTOR AND DELAY VARIABLES ACROSS TRIALS FOR ALL THE SUBJECTS
         plot_final_stage_motor_delay(subj_unq, df=df_trials,
