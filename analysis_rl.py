@@ -493,7 +493,8 @@ def plot_results(folder, w_ahas, w_perf, w_before_ahas, perf_bef_aft,
             metrics, flag = data_extraction(folder=file, metrics=metrics,
                                             w_conv_perf=w_conv_perf,
                                             conv=[1, 0])
-            aha_data, flag = aha_moment(folder=file, aha_data=aha_data, **ahas_dic)
+            aha_data, flag = aha_moment(folder=file, aha_data=aha_data,
+                                        **ahas_dic)
 
             # store values
             if flag:
@@ -501,6 +502,11 @@ def plot_results(folder, w_ahas, w_perf, w_before_ahas, perf_bef_aft,
         val_index = np.array(val_index)
         # AHA-MOMENT
         aha_mmts = aha_data['aha_mmts']
+        prev_prfs = aha_data['prev_prfs']
+        post_prfs = aha_data['post_prfs']
+        gt_patterns = aha_data['gt_patterns']
+        perf_patterns = aha_data['perf_patterns']
+        prob_right = aha_data['prob_right']
         if len(aha_mmts) > 0:
             fig, ax1 = plt.subplots()
             colors = ['b', 'g']
@@ -515,20 +521,20 @@ def plot_results(folder, w_ahas, w_perf, w_before_ahas, perf_bef_aft,
             ax_twin = ax2.twinx()
             ax2.imshow(np.array(gt_patterns), aspect='auto')
             ax2.set_title('ground truth')
-            ax_twin.plot(np.mean(np.array(perf_patterns), axis=0), color='red') # TODO: np.convolve(perf_patterns)
+            ax_twin.plot(np.mean(np.array(perf_patterns), axis=0), color='red')
             ax2.set_title('Aha moment with mean performance')
             fig3, ax3 = plt.subplots(1, 1)
             ax_twin = ax3.twinx()
             ax3.imshow(np.array(gt_patterns), aspect='auto')
             ax3.set_title('ground truth')
             mean_perf = np.mean(np.array(perf_patterns), axis=0)
-            w_conv=25
+            w_conv = 25
             ax_twin.plot(np.convolve(mean_perf, np.ones((w_conv,))/w_conv,
-                                     mode='valid'), color='red')  # TODO: np.convolve(perf_patterns)
+                                     mode='valid'), color='red')
             ax3.set_title('Aha moment with convolved mean performance')
             fig4, ax4 = plt.subplots(1, 1)
             ax4.set_title('Prob. Right')
-            ax4.hist(np.array(right))
+            ax4.hist(np.array(prob_right))
         names = ['values_across_training_']  # 'mean_values_across_training_']
         ylabels = ['Performance', 'Phase', 'Number of steps',
                    'Session performance']
