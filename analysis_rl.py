@@ -103,7 +103,7 @@ def data_extraction(folder, metrics, w_conv_perf=500, conv=[1, 0]):
     return metrics, data_flag
 
 
-def get_ahas(stage, perf, gt, verbose=False, **aha_dic):
+def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
     ahas_dic_def = {'w_ahas': 10, 'w_perf': 500,
                     'perf_bef_aft': [.55, .6], 'perf_th': 0.69, 'w_explore': 100}
     ahas_dic_def.update(aha_dic)
@@ -139,31 +139,28 @@ def get_ahas(stage, perf, gt, verbose=False, **aha_dic):
                 prev_perf = np.mean(perf_stg_1[a_i-w_perf:a_i])
                 post_perf = np.mean(perf_stg_1[a_i+w_ahas:
                                                a_i+w_ahas+w_perf])
-                prev_prfs.append(prev_perf)
-                post_prfs.append(post_perf)
+                aha_data['prev_prfs'].append(prev_perf)
+                aha_data['post_prfs'].append(post_perf)
                 plt.plot([a_i, a_i], [0, 1], '--m')
                 if prev_perf <= perf_bef_aft[0] and\
                    post_perf >= perf_bef_aft[1]:
-                    aha_mmts.append(a_i)
+                    aha_data['aha_mmts'].append(a_i)
                     if verbose:
                         plt.plot([a_i, a_i], [0, 1], '--k')
                         print('AHA MOMENT')
                         print(gt[a_i-w_perf:a_i+w_ahas+w_perf])
                         print('**')
-                    gt_patterns.append(gt[a_i-w_perf:a_i+w_ahas+w_perf])
-                    perf_patterns.append(perf_stg_1[a_i-w_perf:
+                    aha_data['gt_patterns'].append(gt[a_i-w_perf:
+                                                      a_i+w_ahas+w_perf])
+                    aha_data['perf_patterns'].append(perf_stg_1[a_i-w_perf:
                                                     a_i+w_ahas+w_perf])
                     # find probabilities of right before the aha window
                     right_number = np.sum(gt[a_i-w_explore:a_i] == 1)
                     prob_right = right_number/len(gt[a_i-w_explore:a_i])
-                    right.append(prob_right)
-            if verbose:
-                print('gt', gt_patterns)
-                print('perf', perf_patterns)
-                print('prob_right: ', right)    
+                    aha_data['prob_right'].append(prob_right)
+    return aha_data
 
-def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, gt_patterns,
-               perf_patterns, right, verbose=True, conv=[1], **aha_dic):
+def aha_moment(folder, aha_data={}, verbose=True, conv=[1], **aha_dic):
     """ Extract data saved during training. metrics: dict containing
     the keys of the data to loaextractd.
     conv: list of the indexes of the metrics to convolve."""
@@ -175,13 +172,13 @@ def aha_moment(folder, aha_mmts, prev_prfs, post_prfs, gt_patterns,
             perf = data['real_performance']
             stage = data['stage']
             gt = data['gt']
-            get_ahas(stage=stage, perf=perf, gt=gt, **aha_dic)
+            aha_data = get_ahas(stage=stage, perf=perf, gt=gt, aha_data=aha_data,
+                                **aha_dic)
     else:
         if verbose:
             print('No data in: ', folder)
         data_flag = False
-    return (aha_mmts, post_prfs, prev_prfs, data_flag, gt_patterns,
-            perf_patterns, right)
+    return aha_data, data_flag
 
 
 def get_tag(tag, file):
@@ -438,13 +435,12 @@ def plot_inst_punishment(num_instances, punish_3_vector, conv_w):
             f.savefig(sv_f_inst+'.png', dpi=300)
 
 
-def plot_results(folder, w_ahas, w_perf, w_before_ahas, perf_bef_aft,
-                 perf_th, w_explore, setup='', setup_nm='', w_conv_perf=500,
+def plot_results(folder, setup='', setup_nm='', w_conv_perf=500,
                  keys=['real_performance', 'stage'], limit_ax=True, final_ph=4,
                  ax_final=None, tag='th_stage', limit_tr=False, rerun=False,
                  f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
                  plt_ind_vals=True, plt_ind_traces=True, n_roll=5, name='',
-                 x=0):
+                 x=0, **ahas_dic):
     """This function uses the data generated during training to analyze it
     and generate figures showing the results in function of the different
     values used for the third level variable (i.e. differen threshold values
@@ -505,8 +501,7 @@ def plot_results(folder, w_ahas, w_perf, w_before_ahas, perf_bef_aft,
             fig, ax1 = plt.subplots()
             colors = ['b', 'g']
             labels = ['prev_prfs', 'post_prfs']
-            ax1.hist([prev_prfs, post_prfs], bins=10, color=colors,
-                     label=labels)
+            ax1.hist([prev_prfs, post_prfs], bins=10, color=colors, label=labels)
             ax1.legend()
             plt.tight_layout()
             plt.show()
@@ -733,7 +728,8 @@ if __name__ == '__main__':
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_20/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/shaping_5_0.1/'
-    sv_f = '/home/manuel/shaping/results_280421/shaping_5_0.1/'
+    # sv_f = '/home/manuel/shaping/results_280421/shaping_5_0.1/'
+    sv_f = '/home/molano/shaping/results_280421/shaping_5_0.1/'
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
     TH = 0.6
     ahas_dic = {'w_ahas': 10, 'w_perf': 500,
