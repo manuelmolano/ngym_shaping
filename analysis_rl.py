@@ -103,6 +103,11 @@ def data_extraction(folder, metrics, w_conv_perf=500, conv=[1, 0]):
     return metrics, data_flag
 
 
+def learned(perf, **params):
+    ahas_dic_def = {'w_perf': 500, 'perf_bef_aft': [.55, .6]}
+    
+
+
 def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
     ahas_dic_def = {'w_ahas': 10, 'w_perf': 500,
                     'perf_bef_aft': [.55, .6], 'aha_th': 0.69, 'w_explore': 100}
@@ -126,10 +131,10 @@ def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
             plt.figure()
             # plt.title(folder)
             # plt.plot(perf_stg_1, '-+')
-            plt.plot(ahas, '-+')
+            # plt.plot(ahas, '-+')
             plt.plot(perf)
-            plt.plot(np.convolve(perf_stg_1, np.ones((500,))/500,
-                     mode='valid'))
+            # plt.plot(np.convolve(perf_stg_1, np.ones((500,))/500,
+            #          mode='valid'))
         aha_indx = np.where(ahas > perf_th)[0]
         if len(aha_indx) > 0:
             aha_diff = np.diff(aha_indx)
@@ -141,12 +146,12 @@ def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
                                                a_i+w_ahas+w_perf])
                 aha_data['prev_prfs'].append(prev_perf)
                 aha_data['post_prfs'].append(post_perf)
-                plt.plot([a_i, a_i], [0, 1], '--m')
+                # plt.plot([a_i, a_i], [0, 1], '--m')
                 if prev_perf <= perf_bef_aft[0] and\
                    post_perf >= perf_bef_aft[1]:
                     aha_data['aha_mmts'].append(a_i)
                     if verbose:
-                        plt.plot([a_i, a_i], [0, 1], '--k')
+                        # plt.plot([a_i, a_i], [0, 1], '--k')
                         print('AHA MOMENT')
                         print(gt[a_i-w_perf:a_i+w_ahas+w_perf])
                         print('**')
