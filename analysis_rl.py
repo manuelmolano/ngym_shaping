@@ -133,7 +133,7 @@ Medir la distancia mínima entre los periodos
     f, ax = plt.subplots(1, 2)
     ax = ax.flatten()
     ax[0].plot(perf_conv, label='Convolve perf w='+str(w_perf))
-    ax[0].plot(perf_conv < perf_bef_aft[0], label='Chance')
+    ax[0].plot(perf_conv < perf_bef_aft[0], label='Not learned')
     ax[0].plot(perf_conv > perf_bef_aft[1], label='Learned')
     ax[0].legend()
     ax[1].hist(perf_conv, 50)

@@ -737,8 +737,9 @@ def aha_moments(sbj, df, index_event=None, color_ev='',
     stg_mat = np.ones_like(hit_sbj)
     aha_data = {'aha_mmts': [], 'prev_prfs': [], 'post_prfs': [],
                 'gt_patterns': [], 'perf_patterns': [], 'prob_right': []}
-    arl.get_ahas(stage=stg_mat, perf=hit_sbj, gt=gt_sbj, aha_data=aha_data,
-                 verbose=True, **aha_dic)
+    arl.learned(perf=hit_sbj)
+    # arl.get_ahas(stage=stg_mat, perf=hit_sbj, gt=gt_sbj, aha_data=aha_data,
+    #              verbose=True, **aha_dic)
     plt.title(sbj)
             
 
