@@ -103,7 +103,7 @@ def data_extraction(folder, metrics, w_conv_perf=500, conv=[1, 0]):
     return metrics, data_flag
 
 
-def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
+def get_ahas(stage, perf, gt, aha_data, verbose=True, **aha_dic):
     ahas_dic_def = {'w_ahas': 10, 'w_perf': 500,
                     'perf_bef_aft': [.55, .6], 'aha_th': 0.69, 'w_explore': 100}
     ahas_dic_def.update(aha_dic)
@@ -125,11 +125,11 @@ def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
         if verbose:
             plt.figure()
             # plt.title(folder)
-            # plt.plot(perf_stg_1, '-+')
+            plt.plot(perf_stg_1, '-+')
             plt.plot(ahas, '-+')
             plt.plot(perf)
             plt.plot(np.convolve(perf_stg_1, np.ones((500,))/500,
-                     mode='valid'))
+                      mode='valid'))
         aha_indx = np.where(ahas > perf_th)[0]
         if len(aha_indx) > 0:
             aha_diff = np.diff(aha_indx)
@@ -141,7 +141,7 @@ def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
                                                a_i+w_ahas+w_perf])
                 aha_data['prev_prfs'].append(prev_perf)
                 aha_data['post_prfs'].append(post_perf)
-                plt.plot([a_i, a_i], [0, 1], '--m')
+                # plt.plot([a_i, a_i], [0, 1], '--m')
                 if prev_perf <= perf_bef_aft[0] and\
                    post_perf >= perf_bef_aft[1]:
                     aha_data['aha_mmts'].append(a_i)
@@ -512,25 +512,24 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500, perf_th=0.6,
             plt.tight_layout()
             plt.show()
 
-            fig2, ax2 = plt.subplots(1, 1)
-            ax_twin = ax2.twinx()
-            ax2.imshow(np.array(gt_patterns), aspect='auto')
-            ax2.set_title('ground truth')
-            ax_twin.plot(np.mean(np.array(perf_patterns), axis=0), color='red')
-            ax2.set_title('Aha moment with mean performance')
-            fig3, ax3 = plt.subplots(1, 1)
-            ax_twin = ax3.twinx()
-            ax3.imshow(np.array(gt_patterns), aspect='auto')
-            ax3.set_title('ground truth')
-            mean_perf = np.mean(np.array(perf_patterns), axis=0)
-            w_conv = 25
-            ax_twin.plot(np.convolve(mean_perf, np.ones((w_conv,))/w_conv,
-                                     mode='valid'), color='red')
-            ax3.set_title('Aha moment with convolved mean performance')
-            fig4, ax4 = plt.subplots(1, 1)
-            ax4.set_title('Prob. Right')
-            ax4.hist(np.array(prob_right))
-        asdasd
+            # fig2, ax2 = plt.subplots(1, 1)
+            # ax_twin = ax2.twinx()
+            # ax2.imshow(np.array(gt_patterns), aspect='auto')
+            # ax2.set_title('ground truth')
+            # ax_twin.plot(np.mean(np.array(perf_patterns), axis=0), color='red')
+            # ax2.set_title('Aha moment with mean performance')
+            # fig3, ax3 = plt.subplots(1, 1)
+            # ax_twin = ax3.twinx()
+            # ax3.imshow(np.array(gt_patterns), aspect='auto')
+            # ax3.set_title('ground truth')
+            # mean_perf = np.mean(np.array(perf_patterns), axis=0)
+            # w_conv = 25
+            # ax_twin.plot(np.convolve(mean_perf, np.ones((w_conv,))/w_conv,
+            #                          mode='valid'), color='red')
+            # ax3.set_title('Aha moment with convolved mean performance')
+            # fig4, ax4 = plt.subplots(1, 1)
+            # ax4.set_title('Prob. Right')
+            # ax4.hist(np.array(prob_right))
         names = ['values_across_training_']  # 'mean_values_across_training_']
         ylabels = ['Performance', 'Phase', 'Number of steps',
                    'Session performance']
@@ -734,9 +733,9 @@ if __name__ == '__main__':
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_40/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_20/'
-    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/shaping_5_0.1/'
+    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/shaping_5_0.1/'
     # sv_f = '/home/manuel/shaping/results_280421/shaping_5_0.1/'
-    sv_f = '/home/molano/shaping/results_280421/shaping_5_0.1/'
+    # sv_f = '/home/molano/shaping/results_280421/shaping_5_0.1/'
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
     TH = 0.6
     ahas_dic = {'w_ahas': 10, 'w_perf': 500,
