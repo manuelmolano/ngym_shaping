@@ -139,8 +139,6 @@ Medir la distancia mínima entre los periodos
     ax[1].hist(perf_conv, 50)
     ax[1].plot([perf_bef_aft[0], perf_bef_aft[0]], [0, 100], 'c')
     ax[1].plot([perf_bef_aft[1], perf_bef_aft[1]], [0, 100], 'm')
-    adsasd
-    print(1)
 
 
 def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
