@@ -104,8 +104,43 @@ def data_extraction(folder, metrics, w_conv_perf=500, conv=[1, 0]):
 
 
 def learned(perf, **params):
-    ahas_dic_def = {'w_perf': 500, 'perf_bef_aft': [.55, .6]}
+    """
+Hacer un smoothing (np.convolve) con una ventana muy larga.
+Hacer un histograma con los valores del factor resultante para ver si 
+    sacas 2 "montañitas": chance and learned performance.
+Establecer un threshold a partir de ese histograma.
+Buscar todos los valores por debajo/encima de los thresholds
+Medir la distancia mínima entre los periodos
+
+    Parameters
+    ----------
+    perf : TYPE
+        DESCRIPTION.
+    **params : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
+    ahas_dic_def = {'w_perf': 500, 'perf_bef_aft': [.5, .7]}
+    ahas_dic_def.update(params)
+    w_perf = ahas_dic_def['w_perf']
+    perf_bef_aft = ahas_dic_def['perf_bef_aft']
+    perf_conv = np.convolve(perf, np.ones((w_perf,))/w_perf, mode='valid')
     
+    f, ax = plt.subplots(1, 2)
+    ax = ax.flatten()
+    ax[0].plot(perf_conv, label='Convolve perf w='+str(w_perf))
+    ax[0].plot(perf_conv < perf_bef_aft[0], label='Chance')
+    ax[0].plot(perf_conv > perf_bef_aft[1], label='Learned')
+    ax[0].legend()
+    ax[1].hist(perf_conv, 50)
+    ax[1].plot([perf_bef_aft[0], perf_bef_aft[0]], [0, 100], 'c')
+    ax[1].plot([perf_bef_aft[1], perf_bef_aft[1]], [0, 100], 'm')
+    adsasd
+    print(1)
 
 
 def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
@@ -130,11 +165,11 @@ def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
         if verbose:
             plt.figure()
             # plt.title(folder)
-            # plt.plot(perf_stg_1, '-+')
-            # plt.plot(ahas, '-+')
+            plt.plot(perf_stg_1, '-+')
+            plt.plot(ahas, '-+')
             plt.plot(perf)
-            # plt.plot(np.convolve(perf_stg_1, np.ones((500,))/500,
-            #          mode='valid'))
+            plt.plot(np.convolve(perf_stg_1, np.ones((500,))/500,
+                                 mode='valid'))
         aha_indx = np.where(ahas > perf_th)[0]
         if len(aha_indx) > 0:
             aha_diff = np.diff(aha_indx)
@@ -517,25 +552,24 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500, perf_th=0.6,
             plt.tight_layout()
             plt.show()
 
-            fig2, ax2 = plt.subplots(1, 1)
-            ax_twin = ax2.twinx()
-            ax2.imshow(np.array(gt_patterns), aspect='auto')
-            ax2.set_title('ground truth')
-            ax_twin.plot(np.mean(np.array(perf_patterns), axis=0), color='red')
-            ax2.set_title('Aha moment with mean performance')
-            fig3, ax3 = plt.subplots(1, 1)
-            ax_twin = ax3.twinx()
-            ax3.imshow(np.array(gt_patterns), aspect='auto')
-            ax3.set_title('ground truth')
-            mean_perf = np.mean(np.array(perf_patterns), axis=0)
-            w_conv = 25
-            ax_twin.plot(np.convolve(mean_perf, np.ones((w_conv,))/w_conv,
-                                     mode='valid'), color='red')
-            ax3.set_title('Aha moment with convolved mean performance')
-            fig4, ax4 = plt.subplots(1, 1)
-            ax4.set_title('Prob. Right')
-            ax4.hist(np.array(prob_right))
-        asdasd
+            # fig2, ax2 = plt.subplots(1, 1)
+            # ax_twin = ax2.twinx()
+            # ax2.imshow(np.array(gt_patterns), aspect='auto')
+            # ax2.set_title('ground truth')
+            # ax_twin.plot(np.mean(np.array(perf_patterns), axis=0), color='red')
+            # ax2.set_title('Aha moment with mean performance')
+            # fig3, ax3 = plt.subplots(1, 1)
+            # ax_twin = ax3.twinx()
+            # ax3.imshow(np.array(gt_patterns), aspect='auto')
+            # ax3.set_title('ground truth')
+            # mean_perf = np.mean(np.array(perf_patterns), axis=0)
+            # w_conv = 25
+            # ax_twin.plot(np.convolve(mean_perf, np.ones((w_conv,))/w_conv,
+            #                          mode='valid'), color='red')
+            # ax3.set_title('Aha moment with convolved mean performance')
+            # fig4, ax4 = plt.subplots(1, 1)
+            # ax4.set_title('Prob. Right')
+            # ax4.hist(np.array(prob_right))
         names = ['values_across_training_']  # 'mean_values_across_training_']
         ylabels = ['Performance', 'Phase', 'Number of steps',
                    'Session performance']
@@ -739,9 +773,9 @@ if __name__ == '__main__':
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_40/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_20/'
-    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/shaping_5_0.1/'
+    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/shaping_5_0.1/'
     # sv_f = '/home/manuel/shaping/results_280421/shaping_5_0.1/'
-    sv_f = '/home/molano/shaping/results_280421/shaping_5_0.1/'
+    # sv_f = '/home/molano/shaping/results_280421/shaping_5_0.1/'
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
     TH = 0.6
     ahas_dic = {'w_ahas': 10, 'w_perf': 500,

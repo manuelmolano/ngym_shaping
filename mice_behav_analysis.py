@@ -34,8 +34,8 @@ def set_paths(path_ops):
 
     global PATH, SV_FOLDER
     if path_ops == 'Leyre':
-        PATH = '/Users/leyreazcarate/Dropbox/mice_data/standard_training_2020'
-        SV_FOLDER = '/Users/leyreazcarate/Dropbox/mice_data/standard_training_2020'
+        PATH = '/Users/leyreazcarate/Dropbox/Leyre Azcarate/mice_data/standard_training_2020'
+        SV_FOLDER = '/Users/leyreazcarate/Dropbox/Leyre Azcarate/mice_data/standard_training_2020'
     elif path_ops == 'Manuel':
         PATH = '/home/manuel/mice_data/standard_training_2020'
         SV_FOLDER = '/home/manuel/mice_data/standard_training_2020'
@@ -149,7 +149,7 @@ def accuracy_trials_subj_stage4(df, subj, stg=None, conv_w=50):
 
     """
     # find accuracy values for each subject (hithistory takes the values  0/1)
-    hit_raw = df.loc[df['subject_name'] == subj, 'hithistory'].values
+    hit_raw = df.loc[df['subject_name'] == subj, 'wronglickhistory'].values
     # convolve it in order to get smooth values
     hit = np.convolve(hit_raw, np.ones((conv_w,))/conv_w, mode='valid')
     # find all the stages of the subject
@@ -700,7 +700,7 @@ def aha_moments(sbj, df, index_event=None, color_ev='',
 
         """
         # find accuracy values for each subject (hithistory takes the values  0/1)
-        hit = df.loc[df['subject_name'] == subj, 'hithistory'].values
+        hit = df.loc[df['subject_name'] == subj, 'wronglickhistory'].values
         # find all the stages of the subject
         stg = df.loc[df['subject_name'] == subj, 'new_stage'].values
         # find all the stages of the subject
@@ -729,7 +729,7 @@ def aha_moments(sbj, df, index_event=None, color_ev='',
             gt_list.append(gts)
         return hit_list, xs_list, stage_list, gt_list
 
-    aha_dic = {'w_ahas': 10, 'w_perf': 100,
+    aha_dic = {'w_ahas': 10, 'w_perf': 50,
                'perf_bef_aft': [.55, .6], 'aha_th': 0.79, 'w_explore': 100}
     hit_sbj, xs_sbj, color_sbj, gt_sbj = get_trial_info(df, subj=sbj)
     hit_sbj = hit_sbj[color_sbj == stage-1]
@@ -897,7 +897,7 @@ def plot_accuracy_trials_coloured_stage4(sbj, df, index_event=None, color_ev='',
                  " account misses (" + sbj+")")
     ax.set_xlabel('Trials')
     ax.set_ylabel('Accuracy')
-    ax.legend(['Stg 1', 'Stg 2', 'Stg 3 (motor)', 'Stg 3.1 (motor+delay)'],
+    ax.legend(['Stage 1', 'Stage 2', 'Stage 3', 'Stage 4'],
               loc="center right",   # Position of legend
               borderaxespad=0.1,  # Small spacing around legend box
               title='Color legend')
@@ -968,12 +968,12 @@ def plot_final_acc_session_subj_stage4(subj_unq, df_trials, figsize=(8, 4),
                                                                  conv_w=conv_w)
         plot_accuracy_trials_subj_stage4(hit=hit_sbj, xs=xs_sbj, col=color_sbj,
                                          ax=ax[i_s], subj=sbj)
-    fig.suptitle("Accuracy VS trials with 3.1 stage", fontsize="x-large")
+    fig.suptitle("Accuracy VS trials", fontsize="x-large")
     lines = [obj for obj in ax[0].properties()['children']  # all objs in ax[0]
              if isinstance(obj, matplotlib.lines.Line2D)  # that are lines
              and obj.get_linestyle() != '--']  # that are not dashed
-    fig.legend(lines, ['Stg 1', 'Stg 2', 'Stg 3 (motor)',
-                       'Stg 3.1 (motor+delay)'],
+    fig.legend(lines, ['Stage 1', 'Stage 2', 'Stage 3',
+                       'Stage 4'],
                loc="center right",   # Position of legend
                borderaxespad=0.1,  # Small spacing around legend box
                title='Color legend')
@@ -1243,10 +1243,10 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 ### HINT: MAIN
 if __name__ == '__main__':
     plt.close('all')
-    set_paths('molano')
+    set_paths('Leyre')  #molano #Leyre
     # set_paths('Manuel')
     plt_stg_vars = False
-    plt_stg_with_fourth = False
+    plt_stg_with_fourth = True
     plt_acc_vs_sess = False
     plt_perf_stage_session = False
     plt_perf_stage_trial = False
@@ -1258,7 +1258,7 @@ if __name__ == '__main__':
     # 'dataset_N01' (subject from N01 to N18)
     # 'dataset_N19' (subject from N19 to N28)
     # 'dataset_C17' (subject from C17 to C22)
-    df_trials, df_params, subj_unq = load_data(dataset='C17')  # N01 N19 C17
+    df_trials, df_params, subj_unq = load_data(dataset='N01')  # N01 N19 C17
     if plt_stg_vars:
         # PLOT MOTOR AND DELAY VARIABLES ACROSS TRIALS FOR ALL THE SUBJECTS
         plot_final_stage_motor_delay(subj_unq, df=df_trials,
