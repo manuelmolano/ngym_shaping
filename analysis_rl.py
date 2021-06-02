@@ -127,11 +127,10 @@ Medir la distancia mínima entre los periodos
     def get_event(trace, frst_lst):
         dwn_idx = np.where(np.diff(trace) < 0)[0]
         up_idx = np.where(np.diff(trace) > 0)[0]
-        if frst_lst == 'first':
-            dwn_idx = np.append(dwn_idx, len(trace))
+        ev = None
+        if frst_lst == 'first' and len(dwn_idx) > 0:
             ev = dwn_idx[0] if (dwn_idx[0] < up_idx).all() else None
-        elif frst_lst == 'last':
-            up_idx = np.insert(up_idx, 0, 0)
+        elif frst_lst == 'last' and len(up_idx) > 0:
             ev = up_idx[-1] if (up_idx[-1] > dwn_idx).all() else None
         return ev
     ahas_dic_def = {'w_perf': 500, 'perf_bef_aft': [.6, .75]}
