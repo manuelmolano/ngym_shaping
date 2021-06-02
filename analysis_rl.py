@@ -124,21 +124,39 @@ Medir la distancia mínima entre los periodos
     None.
 
     """
-    ahas_dic_def = {'w_perf': 500, 'perf_bef_aft': [.5, .7]}
+    def get_event(trace, frst_lst):
+        dwn_idx = np.where(np.diff(trace) < 0)[0]
+        up_idx = np.where(np.diff(trace) > 0)[0]
+        if frst_lst == 'first':
+            dwn_idx = np.append(dwn_idx, len(trace))
+            ev = dwn_idx[0] if (dwn_idx[0] < up_idx).all() else None
+        elif frst_lst == 'last':
+            up_idx = np.insert(up_idx, 0, 0)
+            ev = up_idx[-1] if (up_idx[-1] > dwn_idx).all() else None
+        return ev
+    ahas_dic_def = {'w_perf': 500, 'perf_bef_aft': [.6, .75]}
     ahas_dic_def.update(params)
     w_perf = ahas_dic_def['w_perf']
     perf_bef_aft = ahas_dic_def['perf_bef_aft']
     perf_conv = np.convolve(perf, np.ones((w_perf,))/w_perf, mode='valid')
-    
-    f, ax = plt.subplots(1, 2)
-    ax = ax.flatten()
-    ax[0].plot(perf_conv, label='Convolve perf w='+str(w_perf))
-    ax[0].plot(perf_conv < perf_bef_aft[0], label='Not learned')
-    ax[0].plot(perf_conv > perf_bef_aft[1], label='Learned')
-    ax[0].legend()
-    ax[1].hist(perf_conv, 50)
-    ax[1].plot([perf_bef_aft[0], perf_bef_aft[0]], [0, 100], 'c')
-    ax[1].plot([perf_bef_aft[1], perf_bef_aft[1]], [0, 100], 'm')
+
+    not_learned = 1*(perf_conv < perf_bef_aft[0])
+    ev_not_l = get_event(trace=not_learned, frst_lst='first')
+    learned = 1*(perf_conv > perf_bef_aft[1])
+    ev_l = get_event(trace=learned, frst_lst='last')
+
+    f, ax = plt.subplots(1, 1)
+    ax.plot(perf_conv, label='Convolve perf w='+str(w_perf))
+    ax.plot([ev_not_l, ev_not_l], [0, 1], 'c', label='Not learned end')
+    ax.plot([ev_l, ev_l], [0, 1], 'm', label='learned start')
+    ax.legend()
+    learned = False if (ev_l is None or ev_not_l is None or ev_l <= ev_not_l)\
+        else True
+    return learned, ev_not_l, ev_l
+    # ax[1].hist(perf_conv, 50)
+    # ax[1].plot([perf_bef_aft[0], perf_bef_aft[0]], [0, 100], 'c')
+    # ax[1].plot([perf_bef_aft[1], perf_bef_aft[1]], [0, 100], 'm')
+    # asd
 
 
 def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):

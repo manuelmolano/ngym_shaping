@@ -400,6 +400,7 @@ def remove_misses(df):
     assert (~df['hithistory'][df['misshistory']]).all()
     df_copy = df.copy()
     df_copy['hithistory'][df_copy['misshistory']] = 0.5  # XXX: not very elegant
+    df_copy['wronglickhistory'][df_copy['misshistory']] = 0.5
     return df_copy
 
 
@@ -665,8 +666,8 @@ def vertical_line_session(ax, df, sbj):
         ax.axvline(i, color='gray', linewidth=0.5)
 
 
-def aha_moments(sbj, df, index_event=None, color_ev='',
-                figsize=(8, 4), ax=None, plt_sess=True, stage=1):
+def learned_categories(sbj, df, index_event=None, color_ev='',
+                       figsize=(8, 4), ax=None, plt_sess=True, stage=1):
     """
     The function plots accuracy over trials for every subject, showing
     the stages the mice are in different colors.
@@ -729,19 +730,20 @@ def aha_moments(sbj, df, index_event=None, color_ev='',
             gt_list.append(gts)
         return hit_list, xs_list, stage_list, gt_list
 
-    aha_dic = {'w_ahas': 10, 'w_perf': 50,
-               'perf_bef_aft': [.55, .6], 'aha_th': 0.79, 'w_explore': 100}
+    # aha_dic = {'w_ahas': 10, 'w_perf': 50,
+    #            'perf_bef_aft': [.55, .6], 'aha_th': 0.79, 'w_explore': 100}
     hit_sbj, xs_sbj, color_sbj, gt_sbj = get_trial_info(df, subj=sbj)
     hit_sbj = hit_sbj[color_sbj == stage-1]
-    gt_sbj = gt_sbj[color_sbj == stage-1]
-    stg_mat = np.ones_like(hit_sbj)
-    aha_data = {'aha_mmts': [], 'prev_prfs': [], 'post_prfs': [],
-                'gt_patterns': [], 'perf_patterns': [], 'prob_right': []}
-    arl.learned(perf=hit_sbj)
+    learned, ev_not_l, ev_l = arl.learned(perf=hit_sbj)
+    plt.title(sbj+'  '+str(learned)+'  '+str(ev_not_l)+'-'+str(ev_l))
+    # gt_sbj = gt_sbj[color_sbj == stage-1]
+    # stg_mat = np.ones_like(hit_sbj)
+    # aha_data = {'aha_mmts': [], 'prev_prfs': [], 'post_prfs': [],
+    #             'gt_patterns': [], 'perf_patterns': [], 'prob_right': []}
     # arl.get_ahas(stage=stg_mat, perf=hit_sbj, gt=gt_sbj, aha_data=aha_data,
     #              verbose=True, **aha_dic)
-    plt.title(sbj)
-            
+    return learned, ev_not_l, ev_l
+
 
 ### HINT: FUNCTIONS TO PLOT
 
@@ -1244,10 +1246,10 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 ### HINT: MAIN
 if __name__ == '__main__':
     plt.close('all')
-    set_paths('Leyre')  #molano #Leyre
+    set_paths('molano')  #molano #Leyre
     # set_paths('Manuel')
     plt_stg_vars = False
-    plt_stg_with_fourth = True
+    plt_stg_with_fourth = False
     plt_acc_vs_sess = False
     plt_perf_stage_session = False
     plt_perf_stage_trial = False
@@ -1259,7 +1261,7 @@ if __name__ == '__main__':
     # 'dataset_N01' (subject from N01 to N18)
     # 'dataset_N19' (subject from N19 to N28)
     # 'dataset_C17' (subject from C17 to C22)
-    df_trials, df_params, subj_unq = load_data(dataset='C17')  # N01 N19 C17
+    df_trials, df_params, subj_unq = load_data(dataset='N19')  # N01 N19 C17
     if plt_stg_vars:
         # PLOT MOTOR AND DELAY VARIABLES ACROSS TRIALS FOR ALL THE SUBJECTS
         plot_final_stage_motor_delay(subj_unq, df=df_trials,
@@ -1338,8 +1340,19 @@ if __name__ == '__main__':
     if plt_aha_mmnts:
         # PLOT TRIALS ACCURACY OF ALL THE SUBJECTS CONSIDERING MISSES
         # remove misses
-        dataframe_4stage = dataframes_joint(df_trials, df_params, subj_unq)
-        df_trials_without_misses = remove_misses(dataframe_4stage)
-        for i_s, sbj in enumerate(subj_unq):
-            aha_moments(sbj, df_trials_without_misses, index_event=None,
-                        figsize=(6, 3))
+        learning_time = []
+        learned_mat = []
+        for exps in ['N01', 'N19', 'C17']:
+            df_trials, df_params, subj_unq = load_data(dataset=exps)
+            dataframe_4stage = dataframes_joint(df_trials, df_params, subj_unq)
+            df_trials_without_misses = remove_misses(dataframe_4stage)
+            for i_s, sbj in enumerate(subj_unq):
+                learned, ev_not_l, ev_l, =\
+                    learned_categories(sbj, df_trials_without_misses,
+                                       index_event=None, figsize=(6, 3))
+                learned_mat.append(1*learned)
+                if learned:
+                    learning_time.append(ev_l-ev_not_l)
+        f, ax = plt.subplots(1, 2)
+        ax[0].hist(learned_mat)
+        ax[1].hist(learning_time)
