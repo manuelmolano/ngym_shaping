@@ -161,7 +161,7 @@ Medir la distancia mínima entre los periodos
 
 
 def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
-    ahas_dic_def = {'w_ahas': 10, 'w_perf': 50,
+    ahas_dic_def = {'w_ahas': 10, 'w_perf': 50,  # TODO: explore w_perf, bef_aft_diff, aha_th
                     'bef_aft_diff': 0.3, 'aha_th': 0.69, 'w_explore': 100}
     ahas_dic_def.update(aha_dic)
     prob_right = 0
