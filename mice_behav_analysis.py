@@ -666,7 +666,7 @@ def vertical_line_session(ax, df, sbj):
         ax.axvline(i, color='gray', linewidth=0.5)
 
 
-def learned_categories(sbj, df, index_event=None, color_ev='',
+def learned_categories(sbj, df, index_event=None, color_ev='', verbose=False,
                        figsize=(8, 4), ax=None, plt_sess=True, stage=1):
     """
     The function plots accuracy over trials for every subject, showing
@@ -730,18 +730,20 @@ def learned_categories(sbj, df, index_event=None, color_ev='',
             gt_list.append(gts)
         return hit_list, xs_list, stage_list, gt_list
 
-    # aha_dic = {'w_ahas': 10, 'w_perf': 50,
-    #            'perf_bef_aft': [.55, .6], 'aha_th': 0.79, 'w_explore': 100}
     hit_sbj, xs_sbj, color_sbj, gt_sbj = get_trial_info(df, subj=sbj)
     hit_sbj = hit_sbj[color_sbj == stage-1]
-    learned, ev_not_l, ev_l = arl.learned(perf=hit_sbj)
-    plt.title(sbj+'  '+str(learned)+'  '+str(ev_not_l)+'-'+str(ev_l))
-    # gt_sbj = gt_sbj[color_sbj == stage-1]
-    # stg_mat = np.ones_like(hit_sbj)
-    # aha_data = {'aha_mmts': [], 'prev_prfs': [], 'post_prfs': [],
-    #             'gt_patterns': [], 'perf_patterns': [], 'prob_right': []}
-    # arl.get_ahas(stage=stg_mat, perf=hit_sbj, gt=gt_sbj, aha_data=aha_data,
-    #              verbose=True, **aha_dic)
+    # LEARNING TIME
+    learned, ev_not_l, ev_l = arl.learned(perf=hit_sbj, verbose=verbose)
+    if verbose:
+        plt.title(sbj+'  '+str(learned)+'  '+str(ev_not_l)+'-'+str(ev_l))
+
+    # AHA-MOMENTS
+    gt_sbj = gt_sbj[color_sbj == stage-1]
+    stg_mat = np.ones_like(hit_sbj)
+    aha_data = {'aha_mmts': [], 'prev_prfs': [], 'post_prfs': [],
+                'gt_patterns': [], 'perf_patterns': [], 'prob_right': []}
+    arl.get_ahas(stage=stg_mat, perf=hit_sbj, gt=gt_sbj, aha_data=aha_data,
+                 verbose=True)
     return learned, ev_not_l, ev_l
 
 
@@ -1246,7 +1248,7 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 ### HINT: MAIN
 if __name__ == '__main__':
     plt.close('all')
-    set_paths('Leyre')  #molano #Leyre
+    set_paths('molano')  #molano #Leyre
     # set_paths('Manuel')
     plt_stg_vars = False
     plt_stg_with_fourth = False
