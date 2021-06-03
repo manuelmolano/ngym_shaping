@@ -1358,6 +1358,8 @@ if __name__ == '__main__':
         ax[0].set_title('Subjects that learn (1 learn, 0 not)')
         ax[1].hist(learning_time,10)
         ax[1].set_title('Number of trials to learn')
+        ax[1].set_xlabel('Trials')
+        ax[1].set_ylabel('Subjects')
         min(learning_time)
         
         
