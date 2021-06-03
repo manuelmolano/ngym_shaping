@@ -148,6 +148,8 @@ Medir la distancia mínima entre los periodos
     ax.plot(perf_conv, label='Convolve perf w='+str(w_perf))
     ax.plot([ev_not_l, ev_not_l], [0, 1], 'c', label='Not learned end')
     ax.plot([ev_l, ev_l], [0, 1], 'm', label='learned start')
+    ax.axhline(y=perf_bef_aft[0], color='c', linestyle='--')
+    ax.axhline(y=perf_bef_aft[1], color='m', linestyle='--')
     ax.legend()
     learned = False if (ev_l is None or ev_not_l is None or ev_l <= ev_not_l)\
         else True

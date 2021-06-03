@@ -1246,7 +1246,7 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 ### HINT: MAIN
 if __name__ == '__main__':
     plt.close('all')
-    set_paths('molano')  #molano #Leyre
+    set_paths('Leyre')  #molano #Leyre
     # set_paths('Manuel')
     plt_stg_vars = False
     plt_stg_with_fourth = False
@@ -1342,7 +1342,7 @@ if __name__ == '__main__':
         # remove misses
         learning_time = []
         learned_mat = []
-        for exps in ['N01', 'N19', 'C17']:
+        for exps in ['N01']:   # , 'N19', 'C17'
             df_trials, df_params, subj_unq = load_data(dataset=exps)
             dataframe_4stage = dataframes_joint(df_trials, df_params, subj_unq)
             df_trials_without_misses = remove_misses(dataframe_4stage)
@@ -1355,4 +1355,11 @@ if __name__ == '__main__':
                     learning_time.append(ev_l-ev_not_l)
         f, ax = plt.subplots(1, 2)
         ax[0].hist(learned_mat)
-        ax[1].hist(learning_time)
+        ax[0].set_title('Subjects that learn (1 learn, 0 not)')
+        ax[1].hist(learning_time,10)
+        ax[1].set_title('Number of trials to learn')
+        min(learning_time)
+        
+        
+        
+        
