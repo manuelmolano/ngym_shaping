@@ -103,7 +103,7 @@ def data_extraction(folder, metrics, w_conv_perf=500, conv=[1, 0]):
     return metrics, data_flag
 
 
-def learned(perf, **params):
+def learned(perf, verbose=False, **params):
     """
 Hacer un smoothing (np.convolve) con una ventana muy larga.
 Hacer un histograma con los valores del factor resultante para ver si 
@@ -143,14 +143,14 @@ Medir la distancia mínima entre los periodos
     ev_not_l = get_event(trace=not_learned, frst_lst='first')
     learned = 1*(perf_conv > perf_bef_aft[1])
     ev_l = get_event(trace=learned, frst_lst='last')
-
-    f, ax = plt.subplots(1, 1)
-    ax.plot(perf_conv, label='Convolve perf w='+str(w_perf))
-    ax.plot([ev_not_l, ev_not_l], [0, 1], 'c', label='Not learned end')
-    ax.plot([ev_l, ev_l], [0, 1], 'm', label='learned start')
-    ax.axhline(y=perf_bef_aft[0], color='c', linestyle='--')
-    ax.axhline(y=perf_bef_aft[1], color='m', linestyle='--')
-    ax.legend()
+    if verbose:
+        f, ax = plt.subplots(1, 1)
+        ax.plot(perf_conv, label='Convolve perf w='+str(w_perf))
+        ax.plot([ev_not_l, ev_not_l], [0, 1], 'c', label='Not learned end')
+        ax.plot([ev_l, ev_l], [0, 1], 'm', label='learned start')
+        ax.axhline(y=perf_bef_aft[0], color='c', linestyle='--')
+        ax.axhline(y=perf_bef_aft[1], color='m', linestyle='--')
+        ax.legend()
     learned = False if (ev_l is None or ev_not_l is None or ev_l <= ev_not_l)\
         else True
     return learned, ev_not_l, ev_l
@@ -161,14 +161,14 @@ Medir la distancia mínima entre los periodos
 
 
 def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
-    ahas_dic_def = {'w_ahas': 10, 'w_perf': 500,
-                    'perf_bef_aft': [.55, .6], 'aha_th': 0.69, 'w_explore': 100}
+    ahas_dic_def = {'w_ahas': 10, 'w_perf': 50,  # TODO: explore w_perf, bef_aft_diff, aha_th
+                    'bef_aft_diff': 0.3, 'aha_th': 0.69, 'w_explore': 100}
     ahas_dic_def.update(aha_dic)
     prob_right = 0
     w_ahas = ahas_dic_def['w_ahas']
     w_perf = ahas_dic_def['w_perf']
     perf_th = ahas_dic_def['aha_th']
-    perf_bef_aft = ahas_dic_def['perf_bef_aft']
+    bef_aft_diff = ahas_dic_def['bef_aft_diff']
     w_explore = ahas_dic_def['w_explore']
     no_shaping = len(np.unique(stage)) == 1 and 4 in stage
     if 1 in stage or no_shaping:
@@ -182,40 +182,40 @@ def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
         if verbose:
             plt.figure()
             # plt.title(folder)
-            plt.plot(perf_stg_1, '-+')
-            plt.plot(ahas, '-+')
-            plt.plot(perf)
-            plt.plot(np.convolve(perf_stg_1, np.ones((500,))/500,
-                                 mode='valid'))
+            # plt.plot(perf_stg_1, '-+')
+            plt.plot(ahas, '-+', label='ahas')
+            plt.plot(perf, label='perf')
+            # plt.plot(np.convolve(perf_stg_1, np.ones((500,))/500,
+            #                      mode='valid'))
         aha_indx = np.where(ahas > perf_th)[0]
         if len(aha_indx) > 0:
-            aha_diff = np.diff(aha_indx)
-            aha_diff = np.insert(aha_diff, 0, w_ahas+1)
-            aha_indx = aha_indx[aha_diff > w_ahas]
+            prev_ai = -10e6
             for a_i in aha_indx:
                 prev_perf = np.mean(perf_stg_1[a_i-w_perf:a_i])
                 post_perf = np.mean(perf_stg_1[a_i+w_ahas:
                                                a_i+w_ahas+w_perf])
                 aha_data['prev_prfs'].append(prev_perf)
                 aha_data['post_prfs'].append(post_perf)
-                # plt.plot([a_i, a_i], [0, 1], '--m')
-                if prev_perf <= perf_bef_aft[0] and\
-                   post_perf >= perf_bef_aft[1]:
+                # if verbose:
+                #     plt.plot([a_i, a_i], [0, 1], '--m')
+                if prev_perf <= post_perf - bef_aft_diff and a_i > prev_ai+w_perf:
+                    prev_ai = a_i
                     aha_data['aha_mmts'].append(a_i)
                     if verbose:
-                        # plt.plot([a_i, a_i], [0, 1], '--k')
+                        plt.plot([a_i, a_i], [0, 1], '--k')
                         print('AHA MOMENT')
                         print(gt[a_i-w_perf:a_i+w_ahas+w_perf])
                         print('**')
                     aha_data['gt_patterns'].append(gt[a_i-w_perf:
                                                       a_i+w_ahas+w_perf])
                     aha_data['perf_patterns'].append(perf_stg_1[a_i-w_perf:
-                                                    a_i+w_ahas+w_perf])
+                                                                a_i+w_ahas+w_perf])
                     # find probabilities of right before the aha window
                     right_number = np.sum(gt[a_i-w_explore:a_i] == 1)
                     prob_right = right_number/len(gt[a_i-w_explore:a_i])
                     aha_data['prob_right'].append(prob_right)
     return aha_data
+
 
 def aha_moment(folder, aha_data={}, verbose=True, conv=[1], **aha_dic):
     """ Extract data saved during training. metrics: dict containing
