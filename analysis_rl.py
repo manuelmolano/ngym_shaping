@@ -103,7 +103,7 @@ def data_extraction(folder, metrics, w_conv_perf=500, conv=[1, 0]):
     return metrics, data_flag
 
 
-def learned(perf, verbose=False, **params):
+def learned(perf, verbose=True, **params):
     """
 Hacer un smoothing (np.convolve) con una ventana muy larga.
 Hacer un histograma con los valores del factor resultante para ver si 
@@ -144,13 +144,18 @@ Medir la distancia mínima entre los periodos
     learned = 1*(perf_conv > perf_bef_aft[1])
     ev_l = get_event(trace=learned, frst_lst='last')
     if verbose:
-        f, ax = plt.subplots(1, 1)
-        ax.plot(perf_conv, label='Convolve perf w='+str(w_perf))
-        ax.plot([ev_not_l, ev_not_l], [0, 1], 'c', label='Not learned end')
-        ax.plot([ev_l, ev_l], [0, 1], 'm', label='learned start')
+        f, ax = plt.subplots(1, 1, figsize=(5,3))
+        ax.plot(perf_conv, label='Performance')
+        ax.plot([ev_not_l, ev_not_l], [0, 1], 'c', label='Start of learning period')
+        ax.plot([ev_l, ev_l], [0, 1], 'm', label='End of learning period')
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
         ax.axhline(y=perf_bef_aft[0], color='c', linestyle='--')
         ax.axhline(y=perf_bef_aft[1], color='m', linestyle='--')
-        ax.legend()
+        ax.set_ylim(0.4,1)
+        ax.set_xlabel('Trials')
+        ax.set_ylabel('Mean performance')
+        ax.legend(loc='upper left')
     learned = False if (ev_l is None or ev_not_l is None or ev_l <= ev_not_l)\
         else True
     return learned, ev_not_l, ev_l
@@ -162,7 +167,7 @@ Medir la distancia mínima entre los periodos
 
 def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
     ahas_dic_def = {'w_ahas': 10, 'w_perf': 50,  # TODO: explore w_perf, bef_aft_diff, aha_th
-                    'bef_aft_diff': 0.3, 'aha_th': 0.69, 'w_explore': 100}
+                    'bef_aft_diff': 0.25, 'aha_th': 0.75, 'w_explore': 100}
     ahas_dic_def.update(aha_dic)
     prob_right = 0
     w_ahas = ahas_dic_def['w_ahas']

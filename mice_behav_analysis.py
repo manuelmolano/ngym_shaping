@@ -666,7 +666,7 @@ def vertical_line_session(ax, df, sbj):
         ax.axvline(i, color='gray', linewidth=0.5)
 
 
-def learned_categories(sbj, df, index_event=None, color_ev='', verbose=False,
+def learned_categories(sbj, df, index_event=None, color_ev='', verbose=True,
                        figsize=(8, 4), ax=None, plt_sess=True, stage=1):
     """
     The function plots accuracy over trials for every subject, showing
@@ -1248,7 +1248,7 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 ### HINT: MAIN
 if __name__ == '__main__':
     plt.close('all')
-    set_paths('molano')  #molano #Leyre
+    set_paths('Leyre')  #molano #Leyre
     # set_paths('Manuel')
     plt_stg_vars = False
     plt_stg_with_fourth = False
@@ -1358,10 +1358,15 @@ if __name__ == '__main__':
         f, ax = plt.subplots(1, 2)
         ax[0].hist(learned_mat)
         ax[0].set_title('Subjects that learn (1 learn, 0 not)')
-        ax[1].hist(learning_time,10)
-        ax[1].set_title('Number of trials to learn')
-        ax[1].set_xlabel('Trials')
-        ax[1].set_ylabel('Subjects')
+        ax[0].spines['right'].set_visible(False)
+        ax[0].spines['top'].set_visible(False)
+        ax[1].hist(learning_time,8)
+        ax[1].spines['right'].set_visible(False)
+        ax[1].spines['top'].set_visible(False)
+        ax[1].set_xlabel('Time to learn')
+        ax[1].set_ylabel('Counts')
+        np.mean(learning_time)
+        np.std(learning_time)
         min(learning_time)
         
         
