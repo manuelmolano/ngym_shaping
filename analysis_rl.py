@@ -166,8 +166,8 @@ Medir la distancia mínima entre los periodos
 
 
 def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
-    ahas_dic_def = {'w_ahas': 10, 'w_perf': 50,  # TODO: explore w_perf, bef_aft_diff, aha_th
-                    'bef_aft_diff': 0.25, 'aha_th': 0.75, 'w_explore': 100}
+    ahas_dic_def = {'w_ahas': 10, 'w_perf': 100,  # TODO: explore w_perf, bef_aft_diff, aha_th
+                    'bef_aft_diff': 0.2, 'aha_th': 0.75, 'w_explore': 100}
     ahas_dic_def.update(aha_dic)
     prob_right = 0
     w_ahas = ahas_dic_def['w_ahas']
@@ -201,13 +201,13 @@ def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
                                                a_i+w_ahas+w_perf])
                 aha_data['prev_prfs'].append(prev_perf)
                 aha_data['post_prfs'].append(post_perf)
-                # if verbose:
-                #     plt.plot([a_i, a_i], [0, 1], '--m')
+                if verbose:
+                    plt.plot([a_i, a_i], [0, 1], '--m', lw=0.5)
                 if prev_perf <= post_perf - bef_aft_diff and a_i > prev_ai+w_perf:
                     prev_ai = a_i
                     aha_data['aha_mmts'].append(a_i)
                     if verbose:
-                        plt.plot([a_i, a_i], [0, 1], '--k')
+                        plt.plot([a_i, a_i], [0, 1], '--k', lw=2)
                         print('AHA MOMENT')
                         print(gt[a_i-w_perf:a_i+w_ahas+w_perf])
                         print('**')

@@ -736,15 +736,21 @@ def learned_categories(sbj, df, index_event=None, color_ev='', verbose=True,
     learned, ev_not_l, ev_l = arl.learned(perf=hit_sbj, verbose=verbose)
     if verbose:
         plt.title(sbj+'  '+str(learned)+'  '+str(ev_not_l)+'-'+str(ev_l))
+        f = plt.gcf()
+        sv_fig(f=f, name=sbj+'_learned')
 
     # AHA-MOMENTS
     gt_sbj = gt_sbj[color_sbj == stage-1]
     stg_mat = np.ones_like(hit_sbj)
     aha_data = {'aha_mmts': [], 'prev_prfs': [], 'post_prfs': [],
                 'gt_patterns': [], 'perf_patterns': [], 'prob_right': []}
-    arl.get_ahas(stage=stg_mat, perf=hit_sbj, gt=gt_sbj, aha_data=aha_data,
-                 verbose=True)
-    return learned, ev_not_l, ev_l
+    aha_data = arl.get_ahas(stage=stg_mat, perf=hit_sbj, gt=gt_sbj,
+                            aha_data=aha_data, verbose=verbose)
+    if verbose:
+        plt.title(sbj+'  number of ahas: '+str(len(aha_data['aha_mmts'])))
+        f = plt.gcf()
+        sv_fig(f=f, name=sbj+'_aha_mmnts')
+    return learned, ev_not_l, ev_l, aha_data
 
 
 ### HINT: FUNCTIONS TO PLOT
@@ -1248,7 +1254,7 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 ### HINT: MAIN
 if __name__ == '__main__':
     plt.close('all')
-    set_paths('Leyre')  #molano #Leyre
+    set_paths('molano')  #molano #Leyre
     # set_paths('Manuel')
     plt_stg_vars = False
     plt_stg_with_fourth = False
