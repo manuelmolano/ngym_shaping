@@ -188,8 +188,11 @@ def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
             plt.figure()
             # plt.title(folder)
             # plt.plot(perf_stg_1, '-+')
-            plt.plot(ahas, '-+', label='ahas')
-            plt.plot(perf, label='perf')
+            plt.plot(ahas, '-+', label='Convolution window = 10')
+            plt.plot(perf, label='Convolution window = 100')
+            plt.legend()
+            plt.xlabel('Trials')
+            plt.ylabel('Mean performance')
             # plt.plot(np.convolve(perf_stg_1, np.ones((500,))/500,
             #                      mode='valid'))
         aha_indx = np.where(ahas > perf_th)[0]
@@ -201,11 +204,12 @@ def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
                                                a_i+w_ahas+w_perf])
                 aha_data['prev_prfs'].append(prev_perf)
                 aha_data['post_prfs'].append(post_perf)
-                if verbose:
-                    plt.plot([a_i, a_i], [0, 1], '--m', lw=0.5)
+                # if verbose:
+                #     plt.plot([a_i, a_i], [0, 1], '--m', lw=0.5)
                 if prev_perf <= post_perf - bef_aft_diff and a_i > prev_ai+w_perf:
                     prev_ai = a_i
                     aha_data['aha_mmts'].append(a_i)
+                    
                     if verbose:
                         plt.plot([a_i, a_i], [0, 1], '--k', lw=2)
                         print('AHA MOMENT')

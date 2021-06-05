@@ -1254,7 +1254,7 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 ### HINT: MAIN
 if __name__ == '__main__':
     plt.close('all')
-    set_paths('molano')  #molano #Leyre
+    set_paths('Leyre')  #molano #Leyre
     # set_paths('Manuel')
     plt_stg_vars = False
     plt_stg_with_fourth = False
@@ -1350,17 +1350,31 @@ if __name__ == '__main__':
         # remove misses
         learning_time = []
         learned_mat = []
+        prob_right = []
+        joint_info_aha = {}
         for exps in ['N01']:   # , 'N19', 'C17'
             df_trials, df_params, subj_unq = load_data(dataset=exps)
             dataframe_4stage = dataframes_joint(df_trials, df_params, subj_unq)
             df_trials_without_misses = remove_misses(dataframe_4stage)
             for i_s, sbj in enumerate(subj_unq):
-                learned, ev_not_l, ev_l, =\
+                learned, ev_not_l, ev_l, aha_data =\
                     learned_categories(sbj, df_trials_without_misses,
                                        index_event=None, figsize=(6, 3))
+                joint_info_aha[sbj] = aha_data['aha_mmts']
+                subj_length =  [len(x) for x in joint_info_aha.values()]
+                # joint_info_aha = np.concatenate(sbj, np.array(aha_data['aha_mmts']))
                 learned_mat.append(1*learned)
+                prob_right.append(1*aha_data['prob_right'])
                 if learned:
                     learning_time.append(ev_l-ev_not_l)
+        # probabilities of right
+        f, ax = plt.subplots(1, 1)
+        ax.hist(prob_right)
+        ax.set_title('Probabilities of choosing right')
+        # number of aha moments for each subj
+        f, ax = plt.subplots(1, 1)
+        ax.hist(subj_length)
+        ax.set_title('Number of aha moments for each subject')
         f, ax = plt.subplots(1, 2)
         ax[0].hist(learned_mat)
         ax[0].set_title('Subjects that learn (1 learn, 0 not)')
