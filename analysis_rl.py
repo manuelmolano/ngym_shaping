@@ -103,7 +103,7 @@ def data_extraction(folder, metrics, w_conv_perf=500, conv=[1, 0]):
     return metrics, data_flag
 
 
-def learned(perf, verbose=True, **params):
+def learned(perf, learn_data, verbose=True, **params):
     """
 Hacer un smoothing (np.convolve) con una ventana muy larga.
 Hacer un histograma con los valores del factor resultante para ver si 
@@ -133,10 +133,10 @@ Medir la distancia mínima entre los periodos
         elif frst_lst == 'last' and len(up_idx) > 0:
             ev = up_idx[-1] if (up_idx[-1] > dwn_idx).all() else None
         return ev
-    ahas_dic_def = {'w_perf': 500, 'perf_bef_aft': [.6, .75]}
-    ahas_dic_def.update(params)
-    w_perf = ahas_dic_def['w_perf']
-    perf_bef_aft = ahas_dic_def['perf_bef_aft']
+    learn_dic_def = {'w_perf': 500, 'perf_bef_aft': [.6, .75]}
+    learn_dic_def.update(params)
+    w_perf = learn_dic_def['w_perf']
+    perf_bef_aft = learn_dic_def['perf_bef_aft']
     perf_conv = np.convolve(perf, np.ones((w_perf,))/w_perf, mode='valid')
 
     not_learned = 1*(perf_conv < perf_bef_aft[0])
@@ -158,16 +158,40 @@ Medir la distancia mínima entre los periodos
         ax.legend(loc='upper left')
     learned = False if (ev_l is None or ev_not_l is None or ev_l <= ev_not_l)\
         else True
-    return learned, ev_not_l, ev_l
+    learn_data['learned'].append(learned)
+    learn_data['ev_not_l'].append(ev_not_l)
+    learn_data['ev_l'].append(ev_l)
+    return learn_data
     # ax[1].hist(perf_conv, 50)
     # ax[1].plot([perf_bef_aft[0], perf_bef_aft[0]], [0, 100], 'c')
     # ax[1].plot([perf_bef_aft[1], perf_bef_aft[1]], [0, 100], 'm')
     # asd
 
 
+def learning(folder, learn_data={}, verbose=True, conv=[1], **aha_dic):
+    """ Extract data saved during training. metrics: dict containing
+    the keys of the data to loaextractd.
+    conv: list of the indexes of the metrics to convolve."""
+    data = put_together_files(folder)  # load all data from the same folder
+    data_flag = True
+    if data:
+        # extract each of the metrics
+        if 'real_performance' in data.keys():
+            perf = data['real_performance']
+            stage = data['stage']
+            perf = perf[stage == 1]
+            learn_data = learned(perf=perf, learn_data=learn_data,
+                                 **aha_dic)
+    else:
+        if verbose:
+            print('No data in: ', folder)
+        data_flag = False
+    return learn_data, data_flag
+
+
 def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
     ahas_dic_def = {'w_ahas': 10, 'w_perf': 100,  # TODO: explore w_perf, bef_aft_diff, aha_th
-                    'bef_aft_diff': 0.2, 'aha_th': 0.75, 'w_explore': 100}
+                    'bef_aft_diff': 0.2, 'aha_th': 0.75, 'w_explore': 10}
     ahas_dic_def.update(aha_dic)
     prob_right = 0
     w_ahas = ahas_dic_def['w_ahas']
@@ -221,8 +245,13 @@ def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
                                                                 a_i+w_ahas+w_perf])
                     # find probabilities of right before the aha window
                     right_number = np.sum(gt[a_i-w_explore:a_i] == 1)
-                    prob_right = right_number/len(gt[a_i-w_explore:a_i])
+                    prob_right = right_number/w_explore
                     aha_data['prob_right'].append(prob_right)
+                    # find probabilities of right during the aha window
+                    right_number = np.sum(gt[a_i:a_i+w_ahas] == 1)
+                    prob_right = right_number/w_ahas
+                    aha_data['prob_right_aha'].append(prob_right)
+
     return aha_data
 
 
@@ -546,7 +575,9 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500, perf_th=0.6,
         val_index = []  # stores values for each instance
         metrics = {k: [] for k in keys}
         aha_data = {'aha_mmts': [], 'prev_prfs': [], 'post_prfs': [],
-                    'gt_patterns': [], 'perf_patterns': [], 'prob_right': []}
+                    'gt_patterns': [], 'perf_patterns': [], 'prob_right': [],
+                    'prob_right_aha': []}
+        learn_data = {'learned': [], 'ev_not_l': [], 'ev_l': []}
         keys = np.array(keys)
         for ind_f, file in enumerate(files):
             print(file)
@@ -556,6 +587,8 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500, perf_th=0.6,
                                             w_conv_perf=w_conv_perf,
                                             conv=[1, 0])
             aha_data, flag = aha_moment(folder=file, aha_data=aha_data,
+                                        **ahas_dic)
+            learn_data, flag = learning(folder=file, learn_data=learn_data,
                                         **ahas_dic)
 
             # store values
@@ -799,8 +832,8 @@ if __name__ == '__main__':
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_40/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_20/'
-    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/shaping_5_0.1/'
-    # sv_f = '/home/manuel/shaping/results_280421/shaping_5_0.1/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/shaping_5_0.1/'
+    sv_f = '/home/manuel/shaping/results_280421/shaping_5_0.1/'
     # sv_f = '/home/molano/shaping/results_280421/shaping_5_0.1/'
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
     TH = 0.6

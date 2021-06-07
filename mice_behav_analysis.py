@@ -85,6 +85,16 @@ def sv_fig(f, name):
     f.savefig(SV_FOLDER+'/'+name+'.png', dpi=400, bbox_inches='tight')
 
 
+def get_hist(data, bins=None):
+    if bins is not None:
+        hist, plt_bins = np.histogram(data, bins=bins)
+    else:
+        hist, plt_bins = np.histogram(data)
+    hist = hist/np.sum(hist)
+    plt_bins = plt_bins[:-1] + (plt_bins[1]-plt_bins[0])/2
+    return hist, plt_bins
+
+
 ### HINT: FUNCTIONS TO OBTAIN VARIABLES
 def accuracy_sessions_subj(df, subj, stg=None):
     """
@@ -666,7 +676,7 @@ def vertical_line_session(ax, df, sbj):
         ax.axvline(i, color='gray', linewidth=0.5)
 
 
-def learned_categories(sbj, df, index_event=None, color_ev='', verbose=True,
+def learned_categories(sbj, df, index_event=None, color_ev='', verbose=False,
                        figsize=(8, 4), ax=None, plt_sess=True, stage=1):
     """
     The function plots accuracy over trials for every subject, showing
@@ -733,9 +743,14 @@ def learned_categories(sbj, df, index_event=None, color_ev='', verbose=True,
     hit_sbj, xs_sbj, color_sbj, gt_sbj = get_trial_info(df, subj=sbj)
     hit_sbj = hit_sbj[color_sbj == stage-1]
     # LEARNING TIME
-    learned, ev_not_l, ev_l = arl.learned(perf=hit_sbj, verbose=verbose)
+    learn_data = {'learned': [], 'ev_not_l': [], 'ev_l': []}
+    learn_data = arl.learned(perf=hit_sbj, learn_data=learn_data,
+                             verbose=verbose)
     if verbose:
-        plt.title(sbj+'  '+str(learned)+'  '+str(ev_not_l)+'-'+str(ev_l))
+        name = sbj
+        for k in learn_data:
+            name += k+': '+str(learn_data[k])
+        plt.title(name)
         f = plt.gcf()
         sv_fig(f=f, name=sbj+'_learned')
 
@@ -743,14 +758,15 @@ def learned_categories(sbj, df, index_event=None, color_ev='', verbose=True,
     gt_sbj = gt_sbj[color_sbj == stage-1]
     stg_mat = np.ones_like(hit_sbj)
     aha_data = {'aha_mmts': [], 'prev_prfs': [], 'post_prfs': [],
-                'gt_patterns': [], 'perf_patterns': [], 'prob_right': []}
+                'gt_patterns': [], 'perf_patterns': [], 'prob_right': [],
+                'prob_right_aha': []}
     aha_data = arl.get_ahas(stage=stg_mat, perf=hit_sbj, gt=gt_sbj,
                             aha_data=aha_data, verbose=verbose)
     if verbose:
         plt.title(sbj+'  number of ahas: '+str(len(aha_data['aha_mmts'])))
         f = plt.gcf()
         sv_fig(f=f, name=sbj+'_aha_mmnts')
-    return learned, ev_not_l, ev_l, aha_data
+    return learn_data, aha_data
 
 
 ### HINT: FUNCTIONS TO PLOT
@@ -759,7 +775,7 @@ def learned_categories(sbj, df, index_event=None, color_ev='', verbose=True,
 def plot_xvar_VS_yvar(df, x_var, y_var, col, xlabel='x_var', ylabel='y_var',
                       name='X variable VS Y variable'):
     """
-    plot x_var VS y_var.
+    Plot x_var VS y_var.
 
     Parameters
     ----------
@@ -1254,7 +1270,7 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 ### HINT: MAIN
 if __name__ == '__main__':
     plt.close('all')
-    set_paths('Leyre')  #molano #Leyre
+    set_paths('Manuel')  #molano #Leyre
     # set_paths('Manuel')
     plt_stg_vars = False
     plt_stg_with_fourth = False
@@ -1269,7 +1285,7 @@ if __name__ == '__main__':
     # 'dataset_N01' (subject from N01 to N18)
     # 'dataset_N19' (subject from N19 to N28)
     # 'dataset_C17' (subject from C17 to C22)
-    df_trials, df_params, subj_unq = load_data(dataset='N19')  # N01 N19 C17
+    df_trials, df_params, subj_unq = load_data(dataset='N01')  # N01 N19 C17
     if plt_stg_vars:
         # PLOT MOTOR AND DELAY VARIABLES ACROSS TRIALS FOR ALL THE SUBJECTS
         plot_final_stage_motor_delay(subj_unq, df=df_trials,
@@ -1351,36 +1367,60 @@ if __name__ == '__main__':
         learning_time = []
         learned_mat = []
         prob_right = []
+        prob_right_aha = []
         joint_info_aha = {}
         for exps in ['N01']:   # , 'N19', 'C17'
             df_trials, df_params, subj_unq = load_data(dataset=exps)
             dataframe_4stage = dataframes_joint(df_trials, df_params, subj_unq)
             df_trials_without_misses = remove_misses(dataframe_4stage)
             for i_s, sbj in enumerate(subj_unq):
-                learned, ev_not_l, ev_l, aha_data =\
+                learn_data, aha_data =\
                     learned_categories(sbj, df_trials_without_misses,
                                        index_event=None, figsize=(6, 3))
                 joint_info_aha[sbj] = aha_data['aha_mmts']
-                subj_length =  [len(x) for x in joint_info_aha.values()]
-                # joint_info_aha = np.concatenate(sbj, np.array(aha_data['aha_mmts']))
-                learned_mat.append(1*learned)
-                prob_right.append(1*aha_data['prob_right'])
-                if learned:
-                    learning_time.append(ev_l-ev_not_l)
+                learned_mat.append(1*learn_data['learned'][0])
+                prob_right += aha_data['prob_right']
+                prob_right_aha += aha_data['prob_right_aha']
+                if learn_data['learned'][0]:
+                    learning_time.append(learn_data['ev_l'][0] -
+                                         learn_data['ev_not_l'][0])
+        num_sh = 100000
+        bins = np.linspace(0, 1, 10)
         # probabilities of right
+        w = 10
+        r_m = np.random.rand(num_sh, w)
+        r_m = np.sum(r_m > 0.5, axis=1)/w
+        prob_R_chance, plt_bins = get_hist(r_m, bins=bins)
         f, ax = plt.subplots(1, 1)
-        ax.hist(prob_right)
-        ax.set_title('Probabilities of choosing right')
+        ax.plot(plt_bins, prob_R_chance)
+        prob_R, plt_bins = get_hist(prob_right, bins=bins)
+        ax.plot(plt_bins, prob_R)
+        ax.set_title('Probabilities of ground truth=right before aha-moment')
+        # probabilities of right aha
+        w = 10
+        r_m = np.random.rand(num_sh, w)
+        r_m = np.sum(r_m > 0.5, axis=1)/w
+        prob_R_chance, plt_bins = get_hist(r_m, bins=bins)
+        f, ax = plt.subplots(1, 1)
+        ax.plot(plt_bins, prob_R_chance)
+        prob_R, plt_bins = get_hist(prob_right_aha, bins=bins)
+        ax.plot(plt_bins, prob_R)
+        ax.set_title('Probabilities of ground truth=right during aha-moment')
+
         # number of aha moments for each subj
+        subj_length = [len(x) for x in joint_info_aha.values()]
         f, ax = plt.subplots(1, 1)
-        ax.hist(subj_length)
+        ax.hist(subj_length, bins=np.arange(6)-0.5)
+        print('Mean/std number of aha-moments')
+        print(np.mean(subj_length))
+        print(np.std(subj_length))
         ax.set_title('Number of aha moments for each subject')
         f, ax = plt.subplots(1, 2)
         ax[0].hist(learned_mat)
         ax[0].set_title('Subjects that learn (1 learn, 0 not)')
         ax[0].spines['right'].set_visible(False)
         ax[0].spines['top'].set_visible(False)
-        ax[1].hist(learning_time,8)
+        ax[1].hist(learning_time, 6)
         ax[1].spines['right'].set_visible(False)
         ax[1].spines['top'].set_visible(False)
         ax[1].set_xlabel('Time to learn')
@@ -1388,7 +1428,3 @@ if __name__ == '__main__':
         np.mean(learning_time)
         np.std(learning_time)
         min(learning_time)
-        
-        
-        
-        
