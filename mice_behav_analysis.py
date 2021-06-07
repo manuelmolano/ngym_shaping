@@ -1420,7 +1420,7 @@ if __name__ == '__main__':
         ax[0].set_title('Subjects that learn (1 learn, 0 not)')
         ax[0].spines['right'].set_visible(False)
         ax[0].spines['top'].set_visible(False)
-        ax[1].hist(learning_time, 6)
+        ax[1].hist(learning_time, 8)
         ax[1].spines['right'].set_visible(False)
         ax[1].spines['top'].set_visible(False)
         ax[1].set_xlabel('Time to learn')

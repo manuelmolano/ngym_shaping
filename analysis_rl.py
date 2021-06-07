@@ -189,7 +189,7 @@ def learning(folder, learn_data={}, verbose=True, conv=[1], **aha_dic):
     return learn_data, data_flag
 
 
-def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
+def get_ahas(stage, perf, gt, aha_data, verbose=True, **aha_dic):
     ahas_dic_def = {'w_ahas': 10, 'w_perf': 100,  # TODO: explore w_perf, bef_aft_diff, aha_th
                     'bef_aft_diff': 0.2, 'aha_th': 0.75, 'w_explore': 10}
     ahas_dic_def.update(aha_dic)
@@ -535,7 +535,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500, perf_th=0.6,
                  ax_final=None, tag='th_stage', limit_tr=False, rerun=False,
                  f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
                  plt_ind_vals=True, plt_ind_traces=True, n_roll=5, name='',
-                 x=0, **ahas_dic):
+                 x=0, ahas_dic={}, learn_dic={}):
     """This function uses the data generated during training to analyze it
     and generate figures showing the results in function of the different
     values used for the third level variable (i.e. differen threshold values
@@ -589,13 +589,14 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500, perf_th=0.6,
             aha_data, flag = aha_moment(folder=file, aha_data=aha_data,
                                         **ahas_dic)
             learn_data, flag = learning(folder=file, learn_data=learn_data,
-                                        **ahas_dic)
+                                        **learn_dic)
 
             # store values
             if flag:
                 val_index.append(val)
         val_index = np.array(val_index)
         # AHA-MOMENT
+        # TODO: plot figures as for mice (line 1387 in mice_behav_...)
         aha_mmts = aha_data['aha_mmts']
         prev_prfs = aha_data['prev_prfs']
         post_prfs = aha_data['post_prfs']
@@ -837,8 +838,11 @@ if __name__ == '__main__':
     # sv_f = '/home/molano/shaping/results_280421/shaping_5_0.1/'
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
     TH = 0.6
-    ahas_dic = {'w_ahas': 10, 'w_perf': 500,
-                'perf_bef_aft': [.55, .6], 'aha_th': 0.69, 'w_explore': 100}
+    # TODO: tune perf_bef_aft, bef_aft_diff
+    ahas_dic = {'w_ahas': 10, 'w_perf': 100,
+                'bef_aft_diff': 0.2, 'aha_th': 0.75, 'w_explore': 10}
+
+    learn_dic = {'w_perf': 500, 'perf_bef_aft': [.6, .75]}
 
     plot_separate_figures = True
     plot_all_figs = True
@@ -857,7 +861,8 @@ if __name__ == '__main__':
                  final_ph=final_ph, ax_final=ax, perf_th=TH,
                  tag='pun', limit_tr=False, rerun=True,
                  f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
-                 plt_ind_vals=True, plt_ind_traces=True, **ahas_dic)
+                 plt_ind_vals=True, plt_ind_traces=True, ahas_dic=ahas_dic,
+                 learn_dic=learn_dic)
 
     # f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
     # f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
