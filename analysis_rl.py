@@ -212,8 +212,8 @@ def get_ahas(stage, perf, gt, aha_data, verbose=True, **aha_dic):
             plt.figure()
             # plt.title(folder)
             # plt.plot(perf_stg_1, '-+')
-            plt.plot(ahas, '-+', label='Convolution window = 10')
-            plt.plot(perf, label='Convolution window = 100')
+            plt.plot(ahas, '-+', label='Performance window = 10')
+            plt.plot(perf, label='Performance window = 1000')
             plt.legend()
             plt.xlabel('Trials')
             plt.ylabel('Mean performance')
@@ -301,6 +301,16 @@ def box_plot(data, ax, x, lw=.5, fliersize=4, color='k', widths=0.15):
     ax.set_title('Perfomance for different rollout values')
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
+
+
+def get_hist(data, bins=None):
+    if bins is not None:
+        hist, plt_bins = np.histogram(data, bins=bins)
+    else:
+        hist, plt_bins = np.histogram(data)
+    hist = hist/np.sum(hist)
+    plt_bins = plt_bins[:-1] + (plt_bins[1]-plt_bins[0])/2
+    return hist, plt_bins
 
 
 ### FUNCTIONS TO OBTAIN VARIABLES
@@ -596,7 +606,6 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500, perf_th=0.6,
                 val_index.append(val)
         val_index = np.array(val_index)
         # AHA-MOMENT
-        # TODO: plot figures as for mice (line 1387 in mice_behav_...)
         aha_mmts = aha_data['aha_mmts']
         prev_prfs = aha_data['prev_prfs']
         post_prfs = aha_data['post_prfs']
@@ -639,6 +648,60 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500, perf_th=0.6,
         final_perfs = [np.mean(p[-final_wind:])
                        for p in metrics['real_performance']]
         box_plot(data=final_perfs, ax=ax_final_perfs, x=x)
+        # TODO: plot figures as for mice (line 1387 in mice_behav_...)
+        num_sh = 100000
+        bins = np.linspace(0, 1, 10)
+        # probabilities of right
+        w = 10
+        r_m = np.random.rand(num_sh, w)
+        r_m = np.sum(r_m > 0.5, axis=1)/w
+        prob_R_chance, plt_bins = get_hist(r_m, bins=bins)
+        f, ax = plt.subplots(1, 1)
+        ax.plot(plt_bins, prob_R_chance)
+        prob_R, plt_bins = get_hist(prob_right, bins=bins)
+        ax.plot(plt_bins, prob_R)
+        ax.set_title('Probabilities of ground truth=right before aha-moment')
+        # probabilities of right aha
+        w = 10
+        r_m = np.random.rand(num_sh, w)
+        r_m = np.sum(r_m > 0.5, axis=1)/w
+        prob_R_chance, plt_bins = get_hist(r_m, bins=bins)
+        f, ax = plt.subplots(1, 1)
+        ax.plot(plt_bins, prob_R_chance)
+        prob_R, plt_bins = get_hist(prob_right, bins=bins)
+        ax.plot(plt_bins, prob_R)
+        ax.set_title('Probabilities of ground truth=right during aha-moment')
+
+        # number of aha moments for each subj
+        subj_length = [len(aha_mmts)]
+        f, ax = plt.subplots(1, 1, figsize=(4.5,5))
+        ax.hist(subj_length, bins=np.arange(6)-0.5)
+        ax.set_xlabel('Number of aha moments')
+        ax.set_ylabel('Number of subjects')
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        print('Mean/std number of aha-moments')
+        print(np.mean(subj_length))
+        print(np.std(subj_length))
+        ax.set_title('Number of aha moments for each subject')
+        f, ax = plt.subplots(1, 2)
+        learned_mat = learn_data
+        ax[0].hist(learned_mat)
+        ax[0].set_title('Subjects that learn (1 learn, 0 not)')
+        ax[0].spines['right'].set_visible(False)
+        ax[0].spines['top'].set_visible(False)
+        learning_time = []
+        learning_time.append(learn_data['ev_l'][0] -
+                              learn_data['ev_not_l'][0])
+        ax[1].hist(learning_time, 8)
+        ax[1].spines['right'].set_visible(False)
+        ax[1].spines['top'].set_visible(False)
+        ax[1].set_xlabel('Time to learn')
+        ax[1].set_ylabel('Counts')
+        np.mean(learning_time)
+        np.std(learning_time)
+        min(learning_time)
+
         for ind in range(len(names)):
             f, ax = plt.subplots(sharex=True, nrows=len(keys), ncols=1,
                                  figsize=(12, 12))
@@ -833,14 +896,14 @@ if __name__ == '__main__':
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_40/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_20/'
-    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/shaping_5_0.1/'
-    sv_f = '/home/manuel/shaping/results_280421/shaping_5_0.1/'
+    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/shaping_5_0.1/'
+    # sv_f = '/home/manuel/shaping/results_280421/shaping_5_0.1/'
     # sv_f = '/home/molano/shaping/results_280421/shaping_5_0.1/'
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
     TH = 0.6
     # TODO: tune perf_bef_aft, bef_aft_diff
-    ahas_dic = {'w_ahas': 10, 'w_perf': 100,
-                'bef_aft_diff': 0.2, 'aha_th': 0.75, 'w_explore': 10}
+    ahas_dic = {'w_ahas': 10, 'w_perf': 1000,
+                'bef_aft_diff': 0.12, 'aha_th': 0.65, 'w_explore': 10}
 
     learn_dic = {'w_perf': 500, 'perf_bef_aft': [.6, .75]}
 

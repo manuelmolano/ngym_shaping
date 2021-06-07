@@ -676,7 +676,7 @@ def vertical_line_session(ax, df, sbj):
         ax.axvline(i, color='gray', linewidth=0.5)
 
 
-def learned_categories(sbj, df, index_event=None, color_ev='', verbose=False,
+def learned_categories(sbj, df, index_event=None, color_ev='', verbose=True,
                        figsize=(8, 4), ax=None, plt_sess=True, stage=1):
     """
     The function plots accuracy over trials for every subject, showing
@@ -1270,7 +1270,7 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 ### HINT: MAIN
 if __name__ == '__main__':
     plt.close('all')
-    set_paths('Manuel')  #molano #Leyre
+    set_paths('Leyre')  #molano #Leyre
     # set_paths('Manuel')
     plt_stg_vars = False
     plt_stg_with_fourth = False
@@ -1409,8 +1409,12 @@ if __name__ == '__main__':
 
         # number of aha moments for each subj
         subj_length = [len(x) for x in joint_info_aha.values()]
-        f, ax = plt.subplots(1, 1)
+        f, ax = plt.subplots(1, 1, figsize=(2.5,3))
         ax.hist(subj_length, bins=np.arange(6)-0.5)
+        ax.set_xlabel('Number of aha moments')
+        ax.set_ylabel('Number of subjects')
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
         print('Mean/std number of aha-moments')
         print(np.mean(subj_length))
         print(np.std(subj_length))
