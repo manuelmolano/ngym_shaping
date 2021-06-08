@@ -189,7 +189,7 @@ def learning(folder, learn_data={}, verbose=True, conv=[1], **aha_dic):
     return learn_data, data_flag
 
 
-def get_ahas(stage, perf, gt, aha_data, verbose=True, **aha_dic):
+def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
     ahas_dic_def = {'w_ahas': 10, 'w_perf': 100,  # TODO: explore w_perf, bef_aft_diff, aha_th
                     'bef_aft_diff': 0.2, 'aha_th': 0.75, 'w_explore': 10}
     ahas_dic_def.update(aha_dic)
@@ -220,6 +220,9 @@ def get_ahas(stage, perf, gt, aha_data, verbose=True, **aha_dic):
             # plt.plot(np.convolve(perf_stg_1, np.ones((500,))/500,
             #                      mode='valid'))
         aha_indx = np.where(ahas > perf_th)[0]
+        min_num_trs = 100
+        aha_indx = aha_indx[aha_indx < len(perf_stg_1)-min_num_trs]
+        aha_indx = aha_indx[aha_indx > min_num_trs]
         if len(aha_indx) > 0:
             prev_ai = -10e6
             for a_i in aha_indx:
@@ -612,6 +615,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500, perf_th=0.6,
         gt_patterns = aha_data['gt_patterns']
         perf_patterns = aha_data['perf_patterns']
         prob_right = aha_data['prob_right']
+        prob_right_aha = aha_data['prob_right_aha']
         if len(aha_mmts) > 0:
             fig, ax1 = plt.subplots()
             colors = ['b', 'g']
@@ -668,13 +672,13 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500, perf_th=0.6,
         prob_R_chance, plt_bins = get_hist(r_m, bins=bins)
         f, ax = plt.subplots(1, 1)
         ax.plot(plt_bins, prob_R_chance)
-        prob_R, plt_bins = get_hist(prob_right, bins=bins)
+        prob_R, plt_bins = get_hist(prob_right_aha, bins=bins)
         ax.plot(plt_bins, prob_R)
         ax.set_title('Probabilities of ground truth=right during aha-moment')
 
         # number of aha moments for each subj
         subj_length = [len(aha_mmts)]
-        f, ax = plt.subplots(1, 1, figsize=(4.5,5))
+        f, ax = plt.subplots(1, 1, figsize=(4.5, 5))
         ax.hist(subj_length, bins=np.arange(6)-0.5)
         ax.set_xlabel('Number of aha moments')
         ax.set_ylabel('Number of subjects')
@@ -685,14 +689,13 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500, perf_th=0.6,
         print(np.std(subj_length))
         ax.set_title('Number of aha moments for each subject')
         f, ax = plt.subplots(1, 2)
-        learned_mat = learn_data
+        learned_mat = 1*np.array(learn_data['learned'])
         ax[0].hist(learned_mat)
         ax[0].set_title('Subjects that learn (1 learn, 0 not)')
         ax[0].spines['right'].set_visible(False)
         ax[0].spines['top'].set_visible(False)
-        learning_time = []
-        learning_time.append(learn_data['ev_l'][0] -
-                              learn_data['ev_not_l'][0])
+        zip_ = zip(learn_data['ev_l'], learn_data['ev_not_l'])
+        learning_time = [x-y for x, y in zip_ if x is not None and y is not None]
         ax[1].hist(learning_time, 8)
         ax[1].spines['right'].set_visible(False)
         ax[1].spines['top'].set_visible(False)
@@ -896,14 +899,14 @@ if __name__ == '__main__':
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_40/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_20/'
-    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/shaping_5_0.1/'
+    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/shaping_5_0.1/'
     # sv_f = '/home/manuel/shaping/results_280421/shaping_5_0.1/'
-    # sv_f = '/home/molano/shaping/results_280421/shaping_5_0.1/'
+    sv_f = '/home/molano/shaping/results_280421/shaping_5_0.1/'
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
     TH = 0.6
     # TODO: tune perf_bef_aft, bef_aft_diff
     ahas_dic = {'w_ahas': 10, 'w_perf': 1000,
-                'bef_aft_diff': 0.12, 'aha_th': 0.65, 'w_explore': 10}
+                'bef_aft_diff': 0.1, 'aha_th': 0.65, 'w_explore': 10}
 
     learn_dic = {'w_perf': 500, 'perf_bef_aft': [.6, .75]}
 

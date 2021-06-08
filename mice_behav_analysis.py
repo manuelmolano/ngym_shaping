@@ -1270,7 +1270,7 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 ### HINT: MAIN
 if __name__ == '__main__':
     plt.close('all')
-    set_paths('Leyre')  #molano #Leyre
+    set_paths('molano')  #molano #Leyre
     # set_paths('Manuel')
     plt_stg_vars = False
     plt_stg_with_fourth = False
