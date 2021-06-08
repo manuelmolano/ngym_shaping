@@ -144,7 +144,7 @@ Medir la distancia mínima entre los periodos
     learned = 1*(perf_conv > perf_bef_aft[1])
     ev_l = get_event(trace=learned, frst_lst='last')
     if verbose:
-        f, ax = plt.subplots(1, 1, figsize=(5,3))
+        f, ax = plt.subplots(1, 1, figsize=(5,4))
         ax.plot(perf_conv, label='Performance')
         ax.plot([ev_not_l, ev_not_l], [0, 1], 'c', label='Start of learning period')
         ax.plot([ev_l, ev_l], [0, 1], 'm', label='End of learning period')
@@ -189,7 +189,7 @@ def learning(folder, learn_data={}, verbose=True, conv=[1], **aha_dic):
     return learn_data, data_flag
 
 
-def get_ahas(stage, perf, gt, aha_data, verbose=False, **aha_dic):
+def get_ahas(stage, perf, gt, aha_data, verbose=True, **aha_dic):
     ahas_dic_def = {'w_ahas': 10, 'w_perf': 100,  # TODO: explore w_perf, bef_aft_diff, aha_th
                     'bef_aft_diff': 0.2, 'aha_th': 0.75, 'w_explore': 10}
     ahas_dic_def.update(aha_dic)
@@ -899,16 +899,16 @@ if __name__ == '__main__':
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_40/'
     # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/' +\
     #     'no_shaping_long_tr_one_agent_stg_4_nsteps_20/'
-    # sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/shaping_5_0.1/'
+    sv_f = '/Users/leyreazcarate/Desktop/TFG/results_280421/shaping_5_0.1/'
     # sv_f = '/home/manuel/shaping/results_280421/shaping_5_0.1/'
-    sv_f = '/home/molano/shaping/results_280421/shaping_5_0.1/'
+    # sv_f = '/home/molano/shaping/results_280421/shaping_5_0.1/'
     NUM_STEPS = 200000  # 1e5*np.arange(10, 21, 2)
     TH = 0.6
     # TODO: tune perf_bef_aft, bef_aft_diff
     ahas_dic = {'w_ahas': 10, 'w_perf': 1000,
                 'bef_aft_diff': 0.1, 'aha_th': 0.65, 'w_explore': 10}
 
-    learn_dic = {'w_perf': 500, 'perf_bef_aft': [.6, .75]}
+    learn_dic = {'w_perf': 500, 'perf_bef_aft': [.55, .6]}
 
     plot_separate_figures = True
     plot_all_figs = True
