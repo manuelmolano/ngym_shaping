@@ -47,6 +47,7 @@ ALL_INDX.update(PUN_IND_MAP)
 ### AUXILIAR FUNCTIONS TO LOAD DATA
 
 def put_together_files(folder):
+    """Put together all the files in a folder and organize them by sufix"""
     def order_by_sufix(file_list):
         sfx = [x[x.rfind('_')+1:x.rfind('.')].split('.') for x in file_list]
         stgs = np.array([x[0] for x in sfx])
@@ -104,25 +105,12 @@ def data_extraction(folder, metrics, w_conv_perf=500, conv=[1, 0]):
 
 
 def learned(perf, learn_data, verbose=True, **params):
-    """
-Hacer un smoothing (np.convolve) con una ventana muy larga.
-Hacer un histograma con los valores del factor resultante para ver si 
-    sacas 2 "montañitas": chance and learned performance.
-Establecer un threshold a partir de ese histograma.
-Buscar todos los valores por debajo/encima de los thresholds
-Medir la distancia mínima entre los periodos
-
-    Parameters
-    ----------
-    perf : TYPE
-        DESCRIPTION.
-    **params : TYPE
-        DESCRIPTION.
-
-    Returns
-    -------
-    None.
-
+    """Do a smoothing (np.convolve) with a very long window.
+    Make a histogram with the values of the resulting factor to see if
+    You get 2 "mountains": chance and learned performance.
+    Establish a threshold from that histogram.
+    Find all values below / above thresholds
+    Measure the minimum distance between the periods.
     """
     def get_event(trace, frst_lst):
         dwn_idx = np.where(np.diff(trace) < 0)[0]
@@ -190,7 +178,9 @@ def learning(folder, learn_data={}, verbose=True, conv=[1], **aha_dic):
 
 
 def get_ahas(stage, perf, gt, aha_data, verbose=True, **aha_dic):
-    ahas_dic_def = {'w_ahas': 10, 'w_perf': 100,  # TODO: explore w_perf, bef_aft_diff, aha_th
+    """Find aha moments when all the requirements are fulfilled and
+    plot them"""
+    ahas_dic_def = {'w_ahas': 10, 'w_perf': 100,
                     'bef_aft_diff': 0.2, 'aha_th': 0.75, 'w_explore': 10}
     ahas_dic_def.update(aha_dic)
     prob_right = 0
@@ -209,11 +199,11 @@ def get_ahas(stage, perf, gt, aha_data, verbose=True, **aha_dic):
         perf = np.convolve(perf_stg_1, np.ones((w_perf,))/w_perf,
                            mode='valid')
         if verbose:
-            plt.figure()
+            plt.figure(figsize=(4,3))
             # plt.title(folder)
             # plt.plot(perf_stg_1, '-+')
             plt.plot(ahas, '-+', label='Performance window = 10')
-            plt.plot(perf, label='Performance window = 1000')
+            plt.plot(perf, label='Performance window = 100')
             plt.legend()
             plt.xlabel('Trials')
             plt.ylabel('Mean performance')
@@ -280,7 +270,7 @@ def aha_moment(folder, aha_data={}, verbose=True, conv=[1], **aha_dic):
 
 
 def get_tag(tag, file):
-    # process name
+    """Process name"""
     f_name = ntpath.basename(file)
     assert f_name.find(tag) != -1, 'Tag '+tag+' not found in '+f_name
     val = f_name[f_name.find(tag)+len(tag)+1:]
@@ -289,6 +279,7 @@ def get_tag(tag, file):
 
 
 def box_plot(data, ax, x, lw=.5, fliersize=4, color='k', widths=0.15):
+    """Plotign box plots for different rollout values"""
     bp = ax.boxplot(data, positions=[x], widths=widths)
     for p in ['whiskers', 'caps', 'boxes', 'medians']:
         for bpp in bp[p]:
@@ -307,6 +298,7 @@ def box_plot(data, ax, x, lw=.5, fliersize=4, color='k', widths=0.15):
 
 
 def get_hist(data, bins=None):
+    """Create a histogram"""
     if bins is not None:
         hist, plt_bins = np.histogram(data, bins=bins)
     else:
@@ -441,7 +433,7 @@ def plt_means(metric, index, ax, limit_mean=True, limit_ax=True,
 def plt_perf_indicators(values, index_val, ax, f_props, ax_props, reached=None,
                         discard=[], plot_individual_values=True,
                         errorbars=True):
-    """Plot final results
+    """Plot final results, in this case, performance indicators
     """
     values = np.array(values)
     index_val = np.array(index_val)
@@ -517,8 +509,8 @@ def trials_per_stage(metric, ax, index):
     ax.set_ylabel('Trials')
 
 
-# plot of each punishment and each instance
 def plot_inst_punishment(num_instances, punish_3_vector, conv_w):
+    """plot of each punishment and each instance"""
     for i_i in range(num_instances):
         for pun in punish_3_vector:
             sv_f_inst = sv_f+'/pun_'+str(round(pun, 2))+'_inst_'+str(i_i)+'/'
@@ -625,24 +617,6 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500, perf_th=0.6,
             plt.tight_layout()
             plt.show()
 
-            # fig2, ax2 = plt.subplots(1, 1)
-            # ax_twin = ax2.twinx()
-            # ax2.imshow(np.array(gt_patterns), aspect='auto')
-            # ax2.set_title('ground truth')
-            # ax_twin.plot(np.mean(np.array(perf_patterns), axis=0), color='red')
-            # ax2.set_title('Aha moment with mean performance')
-            # fig3, ax3 = plt.subplots(1, 1)
-            # ax_twin = ax3.twinx()
-            # ax3.imshow(np.array(gt_patterns), aspect='auto')
-            # ax3.set_title('ground truth')
-            # mean_perf = np.mean(np.array(perf_patterns), axis=0)
-            # w_conv = 25
-            # ax_twin.plot(np.convolve(mean_perf, np.ones((w_conv,))/w_conv,
-            #                          mode='valid'), color='red')
-            # ax3.set_title('Aha moment with convolved mean performance')
-            # fig4, ax4 = plt.subplots(1, 1)
-            # ax4.set_title('Prob. Right')
-            # ax4.hist(np.array(prob_right))
         names = ['values_across_training_']  # 'mean_values_across_training_']
         ylabels = ['Performance', 'Phase', 'Number of steps',
                    'Session performance']
@@ -652,7 +626,6 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500, perf_th=0.6,
         final_perfs = [np.mean(p[-final_wind:])
                        for p in metrics['real_performance']]
         box_plot(data=final_perfs, ax=ax_final_perfs, x=x)
-        # TODO: plot figures as for mice (line 1387 in mice_behav_...)
         num_sh = 100000
         bins = np.linspace(0, 1, 10)
         # probabilities of right
@@ -664,6 +637,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500, perf_th=0.6,
         ax.plot(plt_bins, prob_R_chance)
         prob_R, plt_bins = get_hist(prob_right, bins=bins)
         ax.plot(plt_bins, prob_R)
+        ax.legend(labels=('Ground truth', 'Right side trials'))
         ax.set_title('Probabilities of ground truth=right before aha-moment')
         # probabilities of right aha
         w = 10
@@ -674,6 +648,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500, perf_th=0.6,
         ax.plot(plt_bins, prob_R_chance)
         prob_R, plt_bins = get_hist(prob_right_aha, bins=bins)
         ax.plot(plt_bins, prob_R)
+        ax.legend(labels=('Ground truth', 'Right side trials'))
         ax.set_title('Probabilities of ground truth=right during aha-moment')
 
         # number of aha moments for each subj
@@ -719,6 +694,7 @@ def plot_results(folder, setup='', setup_nm='', w_conv_perf=500, perf_th=0.6,
                 ax[ind_met].set_ylabel(ylabels[ind_met])
             ax[0].set_title('Roll_out = ' + str(n_roll))
             ax[0].axhline(y=0.55, linestyle='--', color='k')
+            ax[0].set_xlabel('Trials')
             ax[len(keys)-1].set_xlabel('Trials')
             ax[len(keys)-1].legend()
             f.savefig(folder+'/'+names[ind]+'_'+setup_nm+'_'+setup +
@@ -918,53 +894,52 @@ if __name__ == '__main__':
     stg_w = 1000
     conv_w = 50
     final_ph = 4
-    f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
-    f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
-    f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
-    ax = [ax1, ax2, ax3]
-    plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
-                 keys=['real_performance', 'stage'], limit_ax=True,
-                 final_ph=final_ph, ax_final=ax, perf_th=TH,
-                 tag='pun', limit_tr=False, rerun=True,
-                 f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
-                 plt_ind_vals=True, plt_ind_traces=True, ahas_dic=ahas_dic,
-                 learn_dic=learn_dic)
+    # f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
+    # f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
+    # f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
+    # ax = [ax1, ax2, ax3]
+    # plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
+    #              keys=['real_performance', 'stage'], limit_ax=True,
+    #              final_ph=final_ph, ax_final=ax, perf_th=TH,
+    #              tag='pun', limit_tr=False, rerun=True,
+    #              f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
+    #              plt_ind_vals=True, plt_ind_traces=True, ahas_dic=ahas_dic,
+    #              learn_dic=learn_dic)
 
     # f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
     # f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
     # f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
     # ax = [ax1, ax2, ax3]
     # plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
-    #              keys=['real_performance', 'stage'], limit_ax=True,
-    #              final_ph=final_ph, ax_final=ax, tag='pun', limit_tr=False,
-    #              rerun=True, plt_ind_vals=True, plt_ind_traces=True,
-    #              f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
-    #              **ahas_dic)
+    #               keys=['real_performance', 'stage'], limit_ax=True,
+    #               final_ph=final_ph, ax_final=ax, tag='pun', limit_tr=False,
+    #               rerun=True, plt_ind_vals=True, plt_ind_traces=True,
+    #               f_final_prop={'color': (0, 0, 0), 'label': '', 'marker': '.'},
+    #               **ahas_dic)
 
     # PLOT FIGURES NO-SHAPING DIFFERENT ROLLOUTS
-    # main_folder = '/Users/leyreazcarate/Desktop/TFG/results_280421/'
-    # # main_folder = '/home/manuel/shaping/results_280421/'
-    # rollouts = [5, 10, 20, 40]
-    # f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(3, 3))
-    # for i_ro, ro in enumerate(rollouts):
-    #     sv_f = main_folder+'no_shaping_long_tr_one_agent_stg_4_nsteps_' + \
-    #         str(ro)+'/'
+    main_folder = '/Users/leyreazcarate/Desktop/TFG/results_280421/'
+    # main_folder = '/home/manuel/shaping/results_280421/'
+    rollouts = [5, 10, 20, 40]
+    f2, ax2 = plt.subplots(nrows=1, ncols=1, figsize=(3, 3))
+    for i_ro, ro in enumerate(rollouts):
+        sv_f = main_folder+'no_shaping_long_tr_one_agent_stg_4_nsteps_' + \
+            str(ro)+'/'
 
-    #     f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
-    #     f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
-    #     ax = [ax1, ax2, ax3]
-    #     plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
-    #                  keys=['real_performance', 'stage'], limit_ax=True,
-    #                  final_ph=final_ph, ax_final=ax, x=i_ro,
-    #                  tag='pun', limit_tr=False, rerun=True,
-    #                  f_final_prop={'color': (0, 0, 0), 'label': '',
-    #                                'marker': '.'},
-    #                  plt_ind_vals=True, plt_ind_traces=True, n_roll=ro,
-    #                  **ahas_dic)
-    #     f1.savefig(sv_f + '/final_results_phase.svg', dpi=200)
-    #     f3.savefig(sv_f + '/final_results_performance.svg', dpi=200)
-    #     plt.close(f1)
-    #     plt.close(f3)
-    # f2.savefig(main_folder + '/final_results_steps.svg', dpi=200)
-    # TODO: close figs after saving
-    # TODO: boxplots for shaping/no-shaping (rollout = 5)
+        f1, ax1 = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
+        f3, ax3 = plt.subplots(nrows=2, ncols=2, figsize=(18, 12))
+        ax = [ax1, ax2, ax3]
+        plot_results(folder=sv_f, setup_nm='pun', w_conv_perf=perf_w,
+                      keys=['real_performance', 'stage'], limit_ax=True,
+                      final_ph=final_ph, ax_final=ax, x=i_ro,
+                      tag='pun', limit_tr=False, rerun=True,
+                      f_final_prop={'color': (0, 0, 0), 'label': '',
+                                    'marker': '.'},
+                      plt_ind_vals=True, plt_ind_traces=True, n_roll=ro,
+                      ahas_dic=ahas_dic, learn_dic=learn_dic)
+        f1.savefig(sv_f + '/final_results_phase.svg', dpi=200)
+        f3.savefig(sv_f + '/final_results_performance.svg', dpi=200)
+        plt.close(f1)
+        plt.close(f3)
+    f2.savefig(main_folder + '/final_results_steps.svg', dpi=200)
+

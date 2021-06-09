@@ -9,9 +9,9 @@ import ngym_shaping as ng_sh
 from ngym_shaping.utils import plotting as plot
 import warnings
 import analysis_rl as arl
-from stable_baselines.common.policies import LstmPolicy
-from stable_baselines.common.vec_env import DummyVecEnv
-from stable_baselines import A2C  # ACER, PPO2
+# from stable_baselines.common.policies import LstmPolicy
+# from stable_baselines.common.vec_env import DummyVecEnv
+# from stable_baselines import A2C  # ACER, PPO2
 warnings.filterwarnings('default')
 
 

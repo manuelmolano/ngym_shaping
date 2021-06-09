@@ -86,6 +86,18 @@ def sv_fig(f, name):
 
 
 def get_hist(data, bins=None):
+    """
+    Makes an histogram.
+
+    Parameters
+    ----------
+    Data
+
+    Returns
+    -------
+    Histogram, bins
+
+    """
     if bins is not None:
         hist, plt_bins = np.histogram(data, bins=bins)
     else:
@@ -367,28 +379,6 @@ def concatenate_misses(df, subject):
     # obtain the performance for each subject
     df_sbj_perf = df_grps.get_group(subject)['misshistory'].values
     return df_sbj_perf
-
-
-def create_toy_dataset(df_trials):
-    """
-    Creates a set of data with subjects 01 and 02 and sessions 1,2 and 3.
-
-    Parameters
-    ----------
-    df_trials : dataframe
-        data.
-
-    Returns
-    -------
-    Set of the original dataset
-
-    """
-    # creation of a miniset of data with subjects N01&N02 and sessions 1,2,3
-    minitrials = df_trials.loc[((df_trials['subject_name'] == 'N01') |
-                               (df_trials['subject_name'] == 'N02')) &
-                               (df_trials['session'] < 4)]
-    minitrials.to_csv(PATH + '/minitrials.csv', sep=';')
-    return minitrials
 
 
 def remove_misses(df):
@@ -770,37 +760,6 @@ def learned_categories(sbj, df, index_event=None, color_ev='', verbose=True,
 
 
 ### HINT: FUNCTIONS TO PLOT
-
-
-def plot_xvar_VS_yvar(df, x_var, y_var, col, xlabel='x_var', ylabel='y_var',
-                      name='X variable VS Y variable'):
-    """
-    Plot x_var VS y_var.
-
-    Parameters
-    ----------
-    df : dataframe
-        dataframe containing data.
-    x_var : str
-        first variable.
-    y_var : str
-        second variable.
-    col : str
-        color.
-
-    Returns
-    -------
-    Plot x VS y
-
-    """
-    f, ax = plt.subplots()
-    ax.plot(df[x_var], df[y_var], color=col)
-    ax.set(title='Plot of accuracy VS session')
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.show()
-    sv_fig(f, name)
-
 
 def plot_accuracy_sessions_subj(acc, xs, col, ax, subj):
     """
@@ -1270,7 +1229,7 @@ def plot_trials_subjects_stage4(df, conv_w=300, figsize=(6, 4)):
 ### HINT: MAIN
 if __name__ == '__main__':
     plt.close('all')
-    set_paths('molano')  #molano #Leyre
+    set_paths('Leyre')  #molano #Leyre
     # set_paths('Manuel')
     plt_stg_vars = False
     plt_stg_with_fourth = False
@@ -1391,20 +1350,22 @@ if __name__ == '__main__':
         r_m = np.random.rand(num_sh, w)
         r_m = np.sum(r_m > 0.5, axis=1)/w
         prob_R_chance, plt_bins = get_hist(r_m, bins=bins)
-        f, ax = plt.subplots(1, 1)
+        f, ax = plt.subplots(1, 1, figsize=(4,3))
         ax.plot(plt_bins, prob_R_chance)
         prob_R, plt_bins = get_hist(prob_right, bins=bins)
         ax.plot(plt_bins, prob_R)
         ax.set_title('Probabilities of ground truth=right before aha-moment')
+        ax.legend(labels=('Ground truth', 'Right side trials'))
         # probabilities of right aha
         w = 10
         r_m = np.random.rand(num_sh, w)
         r_m = np.sum(r_m > 0.5, axis=1)/w
         prob_R_chance, plt_bins = get_hist(r_m, bins=bins)
-        f, ax = plt.subplots(1, 1)
+        f, ax = plt.subplots(1, 1, figsize=(4,3))
         ax.plot(plt_bins, prob_R_chance)
         prob_R, plt_bins = get_hist(prob_right_aha, bins=bins)
         ax.plot(plt_bins, prob_R)
+        ax.legend(labels=('Ground truth', 'Right side trials'))
         ax.set_title('Probabilities of ground truth=right during aha-moment')
 
         # number of aha moments for each subj
